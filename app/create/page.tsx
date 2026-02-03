@@ -78,69 +78,61 @@ export default function CreateTournamentPage() {
 
   // Auto-detect location
   useEffect(() => {
-    // First try browser geolocation
+    const fetchIpLocation = async () => {
+      try {
+        const response = await fetch("https://ipapi.co/json/")
+        if (response.ok) {
+          return await response.json()
+        }
+      } catch {
+        // IP geolocation failed, continue without it
+      }
+      return null
+    }
+
+    // Try browser geolocation for accurate lat/lon, fall back to IP-based
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords
-
-          // Reverse geocode to get city/country
-          try {
-            const response = await fetch(
-              `https://ipapi.co/${latitude},${longitude}/json/`, // This won't work, use a proper reverse geocode
-            )
-            // Fall back to IP-based detection for city/country
-            const ipResponse = await fetch("https://ipapi.co/json/")
-            if (ipResponse.ok) {
-              const ipData = await ipResponse.json()
-              setLocation({
-                lat: latitude,
-                lon: longitude,
-                city: ipData.city,
-                country: ipData.country_name,
-              })
-            } else {
-              setLocation({ lat: latitude, lon: longitude })
-            }
-          } catch {
-            setLocation({ lat: latitude, lon: longitude })
-          }
+          // Use IP-based for city/country (browser geolocation doesn't provide these)
+          const ipData = await fetchIpLocation()
+          setLocation({
+            lat: latitude,
+            lon: longitude,
+            city: ipData?.city,
+            country: ipData?.country_name,
+          })
           setDetectingLocation(false)
         },
         async () => {
-          // Fallback to IP-based location
-          try {
-            const response = await fetch("https://ipapi.co/json/")
-            if (response.ok) {
-              const data = await response.json()
-              setLocation({
-                lat: data.latitude,
-                lon: data.longitude,
-                city: data.city,
-                country: data.country_name,
-              })
-            }
-          } catch (error) {
-            console.error("[v0] IP geolocation failed:", error)
+          // Browser geolocation denied/failed, use IP-based for everything
+          const ipData = await fetchIpLocation()
+          if (ipData) {
+            setLocation({
+              lat: ipData.latitude,
+              lon: ipData.longitude,
+              city: ipData.city,
+              country: ipData.country_name,
+            })
           }
           setDetectingLocation(false)
         },
         { enableHighAccuracy: true, timeout: 5000 },
       )
     } else {
-      // No geolocation, try IP
-      fetch("https://ipapi.co/json/")
-        .then((res) => res.json())
-        .then((data) => {
+      // No browser geolocation, use IP-based
+      fetchIpLocation().then((data) => {
+        if (data) {
           setLocation({
             lat: data.latitude,
             lon: data.longitude,
             city: data.city,
             country: data.country_name,
           })
-        })
-        .catch(console.error)
-        .finally(() => setDetectingLocation(false))
+        }
+        setDetectingLocation(false)
+      })
     }
   }, [])
 

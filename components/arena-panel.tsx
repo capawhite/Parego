@@ -25,6 +25,9 @@ import {
   Home,
   UserPlus,
   Check,
+  Heart,
+  Loader2,
+  MapPin,
 } from "lucide-react" // Added SettingsIcon, Home, Grid3x3, ClipboardList, AlertTriangle, UserPlus, Check
 import {
   Dialog,
@@ -42,6 +45,10 @@ import {
   loadPlayers,
   saveMatches,
   loadMatches,
+  getInterestCount,
+  getInterestedUsers,
+  getUserInterested,
+  type InterestedUser,
 } from "@/lib/database/tournament-db"
 import { generateQRCode } from "@/lib/qr-utils" // Fixed import to use correct path for generateQRCode
 import { TournamentSimulatorPanel } from "@/components/tournament-simulator-panel"
@@ -52,13 +59,21 @@ import { createClient } from "@/lib/supabase/client" // Import createClient for 
 import Link from "next/link" // Import Link for navigation
 import { Label } from "@/components/ui/label" // Import Label for forms
 import { generateGuestUsername } from "@/lib/guest-names" // Import memorable guest name generator
+import { cn } from "@/lib/utils"
+import { toggleInterest } from "@/app/actions/express-interest"
+import { verifyAndCheckIn, markPresentOverride, checkVenueProximity } from "@/app/actions/check-in"
+import { resolveRating } from "@/lib/rating-bands"
+import { toast } from "sonner"
 
 const TOURNAMENT_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
+
+// Debug logging - set to false in production
+const DEBUG = process.env.NODE_ENV === "development"
 
 interface ArenaPanelProps {
   tournamentId: string
   tournamentName: string
-  isPlayerView?: boolean // Added prop
+  isPlayerView?: boolean
 }
 
 interface ArenaSessionData {
@@ -70,6 +85,14 @@ interface ArenaSessionData {
 
 function generateTournamentId(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
+}
+
+/** Merge paired and completed matches for saving; completed version wins on duplicate ids */
+function mergeMatchesForSave(paired: Match[], allTime: Match[]): Match[] {
+  const map = new Map<string, Match>()
+  paired.forEach((m) => map.set(m.id, m))
+  allTime.forEach((m) => map.set(m.id, m))
+  return Array.from(map.values())
 }
 
 export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, isPlayerView }: ArenaPanelProps) {
@@ -99,7 +122,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [isFullScreenPairings, setIsFullScreenPairings] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("players")
-  // const [isPlayerView, setIsPlayerView] = useState(false) // Moved to props
+  // const [effectivePlayerView, setIsPlayerView] = useState(false) // Moved to props
   const [playerSession, setPlayerSession] = useState<ArenaSessionData | null>(null)
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false)
   const [playerSubmissions, setPlayerSubmissions] = useState<
@@ -113,15 +136,31 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [organizerId, setOrganizerId] = useState<string | null>(null)
   const [organizerName, setOrganizerName] = useState<string | null>(null)
+  const [tournamentMetadata, setTournamentMetadata] = useState<{
+    city?: string
+    country?: string
+    latitude?: number
+    longitude?: number
+    visibility?: "public" | "private"
+  } | null>(null)
   const [currentPlayerInTournament, setCurrentPlayerInTournament] = useState<Player | null>(null)
   const [userName, setUserName] = useState<string>("") // For logged-in user joining
-  const [userRating, setUserRating] = useState<number | null>(null) // For logged-in user joining
-  const [userCountry, setUserCountry] = useState<string | null>(null) // For logged-in user joining
+  const [userRating, setUserRating] = useState<number | null>(null)
+  const [userRatingBand, setUserRatingBand] = useState<string | null>(null) // rating_band from profile
+  const [userCountry, setUserCountry] = useState<string | null>(null)
+
+  const [interestCount, setInterestCount] = useState(0)
+  const [interestedUsers, setInterestedUsers] = useState<InterestedUser[]>([])
+  const [userInterested, setUserInterested] = useState(false)
+  const [togglingInterest, setTogglingInterest] = useState(false)
+  const [checkingIn, setCheckingIn] = useState(false)
+  const [markingPresentPlayerId, setMarkingPresentPlayerId] = useState<string | null>(null)
+  const [joiningSelf, setJoiningSelf] = useState(false)
 
   const isOrganizer = currentUserId !== null && currentUserId === organizerId
 
   const isCurrentUserInTournament = currentUserId
-    ? arenaState.players.some((p) => p.userId === currentUserId && !p.isRemoved)
+    ? arenaState.players.some((p) => p.userId === currentUserId && !p.hasLeft)
     : false
 
   // Determine user role for permission system
@@ -148,11 +187,17 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     canAccessSettings: userRole === "organizer",
   }
 
+  // Derive player view from session when not passed as prop (parent page doesn't pass it)
+  // Players who joined via /join link see simplified UI: no Players tab, no result override, etc.
+  // Organizers always see full UI even if they also joined as a player
+  const effectivePlayerView =
+    !isOrganizer && (isPlayerView ?? (playerSession?.role === "player" && !!playerSession?.playerId))
+
   useEffect(() => {
     const loadFromDatabase = async () => {
       if (!tournamentId) return
 
-      console.log("[v0] Loading tournament from database:", tournamentId)
+      if (DEBUG) console.log("[v0] Loading tournament from database:", tournamentId)
 
       const supabase = createClient()
       const {
@@ -162,21 +207,29 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         setCurrentUserId(user.id)
         const { data: profileData } = await supabase
           .from("users")
-          .select("name, rating, country")
+          .select("name, rating, rating_band, country")
           .eq("id", user.id)
           .maybeSingle()
         if (profileData) {
           setUserName(profileData.name || "")
-          setUserRating(profileData.rating || null)
+          setUserRating(profileData.rating ?? null)
+          setUserRatingBand(profileData.rating_band ?? null)
           setUserCountry(profileData.country || null)
         }
       }
 
       const tournament = await loadTournament(tournamentId)
       if (tournament) {
-        console.log("[v0] Found tournament:", tournament.name, "Status:", tournament.status)
+        if (DEBUG) console.log("[v0] Found tournament:", tournament.name, "Status:", tournament.status)
 
         setOrganizerId(tournament.organizer_id || null)
+        setTournamentMetadata({
+          city: tournament.city,
+          country: tournament.country,
+          latitude: tournament.latitude,
+          longitude: tournament.longitude,
+          visibility: tournament.visibility || "public",
+        })
 
         if (tournament.organizer_id) {
           const { data: organizerData } = await supabase
@@ -211,6 +264,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           setCurrentPlayerInTournament(playerMatch || null)
         }
 
+        // Convert start_time from ISO string to numeric timestamp
+        const startTimeMs = tournament.start_time
+          ? new Date(tournament.start_time).getTime()
+          : null
+
         setArenaState((prev) => ({
           ...prev,
           players: dbPlayers.length > 0 ? dbPlayers : prev.players,
@@ -225,10 +283,10 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           pairedMatches: activeMatches,
           allTimeMatches: completedMatches,
           tournamentDuration: tournament.duration || TOURNAMENT_DURATION,
-          tournamentStartTime: tournament.start_time || null, // Load start time from DB
+          tournamentStartTime: startTimeMs,
         }))
       } else {
-        console.log("[v0] Tournament not found, initializing fresh state")
+        if (DEBUG) console.log("[v0] Tournament not found, initializing fresh state")
         setArenaState((prev) => ({
           ...prev,
           status: "setup",
@@ -241,12 +299,38 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     loadFromDatabase()
   }, [tournamentId])
 
+  // Load express-interest count, list (for organizer), and current user's interest
+  useEffect(() => {
+    if (!tournamentId) return
+    let cancelled = false
+    Promise.all([
+      getInterestCount(tournamentId),
+      isOrganizer ? getInterestedUsers(tournamentId) : Promise.resolve([]),
+      currentUserId ? getUserInterested(tournamentId, currentUserId) : Promise.resolve(false),
+    ]).then(([count, users, interested]) => {
+      if (!cancelled) {
+        setInterestCount(count)
+        setInterestedUsers(users)
+        setUserInterested(interested)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [tournamentId, isOrganizer, currentUserId])
+
   useEffect(() => {
     if (!tournamentId || isLoading) return
 
     const saveToDatabase = async () => {
       try {
         const statusToSave = arenaState.status === "completed" ? "completed" : arenaState.isActive ? "active" : "setup"
+        const startTimeIso =
+          arenaState.tournamentStartTime != null
+            ? typeof arenaState.tournamentStartTime === "number"
+              ? new Date(arenaState.tournamentStartTime).toISOString()
+              : String(arenaState.tournamentStartTime)
+            : undefined
 
         await saveTournament(
           tournamentId,
@@ -254,11 +338,16 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           statusToSave,
           arenaState.tableCount,
           arenaState.settings,
-          arenaState.tournamentDuration,
-          arenaState.tournamentStartTime, // Save start time
+          tournamentMetadata?.city,
+          tournamentMetadata?.country,
+          organizerId ?? undefined,
+          tournamentMetadata?.latitude,
+          tournamentMetadata?.longitude,
+          tournamentMetadata?.visibility ?? "public",
+          startTimeIso,
         )
         await savePlayers(tournamentId, arenaState.players)
-        console.log("[v0] Tournament auto-saved to database")
+        if (DEBUG) console.log("[v0] Tournament auto-saved to database")
       } catch (error) {
         console.error("[v0] Error auto-saving tournament:", error)
       }
@@ -274,8 +363,10 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     arenaState.tableCount,
     arenaState.settings,
     arenaState.tournamentDuration,
-    arenaState.status, // Added status to dependencies so completed tournaments save correctly
-    arenaState.tournamentStartTime, // Added start time to dependencies
+    arenaState.status,
+    arenaState.tournamentStartTime,
+    tournamentMetadata,
+    organizerId,
     isLoading,
   ])
 
@@ -287,12 +378,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const remaining = Math.max(0, arenaState.tournamentDuration - elapsed)
       setTimeRemaining(remaining)
 
-      console.log("[v0] Timer update:", {
-        startTime: new Date(arenaState.tournamentStartTime).toISOString(),
-        duration: arenaState.tournamentDuration / 60000,
-        elapsed: elapsed / 60000,
-        remaining: remaining / 60000,
-      })
+      // Timer update - too chatty for normal logging
 
       if (remaining === 0 && !waitingForFinalResults) {
         endTournament()
@@ -316,11 +402,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
     const pairingTimer = setInterval(() => {
       const activePairingMatches = arenaState.pairedMatches.filter((m) => !m.result?.completed)
+      const hasVenue =
+        tournamentMetadata?.latitude != null && tournamentMetadata?.longitude != null
       const availablePlayers = arenaState.players.filter(
         (p) =>
           !p.paused &&
           !p.markedForRemoval &&
-          !p.markedForPause && // Added check for markedForPause
+          !p.markedForPause &&
+          (p.checkedInAt != null || !hasVenue) && // Step 7: only checked-in players in pairing pool (or all if no venue)
           !activePairingMatches.some((m) => m.player1.id === p.id || m.player2.id === p.id),
       )
 
@@ -370,20 +459,24 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     arenaState.players,
     arenaState.allTimeMatches,
     arenaState.tableCount,
-    arenaState.settings, // Use entire settings object
+    arenaState.settings,
+    tournamentMetadata?.latitude,
+    tournamentMetadata?.longitude,
     waitingForFinalResults,
   ])
 
   useEffect(() => {
     const sessionData = localStorage.getItem("tournamentPlayer")
-    console.log("[v0] Checking session data:", sessionData)
+    if (DEBUG) console.log("[v0] Checking session data:", sessionData)
     if (sessionData) {
       try {
         const parsed: ArenaSessionData = JSON.parse(sessionData)
-        console.log("[v0] Parsed session:", parsed)
-        console.log("[v0] Tournament ID match:", parsed.tournamentId, "===", initialTournamentId)
+        if (DEBUG) {
+          console.log("[v0] Parsed session:", parsed)
+          console.log("[v0] Tournament ID match:", parsed.tournamentId, "===", initialTournamentId)
+        }
         if (parsed.tournamentId === initialTournamentId && parsed.role === "player") {
-          console.log("[v0] Setting player view mode")
+          if (DEBUG) console.log("[v0] Setting player view mode")
           // setIsPlayerView(true) // Removed, now comes from props
           setPlayerSession(parsed)
           // Show welcome message for new players
@@ -393,7 +486,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             localStorage.setItem(`welcome_${initialTournamentId}_${parsed.playerId}`, "true")
           }
         } else if (parsed.tournamentId === initialTournamentId && parsed.role === "organizer") {
-          console.log("[v0] Setting organizer view mode")
+          if (DEBUG) console.log("[v0] Setting organizer view mode")
           // setIsPlayerView(false) // Removed, now comes from props
         }
       } catch (err) {
@@ -401,10 +494,17 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         // setIsPlayerView(false) // Removed, now comes from props
       }
     } else {
-      console.log("[v0] No session found, defaulting to organizer view")
+      if (DEBUG) console.log("[v0] No session found, defaulting to organizer view")
       // setIsPlayerView(false) // Removed, now comes from props
     }
   }, [initialTournamentId, arenaState.isActive])
+
+  // When in player view, switch away from Players tab (which is hidden)
+  useEffect(() => {
+    if (effectivePlayerView && activeTab === "players") {
+      setActiveTab("pairings")
+    }
+  }, [effectivePlayerView, activeTab])
 
   useEffect(() => {
     if (!tournamentId || !arenaState.isActive || activeTab !== "players") return
@@ -513,13 +613,10 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       joinedAt: Date.now(),
       userId: userId || null,
       isGuest: isGuest,
-      // Added fields from updates
-      rating: userRating, // Assuming userRating is available when this is called
+      rating: resolveRating(userRating, userRatingBand ?? undefined),
       buchholz: 0,
       sonnebornBerger: 0,
-      isPaused: false,
-      isRemoved: false,
-      country: userCountry, // Assuming userCountry is available
+      country: userCountry,
     }
 
     setArenaState((prev) => ({
@@ -578,37 +675,169 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     await addPlayer(guestUsername, undefined, true)
   }
 
+  const handleToggleInterest = async () => {
+    if (!tournamentId) return
+    setTogglingInterest(true)
+    try {
+      const result = await toggleInterest(tournamentId)
+      if (!result.ok) {
+        toast.error(result.error ?? "Could not update interest")
+        return
+      }
+      setInterestCount(result.count)
+      setUserInterested(result.interested)
+      if (isOrganizer) {
+        const users = await getInterestedUsers(tournamentId)
+        setInterestedUsers(users)
+      }
+    } finally {
+      setTogglingInterest(false)
+    }
+  }
+
+  const handleCheckIn = async () => {
+    if (!tournamentId) return
+    setCheckingIn(true)
+    const tryCheckIn = (): Promise<boolean> =>
+      new Promise((resolve) => {
+        if (!navigator.geolocation) {
+          toast.error("Location is not available")
+          resolve(false)
+          return
+        }
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const result = await verifyAndCheckIn(tournamentId, position.coords.latitude, position.coords.longitude)
+            if (!result.ok) {
+              toast.error(result.error)
+              resolve(false)
+              return
+            }
+            toast.success("You're checked in!")
+            setArenaState((prev) => ({
+              ...prev,
+              players: prev.players.map((p) =>
+                p.userId === currentUserId
+                  ? { ...p, checkedInAt: Date.now(), presenceSource: "gps" as const }
+                  : p,
+              ),
+            }))
+            resolve(true)
+          },
+          () => {
+            toast.error("Could not get your location. Allow location access and try again.")
+            resolve(false)
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+        )
+      })
+    const ok = await tryCheckIn()
+    if (!ok) {
+      toast.info("Retrying in 2 seconds...")
+      await new Promise((r) => setTimeout(r, 2000))
+      await tryCheckIn()
+    }
+    setCheckingIn(false)
+  }
+
+  const handleMarkPresent = async (playerId: string) => {
+    if (!tournamentId) return
+    setMarkingPresentPlayerId(playerId)
+    try {
+      const result = await markPresentOverride(tournamentId, playerId)
+      if (!result.ok) {
+        toast.error(result.error)
+        return
+      }
+      toast.success("Player marked present")
+      const now = Date.now()
+      setArenaState((prev) => ({
+        ...prev,
+        players: prev.players.map((p) =>
+          p.id === playerId ? { ...p, checkedInAt: now, presenceSource: "override" as const } : p,
+        ),
+      }))
+    } finally {
+      setMarkingPresentPlayerId(null)
+    }
+  }
+
   const joinAsSelf = async () => {
     if (!currentUserId || !userName) return
 
-    // Check if user is already in tournament
     if (isCurrentUserInTournament) {
-      alert("You are already in this tournament")
+      toast.error("You are already in this tournament")
       return
     }
 
-    // Check for duplicate name
     const existingPlayer = arenaState.players.find(
-      (p) => p.name.toLowerCase() === userName.toLowerCase() && !p.isRemoved,
+      (p) => p.name.toLowerCase() === userName.toLowerCase() && !p.hasLeft,
     )
     if (existingPlayer) {
-      alert("A player with this name is already in the tournament")
+      toast.error("A player with this name is already in the tournament")
       return
+    }
+
+    const hasVenue =
+      tournamentMetadata?.latitude != null && tournamentMetadata?.longitude != null
+    let checkedInAt: number | null = null
+    let presenceSource: "gps" | null = null
+
+    if (hasVenue && tournamentId) {
+      setJoiningSelf(true)
+      const runProximity = (): Promise<boolean> =>
+        new Promise((resolve) => {
+          if (!navigator.geolocation) {
+            toast.error("Location is required to join at the venue.")
+            resolve(false)
+            return
+          }
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const result = await checkVenueProximity(
+                tournamentId!,
+                position.coords.latitude,
+                position.coords.longitude,
+              )
+              if (!result.ok) {
+                toast.error(result.error)
+                resolve(false)
+                return
+              }
+              checkedInAt = Date.now()
+              presenceSource = "gps"
+              resolve(true)
+            },
+            () => {
+              toast.error("Could not get your location. Allow location access to join at the venue.")
+              resolve(false)
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+          )
+        })
+      let ok = await runProximity()
+      if (!ok) {
+        toast.info("Retrying in 2 seconds...")
+        await new Promise((r) => setTimeout(r, 2000))
+        ok = await runProximity()
+      }
+      setJoiningSelf(false)
+      if (!ok) {
+        toast.error("You must be at the venue to join. Get closer or ask the organizer to mark you present.")
+        return
+      }
     }
 
     const newPlayer: Player = {
       id: crypto.randomUUID(),
       name: userName,
-      rating: userRating,
+      rating: resolveRating(userRating, userRatingBand ?? undefined),
       score: 0,
       buchholz: 0,
       sonnebornBerger: 0,
-      isPaused: false,
-      isRemoved: false,
       country: userCountry,
       isGuest: false,
       userId: currentUserId,
-      // Other fields will be populated by addPlayer if needed, or can be added here
       gamesPlayed: 0,
       streak: 0,
       performance: 0,
@@ -618,6 +847,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       active: arenaState.isActive,
       paused: false,
       joinedAt: Date.now(),
+      checkedInAt: checkedInAt,
+      presenceSource: presenceSource,
     }
 
     setArenaState((prev) => ({
@@ -651,11 +882,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           points_earned: [],
           table_numbers: [],
           rating: newPlayer.rating,
-          buchholz: newPlayer.buchholz,
-          sonneborn_berger: newPlayer.sonnebornBerger,
-          is_paused: newPlayer.isPaused,
-          is_removed: newPlayer.isRemoved,
+          buchholz: newPlayer.buchholz ?? 0,
+          sonneborn_berger: newPlayer.sonnebornBerger ?? 0,
           country: newPlayer.country,
+          checked_in_at: checkedInAt != null ? new Date(checkedInAt).toISOString() : null,
+          presence_source: presenceSource,
         })
       } catch (error) {
         console.error("[v0] Error saving player to database:", error)
@@ -664,37 +895,37 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   }
 
   const removePlayer = (playerId: string) => {
-    console.log("[v0] Attempting to remove player:", playerId)
+    if (DEBUG) console.log("[v0] Attempting to remove player:", playerId)
 
     // Check if user has permission to remove this player
     const playerToRemove = arenaState.players.find((p) => p.id === playerId)
 
     if (!playerToRemove) {
-      console.log("[v0] Player not found:", playerId)
+      if (DEBUG) console.log("[v0] Player not found:", playerId)
       return
     }
 
-    console.log("[v0] Player to remove:", playerToRemove.name, "isOrganizer:", isOrganizer)
+    if (DEBUG) console.log("[v0] Player to remove:", playerToRemove.name, "isOrganizer:", isOrganizer)
 
     // Only organizer can remove others, players can only remove themselves
     if (!isOrganizer) {
       // Check if this is the current player removing themselves
       const isRemovingSelf = currentPlayerInTournament?.id === playerId
       if (!isRemovingSelf) {
-        console.log("[v0] Permission denied: only organizer can remove other players")
+        if (DEBUG) console.log("[v0] Permission denied: only organizer can remove other players")
         return
       }
     }
 
     if (arenaState.status === "active" && playerToRemove) {
-      console.log("[v0] Marking player as removed (tournament active)")
+      if (DEBUG) console.log("[v0] Marking player as removed (tournament active)")
       setArenaState((prev) => ({
         ...prev,
         players: prev.players.map((p) => (p.id === playerId ? { ...p, markedForRemoval: true, paused: true } : p)),
       }))
     } else {
       // During setup, actually remove the player
-      console.log("[v0] Removing player from list (tournament setup)")
+      if (DEBUG) console.log("[v0] Removing player from list (tournament setup)")
       setArenaState((prev) => ({
         ...prev,
         players: prev.players.filter((p) => p.id !== playerId),
@@ -707,7 +938,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           const supabase = createClient()
 
           if (arenaState.status === "active") {
-            console.log("[v0] Marking player as paused (removed) in database")
+            if (DEBUG) console.log("[v0] Marking player as paused (removed) in database")
             const { error } = await supabase
               .from("players")
               .update({
@@ -719,11 +950,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             if (error) {
               console.error("[v0] Failed to mark player as paused in database:", error)
             } else {
-              console.log("[v0] Player marked as paused in database successfully")
+              if (DEBUG) console.log("[v0] Player marked as paused in database successfully")
             }
           } else {
             // Delete player from database during setup
-            console.log("[v0] Deleting player from database")
+            if (DEBUG) console.log("[v0] Deleting player from database")
             const { error } = await supabase
               .from("players")
               .delete()
@@ -733,7 +964,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             if (error) {
               console.error("[v0] Failed to delete player from database:", error)
             } else {
-              console.log("[v0] Player deleted from database successfully")
+              if (DEBUG) console.log("[v0] Player deleted from database successfully")
             }
           }
         } catch (error) {
@@ -743,7 +974,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     }
   }
 
-  const startTournament = () => {
+  const handleStartTournament = async () => {
     if (arenaState.status === "completed") {
       alert("This tournament has already been completed and cannot be restarted.")
       return
@@ -780,21 +1011,35 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       return
     }
 
-    setArenaState((prev) => {
-      const newTables = tableCount > 0 ? tableCount : Math.floor(arenaState.players.length / 2) // Fixed: Use arenaState.players.length
-      return {
-        ...prev,
-        status: "active",
-        isActive: true,
-        tableCount: newTables,
-        settings: {
-          ...prev.settings,
-          tableCount: newTables, // Ensure tableCount is synced
-        },
-        tournamentStartTime: Date.now(),
-        tournamentDuration: durationMs,
+    // Call server action to start tournament (validates auth + sets DB status)
+    try {
+      const { startTournament: startTournamentAction } = await import("@/app/actions/start-tournament")
+      const result = await startTournamentAction(tournamentId)
+
+      if (!result.success) {
+        alert(result.error || "Failed to start tournament")
+        return
       }
-    })
+    } catch (error) {
+      console.error("[v0] Error calling startTournament action:", error)
+      alert("Failed to start tournament. Please try again.")
+      return
+    }
+
+    // Update local state with additional data (tables, duration)
+    const newTables = tableCount > 0 ? tableCount : Math.floor(arenaState.players.length / 2)
+    setArenaState((prev) => ({
+      ...prev,
+      status: "active",
+      isActive: true,
+      tableCount: newTables,
+      settings: {
+        ...prev.settings,
+        tableCount: newTables,
+      },
+      tournamentStartTime: Date.now(),
+      tournamentDuration: durationMs,
+    }))
     setTimeRemaining(durationMs)
 
     setActiveTab("pairings")
@@ -826,9 +1071,31 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
     if (tournamentId) {
       try {
-        await saveTournament(tournamentId, displayName, "completed", arenaState.tableCount, arenaState.settings)
-        await saveMatches(tournamentId, [], arenaState.allTimeMatches)
-        console.log("[v0] Tournament ended and saved as completed")
+        const startTimeIso =
+          arenaState.tournamentStartTime != null
+            ? typeof arenaState.tournamentStartTime === "number"
+              ? new Date(arenaState.tournamentStartTime).toISOString()
+              : String(arenaState.tournamentStartTime)
+            : undefined
+
+        await saveTournament(
+          tournamentId,
+          displayName,
+          "completed",
+          arenaState.tableCount,
+          arenaState.settings,
+          tournamentMetadata?.city,
+          tournamentMetadata?.country,
+          organizerId ?? undefined,
+          tournamentMetadata?.latitude,
+          tournamentMetadata?.longitude,
+          tournamentMetadata?.visibility ?? "public",
+          startTimeIso,
+        )
+
+        const allMatchesToSave = mergeMatchesForSave(arenaState.pairedMatches, arenaState.allTimeMatches)
+        await saveMatches(tournamentId, allMatchesToSave)
+        if (DEBUG) console.log("[v0] Tournament ended and saved as completed")
       } catch (error) {
         console.error("[v0] Error saving tournament end:", error)
       }
@@ -840,7 +1107,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   }
 
   const recordResult = async (matchId: string, winnerId: string | undefined, isDraw: boolean) => {
-    console.log("[v0] Recording result for match:", matchId, "isDraw:", isDraw, "winnerId:", winnerId)
+    if (DEBUG) console.log("[v0] Recording result for match:", matchId, "isDraw:", isDraw, "winnerId:", winnerId)
 
     let newPairedMatches = []
     let newAllTimeMatches = []
@@ -923,7 +1190,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
         // If no more active matches, end tournament
         if (remainingMatches.length === 0) {
-          console.log("[v0] All final results entered, ending tournament")
+          if (DEBUG) console.log("[v0] All final results entered, ending tournament")
           setTimeout(() => finalizeEndTournament(), 500) // Small delay for state to settle
         }
       }
@@ -934,12 +1201,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         if (hadMatchJustCompleted) {
           // Apply marked for removal
           if (player.markedForRemoval) {
-            console.log("[v0] Applying deferred removal for:", player.name)
+            if (DEBUG) console.log("[v0] Applying deferred removal for:", player.name)
             return { ...player, hasLeft: true, active: false }
           }
           // Apply marked for pause
           if (player.markedForPause) {
-            console.log("[v0] Applying deferred pause for:", player.name)
+            if (DEBUG) console.log("[v0] Applying deferred pause for:", player.name)
             return { ...player, paused: true, markedForPause: false }
           }
         }
@@ -950,7 +1217,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         savePlayers(tournamentId, newPlayers).catch((err) => {
           console.error("[v0] Error saving players after match completion:", err)
         })
-        saveMatches(tournamentId, newPairedMatches, newAllTimeMatches).catch((err) => {
+        saveMatches(tournamentId, mergeMatchesForSave(newPairedMatches, newAllTimeMatches)).catch((err) => {
           console.error("[v0] Error saving matches after match completion:", err)
         })
       }
@@ -966,7 +1233,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
   // Renamed from recordResult to match the update's function name
   const recordMatchResult = (matchId: string, winnerId: string | undefined, isDraw: boolean) => {
-    console.log("[v0] Recording result for match:", matchId, "isDraw:", isDraw, "winnerId:", winnerId)
+    if (DEBUG) console.log("[v0] Recording result for match:", matchId, "isDraw:", isDraw, "winnerId:", winnerId)
 
     let newPairedMatches = []
     let newAllTimeMatches = []
@@ -1049,7 +1316,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
         // If no more active matches, end tournament
         if (remainingMatches.length === 0) {
-          console.log("[v0] All final results entered, ending tournament")
+          if (DEBUG) console.log("[v0] All final results entered, ending tournament")
           setTimeout(() => finalizeEndTournament(), 500) // Small delay for state to settle
         }
       }
@@ -1068,7 +1335,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         savePlayers(tournamentId, playersAfterRemoval).catch((err) => {
           console.error("[v0] Error saving players after result:", err)
         })
-        saveMatches(tournamentId, updatedPairedMatches, newAllTimeMatches).catch((err) => {
+        saveMatches(tournamentId, mergeMatchesForSave(updatedPairedMatches, newAllTimeMatches)).catch((err) => {
           console.error("[v0] Error saving matches after result:", err)
         })
       }
@@ -1109,7 +1376,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         }
       })
 
-    console.log("[v0] REMATCH ANALYSIS:", {
+    if (DEBUG) console.log("[v0] REMATCH ANALYSIS:", {
       totalUniquePairings: uniquePairings.size,
       totalRematches: rematches.length,
       rematchDetails: rematches.length > 0 ? rematches : "No rematches detected",
@@ -1232,21 +1499,21 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   }
 
   const handlePlayerSubmit = async (matchId: string, result: "player1-win" | "draw" | "player2-win") => {
-    console.log("[v0] Player submitting result:", matchId, result)
+    if (DEBUG) console.log("[v0] Player submitting result:", matchId, result)
     if (!playerSession) {
-      console.log("[v0] No player session, rejecting submission")
+      if (DEBUG) console.log("[v0] No player session, rejecting submission")
       return
     }
 
     const match = arenaState.pairedMatches.find((m) => m.id === matchId)
     if (!match) {
-      console.log("[v0] Match not found, rejecting submission")
+      if (DEBUG) console.log("[v0] Match not found, rejecting submission")
       return
     }
 
     const isPlayerInMatch = match.player1.id === playerSession.playerId || match.player2.id === playerSession.playerId
     if (!isPlayerInMatch) {
-      console.log("[v0] Player not in match, rejecting submission")
+      if (DEBUG) console.log("[v0] Player not in match, rejecting submission")
       alert("You can only submit results for your own matches.")
       return
     }
@@ -1259,7 +1526,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   }
 
   const handlePlayerConfirm = async (matchId: string) => {
-    console.log("[v0] Player confirming result:", matchId)
+    if (DEBUG) console.log("[v0] Player confirming result:", matchId)
     if (!playerSession) return
 
     const match = arenaState.pairedMatches.find((m) => m.id === matchId)
@@ -1267,7 +1534,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
     const isPlayerInMatch = match.player1.id === playerSession.playerId || match.player2.id === playerSession.playerId
     if (!isPlayerInMatch) {
-      console.log("[v0] Player not in match, rejecting confirmation")
+      if (DEBUG) console.log("[v0] Player not in match, rejecting confirmation")
       return
     }
 
@@ -1298,7 +1565,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const updatedMatch = response.match
 
       if (updatedMatch) {
-        console.log("[v0] Match submission saved:", updatedMatch)
+        if (DEBUG) console.log("[v0] Match submission saved:", updatedMatch)
 
         // Check if both players submitted matching results
         if (
@@ -1329,7 +1596,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   }
 
   const handlePlayerCancel = (matchId: string) => {
-    console.log("[v0] Player canceling submission:", matchId)
+    if (DEBUG) console.log("[v0] Player canceling submission:", matchId)
     // Remove temporary submission
     setPlayerSubmissions((prev) => {
       const updated = { ...prev }
@@ -1339,7 +1606,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   }
 
   const overrideResult = async (playerId: string, gameIndex: number, newResult: "W" | "D" | "L") => {
-    console.log("[v0] Overriding result for player:", playerId, "game:", gameIndex, "new result:", newResult)
+    if (DEBUG) console.log("[v0] Overriding result for player:", playerId, "game:", gameIndex, "new result:", newResult)
 
     setArenaState((prev) => {
       const player = prev.players.find((p) => p.id === playerId)
@@ -1350,7 +1617,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
       const oldResult = player.gameResults[gameIndex]
       if (oldResult === newResult) {
-        console.log("[v0] Result unchanged, no update needed")
+        if (DEBUG) console.log("[v0] Result unchanged, no update needed")
         return prev
       }
 
@@ -1487,7 +1754,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         savePlayers(tournamentId, updated.players).catch((err) => {
           console.error("[v0] Error saving players after match completion:", err)
         })
-        saveMatches(tournamentId, updated.pairedMatches, updated.allTimeMatches).catch((err) => {
+        saveMatches(tournamentId, mergeMatchesForSave(updated.pairedMatches, updated.allTimeMatches)).catch((err) => {
           console.error("[v0] Error saving matches after match completion:", err)
         })
       }
@@ -1584,7 +1851,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           />
         )}
 
-        {showWelcomeMessage && isPlayerView && (
+        {showWelcomeMessage && effectivePlayerView && (
           <Card className="bg-primary/10 border-primary mb-4">
             <CardContent className="pt-4 pb-3">
               <div className="flex items-start gap-3">
@@ -1622,13 +1889,24 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   {isOrganizer && <span className="text-primary ml-1">(You)</span>}
                 </p>
               )}
+              {tournamentMetadata?.latitude != null && tournamentMetadata?.longitude != null && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${tournamentMetadata.latitude},${tournamentMetadata.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-1"
+                >
+                  <MapPin className="h-4 w-4" />
+                  Get directions
+                </a>
+              )}
               {arenaState.status === "completed" && (
                 <p className="text-sm text-muted-foreground mt-1">Tournament Completed</p>
               )}
             </div>
 
             <TabsList className="grid grid-cols-4 h-auto">
-              {!isPlayerView && (
+              {!effectivePlayerView && (
                 <TabsTrigger value="players" className="text-xs sm:text-sm h-10 px-3">
                   <Users className="h-4 w-4 mr-1" />
                   Players
@@ -1677,8 +1955,62 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             )}
           </div>
 
-          {!isPlayerView && (
+          {!effectivePlayerView && (
             <TabsContent value="players" className="space-y-2">
+              {/* Express interest card */}
+              <Card className="mb-4 border-primary/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Heart className="h-4 w-4 text-primary" />
+                      Interest
+                    </span>
+                    {interestCount > 0 && (
+                      <span className="text-muted-foreground font-normal">
+                        {interestCount} {interestCount === 1 ? "person" : "people"} interested
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {currentUserId && (
+                    <Button
+                      variant={userInterested ? "secondary" : "outline"}
+                      size="sm"
+                      className="w-full sm:w-auto"
+                      onClick={handleToggleInterest}
+                      disabled={togglingInterest}
+                    >
+                      {togglingInterest ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Heart
+                          className={cn("h-4 w-4 mr-2", userInterested && "fill-current")}
+                        />
+                      )}
+                      {userInterested ? "Interested" : "I'm interested"}
+                    </Button>
+                  )}
+                  {!currentUserId && interestCount > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      <Link href="/auth/login" className="text-primary hover:underline">Sign in</Link> to express interest
+                    </p>
+                  )}
+                  {isOrganizer && interestedUsers.length > 0 && (
+                    <div className="pt-2 border-t">
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5">Interested</p>
+                      <ul className="text-sm space-y-1">
+                        {interestedUsers.map((u) => (
+                          <li key={u.user_id}>
+                            {u.name ?? "Unknown"}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Tournament Setup Card - only show in setup status */}
               {arenaState.status === "setup" && (
                 <Card className="mb-4">
@@ -1716,7 +2048,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                         />
                       </div>
               {permissions.canStartTournament && (
-                <Button onClick={startTournament} className="w-full h-8 text-sm" size="sm">
+                <Button onClick={handleStartTournament} className="w-full h-8 text-sm" size="sm">
                   Start Tournament
                 </Button>
               )}
@@ -1782,7 +2114,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">
-                    Players ({arenaState.players.filter((p) => !p.isRemoved).length})
+                    Players ({arenaState.players.filter((p) => !p.hasLeft).length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -1790,18 +2122,49 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                     arenaState.status !== "completed" && (
                       <div className="space-y-3">
                         {currentUserId && !isOrganizer && !isCurrentUserInTournament && (
-                          <Button onClick={joinAsSelf} className="w-full">
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Join Tournament
+                          <Button onClick={joinAsSelf} className="w-full" disabled={joiningSelf}>
+                            {joiningSelf ? (
+                              <>
+                                <MapPin className="mr-2 h-4 w-4" />
+                                Verifying location...
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Join Tournament
+                              </>
+                            )}
                           </Button>
                         )}
 
-                        {currentUserId && !isOrganizer && isCurrentUserInTournament && (
-                          <div className="text-center text-sm text-muted-foreground p-3 border rounded-lg bg-primary/5">
-                            <Check className="inline-block mr-1 h-4 w-4 text-green-500" />
-                            You have joined this tournament
-                          </div>
-                        )}
+                        {currentUserId && !isOrganizer && isCurrentUserInTournament && (() => {
+                          const me = arenaState.players.find((p) => p.userId === currentUserId && !p.hasLeft)
+                          const needsCheckIn = me && me.checkedInAt == null
+                          return (
+                            <div className="space-y-2">
+                              {needsCheckIn ? (
+                                <Button
+                                  onClick={handleCheckIn}
+                                  disabled={checkingIn}
+                                  variant="default"
+                                  className="w-full"
+                                >
+                                  {checkingIn ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <MapPin className="h-4 w-4 mr-2" />
+                                  )}
+                                  Check in at venue
+                                </Button>
+                              ) : (
+                                <div className="text-center text-sm text-muted-foreground p-3 border rounded-lg bg-primary/5">
+                                  <Check className="inline-block mr-1 h-4 w-4 text-green-500" />
+                                  You have joined this tournament
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })()}
 
                         {isOrganizer && (
                           <>
@@ -1855,6 +2218,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   <PlayersList
                     players={arenaState.players}
                     onRemovePlayer={removePlayer}
+                    onMarkPresent={isOrganizer ? handleMarkPresent : undefined}
+                    markingPresentPlayerId={markingPresentPlayerId}
                     status={arenaState.status}
                     isOrganizer={isOrganizer}
                     currentUserId={currentUserId}
@@ -1929,7 +2294,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   </p>
                 </CardContent>
               </Card>
-            ) : !isPlayerView && arenaState.isActive && showSimulator ? (
+            ) : !effectivePlayerView && arenaState.isActive && showSimulator ? (
               <div className="mb-4">
                 <TournamentSimulatorPanel />
               </div>
@@ -1961,13 +2326,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           <TabsContent value="standings">
             <Leaderboard
               players={arenaState.players}
-              isPlayerView={isPlayerView}
-              onOverrideResult={!isPlayerView ? overrideResult : undefined}
+              effectivePlayerView={effectivePlayerView}
+              onOverrideResult={!effectivePlayerView ? overrideResult : undefined}
             />
           </TabsContent>
 
           {/* Added Settings tab content */}
-          {!isPlayerView && activeTab === "settings" && (
+          {!effectivePlayerView && activeTab === "settings" && (
             <TabsContent value="settings" className="space-y-4">
               <TournamentSettingsPanel
                 settings={arenaState.settings}

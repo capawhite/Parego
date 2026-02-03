@@ -70,15 +70,22 @@ export async function recordMatchResult(
   }
 
   // 4. Update the match with the result
-  const result = isDraw ? "draw" : winnerId === match.player1_id ? "player1-win" : "player2-win"
+  // Store result in same JSON structure as saveMatches/loadMatches expect
+  const completedAt = Date.now()
+  const resultJson = JSON.stringify({
+    winnerId: isDraw ? undefined : winnerId,
+    isDraw,
+    completed: true,
+    completedAt,
+  })
 
   const { error: updateError } = await supabase
     .from("matches")
     .update({
       completed: true,
       winner_id: isDraw ? null : winnerId,
-      result: result,
-      completed_at: new Date().toISOString(),
+      result: resultJson,
+      completed_at: new Date(completedAt).toISOString(),
     })
     .eq("id", matchId)
 

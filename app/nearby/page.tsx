@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, MapPin, Clock, Navigation, AlertCircle, MapPinOff } from "lucide-react"
+import { ArrowLeft, MapPin, Clock, Navigation, AlertCircle, MapPinOff, ExternalLink } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { listNearbyTournaments, type TournamentData } from "@/lib/database/tournament-db"
@@ -271,6 +271,18 @@ export default function NearbyPage() {
                               {formatStartTime(tournament.start_time)}
                             </span>
                           </div>
+                          {tournament.latitude != null && tournament.longitude != null && (
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${tournament.latitude},${tournament.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              Get directions
+                            </a>
+                          )}
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className="text-sm font-medium text-primary">{formatDistance(tournament)}</div>

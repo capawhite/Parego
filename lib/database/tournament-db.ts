@@ -16,6 +16,7 @@ export interface TournamentData {
   longitude?: number
   visibility?: "public" | "private"
   start_time?: string
+  presence_radius_m?: number | null // GPS check-in radius in meters; null = app default
 }
 
 // Save tournament to database
@@ -122,6 +123,8 @@ export async function savePlayers(tournamentId: string, players: Player[]) {
     id: player.id,
     tournament_id: tournamentId,
     name: player.name,
+    user_id: player.userId ?? null,
+    is_guest: player.isGuest ?? false,
     points: player.score,
     wins: player.gameResults.filter((r) => r === "W").length,
     draws: player.gameResults.filter((r) => r === "D").length,
@@ -138,6 +141,9 @@ export async function savePlayers(tournamentId: string, players: Player[]) {
     colors: player.pieceColors,
     points_earned: player.gameResults.map((r) => (r === "W" ? 2 : r === "D" ? 1 : 0)),
     table_numbers: player.tableNumbers || [],
+    checked_in_at: player.checkedInAt != null ? new Date(player.checkedInAt).toISOString() : null,
+    presence_source: player.presenceSource ?? null,
+    rating: player.rating ?? null,
   }))
 
   const { error } = await supabase.from("players").upsert(dbPlayers)
@@ -173,6 +179,11 @@ export async function loadPlayers(tournamentId: string): Promise<Player[]> {
     gameResults: Array.isArray(p.results) ? p.results : [], // Ensure it's always an array
     pieceColors: Array.isArray(p.colors) ? p.colors : [], // Ensure it's always an array
     tableNumbers: Array.isArray(p.table_numbers) ? p.table_numbers : [], // Ensure it's always an array
+    userId: p.user_id ?? null,
+    isGuest: p.is_guest ?? false,
+    checkedInAt: p.checked_in_at ? new Date(p.checked_in_at).getTime() : null,
+    presenceSource: p.presence_source ?? null,
+    rating: p.rating ?? null,
   }))
 }
 
@@ -225,12 +236,39 @@ export async function loadMatches(tournamentId: string): Promise<Match[]> {
     return []
   }
 
-  return data.map((m) => ({
+  return data.map((m) => {
+    // Parse result: support both JSON format and legacy plain string format
+    let result: { winnerId?: string; isDraw: boolean; completed: boolean; completedAt: number } | undefined
+    if (m.result) {
+      try {
+        const parsed = JSON.parse(m.result)
+        if (parsed && typeof parsed.completed === "boolean") {
+          result = parsed
+        } else {
+          throw new Error("Invalid format")
+        }
+      } catch {
+        // Legacy format: plain string "draw" | "player1-win" | "player2-win"
+        const str = String(m.result)
+        if (["draw", "player1-win", "player2-win"].includes(str)) {
+          const isDraw = str === "draw"
+          const completedAt = m.completed_at ? new Date(m.completed_at).getTime() : Date.now()
+          result = {
+            winnerId: isDraw ? undefined : str === "player1-win" ? m.player1_id : m.player2_id,
+            isDraw,
+            completed: true,
+            completedAt,
+          }
+        }
+      }
+    }
+
+    return {
     id: m.id,
     player1: m.player1_data ? JSON.parse(m.player1_data) : { id: m.player1_id, name: "Unknown" },
     player2: m.player2_data ? JSON.parse(m.player2_data) : { id: m.player2_id, name: "Unknown" },
     tableNumber: m.table_number,
-    result: m.result ? JSON.parse(m.result) : undefined,
+    result,
     player1Submission: m.player1_submission
       ? {
           result: m.player1_submission,
@@ -246,7 +284,8 @@ export async function loadMatches(tournamentId: string): Promise<Match[]> {
         }
       : undefined,
     disputeStatus: m.dispute_status || "none",
-  }))
+  }
+  })
 }
 
 // Add a single player to an existing tournament
@@ -416,4 +455,119 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   return R * c
+}
+
+// --- Tournament interest (express interest, non-binding) ---
+
+export async function getInterestCount(tournamentId: string): Promise<number> {
+  const supabase = createClient()
+  const { count, error } = await supabase
+    .from("tournament_interest")
+    .select("*", { count: "exact", head: true })
+    .eq("tournament_id", tournamentId)
+  if (error) {
+    console.error("[tournament-db] getInterestCount error:", error)
+    return 0
+  }
+  return count ?? 0
+}
+
+/** Batch: count of interested users per tournament id */
+export async function getInterestCounts(tournamentIds: string[]): Promise<Record<string, number>> {
+  if (tournamentIds.length === 0) return {}
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("tournament_interest")
+    .select("tournament_id")
+    .in("tournament_id", tournamentIds)
+  if (error) {
+    console.error("[tournament-db] getInterestCounts error:", error)
+    return Object.fromEntries(tournamentIds.map((id) => [id, 0]))
+  }
+  const counts: Record<string, number> = {}
+  for (const id of tournamentIds) counts[id] = 0
+  for (const row of data ?? []) {
+    counts[row.tournament_id] = (counts[row.tournament_id] ?? 0) + 1
+  }
+  return counts
+}
+
+/** Whether the given user has expressed interest in the given tournament */
+export async function getUserInterested(tournamentId: string, userId: string): Promise<boolean> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("tournament_interest")
+    .select("id")
+    .eq("tournament_id", tournamentId)
+    .eq("user_id", userId)
+    .maybeSingle()
+  if (error) return false
+  return !!data
+}
+
+/** Batch: set of tournament ids the user has expressed interest in */
+export async function getUserInterests(userId: string, tournamentIds: string[]): Promise<Set<string>> {
+  if (tournamentIds.length === 0) return new Set()
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("tournament_interest")
+    .select("tournament_id")
+    .eq("user_id", userId)
+    .in("tournament_id", tournamentIds)
+  if (error) return new Set()
+  return new Set((data ?? []).map((r) => r.tournament_id))
+}
+
+export async function addInterest(tournamentId: string, userId: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createClient()
+  const { error } = await supabase.from("tournament_interest").insert({ tournament_id: tournamentId, user_id: userId })
+  if (error) {
+    if (error.code === "23505") return { ok: true } // already interested
+    console.error("[tournament-db] addInterest error:", error)
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
+export async function removeInterest(tournamentId: string, userId: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from("tournament_interest")
+    .delete()
+    .eq("tournament_id", tournamentId)
+    .eq("user_id", userId)
+  if (error) {
+    console.error("[tournament-db] removeInterest error:", error)
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
+export interface InterestedUser {
+  user_id: string
+  name: string | null
+  created_at: string
+}
+
+/** List interested users for a tournament (for organizer view). Joins users for display name. */
+export async function getInterestedUsers(tournamentId: string): Promise<InterestedUser[]> {
+  const supabase = createClient()
+  const { data: rows, error } = await supabase
+    .from("tournament_interest")
+    .select("user_id, created_at")
+    .eq("tournament_id", tournamentId)
+    .order("created_at", { ascending: false })
+  if (error) {
+    console.error("[tournament-db] getInterestedUsers error:", error)
+    return []
+  }
+  if (!rows?.length) return []
+  const userIds = [...new Set(rows.map((r) => r.user_id))]
+  const { data: profiles } = await supabase.from("users").select("id, name").in("id", userIds)
+  const nameBy = new Map((profiles ?? []).map((p) => [p.id, p.name ?? null]))
+  return rows.map((r) => ({
+    user_id: r.user_id,
+    name: nameBy.get(r.user_id) ?? null,
+    created_at: r.created_at,
+  }))
 }

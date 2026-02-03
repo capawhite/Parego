@@ -1,5 +1,6 @@
 import { ArenaPanel } from "@/components/arena-panel"
 import { loadTournament } from "@/lib/database/tournament-db"
+import { notFound } from "next/navigation"
 
 export default async function TournamentPage({
   params,
@@ -9,11 +10,14 @@ export default async function TournamentPage({
   const { id } = await params
 
   const tournament = await loadTournament(id)
-  const tournamentName = tournament?.name || "Arena Tournament"
+
+  if (!tournament) {
+    notFound()
+  }
 
   return (
     <main className="min-h-screen bg-background">
-      <ArenaPanel tournamentId={id} tournamentName={tournamentName} />
+      <ArenaPanel tournamentId={id} tournamentName={tournament.name} />
     </main>
   )
 }

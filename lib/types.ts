@@ -17,6 +17,16 @@ export interface Player {
   hasLeft?: boolean // player was removed mid-tournament (for leaderboard display)
   userId?: string | null // Link to registered user
   isGuest?: boolean // Flag for guest players
+
+  // Extended player data (optional)
+  rating?: number | null // Player's chess rating
+  country?: string | null // Player's country
+  buchholz?: number // Buchholz tiebreaker score
+  sonnebornBerger?: number // Sonneborn-Berger tiebreaker score
+
+  // Presence (OTB check-in at venue)
+  checkedInAt?: number | null // timestamp when verified present; null = not checked in
+  presenceSource?: "gps" | "qr" | "override" | null // how presence was verified
 }
 
 export interface Match {
@@ -110,4 +120,5 @@ export interface ArenaState {
   allTimeMatches: Match[] // track all pairings for history
   tableCount: number // added table count to track available tables
   settings: TournamentSettings // Added settings to arena state
+  status: "setup" | "active" | "completed" // Tournament lifecycle status
 }

@@ -6,10 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { loadTournament, loadPlayers, type TournamentData } from "@/lib/database/tournament-db"
-import { Loader2, Users, Trophy } from "lucide-react"
+import { Loader2, Users, Trophy, MapPin } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { generateGuestUsername } from "@/lib/guest-names"
+import { checkVenueProximity } from "@/app/actions/check-in"
+import { toast } from "sonner"
+import { RATING_BANDS, resolveRating, type RatingBandValue } from "@/lib/rating-bands"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 export default function JoinTournamentPage() {
   const params = useParams()
@@ -25,6 +29,9 @@ export default function JoinTournamentPage() {
   const [success, setSuccess] = useState(false)
   const [isRegistered, setIsRegistered] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [verifyingLocation, setVerifyingLocation] = useState(false)
+  const [ratingBand, setRatingBand] = useState<RatingBandValue | "">("")
+  const [ratingPrecise, setRatingPrecise] = useState("")
 
   useEffect(() => {
     async function checkAuth() {
@@ -37,12 +44,16 @@ export default function JoinTournamentPage() {
         setIsRegistered(true)
         setUserId(user.id)
 
-        // Auto-fill name from profile
-        const { data: profile } = await supabase.from("users").select("name").eq("id", user.id).maybeSingle()
+        // Auto-fill name and rating from profile
+        const { data: profile } = await supabase
+          .from("users")
+          .select("name, rating_band, rating")
+          .eq("id", user.id)
+          .maybeSingle()
 
-        if (profile?.name) {
-          setPlayerName(profile.name)
-        }
+        if (profile?.name) setPlayerName(profile.name)
+        if (profile?.rating_band) setRatingBand(profile.rating_band as RatingBandValue)
+        if (profile?.rating != null) setRatingPrecise(String(profile.rating))
       }
     }
 
@@ -73,88 +84,155 @@ export default function JoinTournamentPage() {
     }
   }, [code])
 
-  const handleJoin = async () => {
-    if (!playerName.trim()) {
-      setError("Please enter your name")
-      return
+  const runProximityCheck = (): Promise<{ ok: boolean; checkedInAt: string | null; presenceSource: "gps" | null }> => {
+      return new Promise((resolve) => {
+        const hasVenue = tournament?.latitude != null && tournament?.longitude != null
+        if (!hasVenue) {
+          resolve({ ok: true, checkedInAt: null, presenceSource: null })
+          return
+        }
+        if (!navigator.geolocation) {
+          toast.error("Location is required to join at the venue.")
+          resolve({ ok: false, checkedInAt: null, presenceSource: null })
+          return
+        }
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const result = await checkVenueProximity(code, position.coords.latitude, position.coords.longitude)
+            if (!result.ok) {
+              toast.error(result.error)
+              resolve({ ok: false, checkedInAt: null, presenceSource: null })
+              return
+            }
+            resolve({
+              ok: true,
+              checkedInAt:
+                tournament?.latitude != null && tournament?.longitude != null ? new Date().toISOString() : null,
+              presenceSource:
+                tournament?.latitude != null && tournament?.longitude != null ? "gps" : null,
+            })
+          },
+          () => {
+            toast.error("Could not get your location. Allow location access to join at the venue.")
+            resolve({ ok: false, checkedInAt: null, presenceSource: null })
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+        )
+      })
     }
 
-    setJoining(true)
-    setError("")
-
-    try {
-      let finalName = playerName.trim()
-      let guestUsername = null
-      const isGuest = !isRegistered
-
-      if (!isRegistered) {
-        const supabase = createClient()
-
-        // Fetch existing player names to avoid collisions
-        const { data: existingPlayers } = await supabase.from("players").select("name").eq("tournament_id", code)
-
-        const existingNames = existingPlayers?.map((p) => p.name) || []
-        guestUsername = generateGuestUsername(existingNames)
-        console.log("[v0] Generated guest username:", guestUsername)
-        finalName = guestUsername
-      }
-
-      const supabase = createClient()
-      const newPlayerId = globalThis.crypto.randomUUID()
-
-      const { error: insertError } = await supabase.from("players").insert({
-        id: newPlayerId,
-        tournament_id: code,
-        name: finalName,
-        user_id: isRegistered ? userId : null,
-        is_guest: isGuest,
-        points: 0,
-        wins: 0,
-        draws: 0,
-        losses: 0,
-        games_played: 0,
-        white_count: 0,
-        black_count: 0,
-        current_streak: 0,
-        on_streak: false,
-        paused: false,
-        game_history: [],
-        opponents: [],
-        results: [],
-        colors: [],
-        points_earned: [],
-        table_numbers: [],
-      })
-
-      if (insertError) {
-        console.error("[v0] Error joining tournament:", insertError)
-        setError("Failed to join tournament. Please try again.")
+    const handleJoin = async () => {
+      if (!playerName.trim()) {
+        setError("Please enter your name")
         return
       }
 
-      setSuccess(true)
-      localStorage.setItem(
-        "tournamentPlayer",
-        JSON.stringify({
-          tournamentId: code,
-          playerName: finalName,
-          playerId: newPlayerId,
-          role: "player",
-          isGuest: isGuest,
-          guestUsername: guestUsername,
-        }),
-      )
+      setJoining(true)
+      setError("")
 
-      setTimeout(() => {
-        router.push(`/tournament/${code}`)
-      }, 2000)
-    } catch (err) {
-      console.error("[v0] Error joining tournament:", err)
-      setError("Failed to join tournament")
-    } finally {
-      setJoining(false)
+      try {
+        setVerifyingLocation(true)
+        let proximity = await runProximityCheck()
+        if (!proximity.ok) {
+          toast.info("Retrying in 2 seconds...")
+          await new Promise((r) => setTimeout(r, 2000))
+          proximity = await runProximityCheck()
+        }
+        setVerifyingLocation(false)
+        if (!proximity.ok) {
+          setError("You must be at the venue to join. Enable location and get closer, or ask the organizer to add you.")
+          setJoining(false)
+          return
+        }
+
+        // Guests must choose strength; registered users use profile rating
+        if (!isRegistered && !ratingBand) {
+          setError("Please choose how you'd describe your strength.")
+          setJoining(false)
+          return
+        }
+
+        const preciseNum = ratingPrecise.trim() ? parseInt(ratingPrecise.trim(), 10) : null
+        const playerRating = resolveRating(
+          preciseNum != null && !isNaN(preciseNum) ? preciseNum : null,
+          ratingBand ? (ratingBand as RatingBandValue) : undefined,
+        )
+
+        let finalName = playerName.trim()
+        let guestUsername = null
+        const isGuest = !isRegistered
+
+        if (!isRegistered) {
+          const supabase = createClient()
+
+          // Fetch existing player names to avoid collisions
+          const { data: existingPlayers } = await supabase.from("players").select("name").eq("tournament_id", code)
+
+          const existingNames = existingPlayers?.map((p) => p.name) || []
+          guestUsername = generateGuestUsername(existingNames)
+          finalName = guestUsername
+        }
+
+        const supabase = createClient()
+        const newPlayerId = globalThis.crypto.randomUUID()
+
+        const { error: insertError } = await supabase.from("players").insert({
+          id: newPlayerId,
+          tournament_id: code,
+          name: finalName,
+          user_id: isRegistered ? userId : null,
+          is_guest: isGuest,
+          points: 0,
+          wins: 0,
+          draws: 0,
+          losses: 0,
+          games_played: 0,
+          white_count: 0,
+          black_count: 0,
+          current_streak: 0,
+          on_streak: false,
+          paused: false,
+          game_history: [],
+          opponents: [],
+          results: [],
+          colors: [],
+          points_earned: [],
+          table_numbers: [],
+          checked_in_at: proximity.checkedInAt,
+          presence_source: proximity.presenceSource,
+          rating: playerRating,
+        })
+
+        if (insertError) {
+          console.error("[v0] Error joining tournament:", insertError)
+          setError("Failed to join tournament. Please try again.")
+          return
+        }
+
+        setSuccess(true)
+        localStorage.setItem(
+          "tournamentPlayer",
+          JSON.stringify({
+            tournamentId: code,
+            playerName: finalName,
+            playerId: newPlayerId,
+            role: "player",
+            isGuest: isGuest,
+            guestUsername: guestUsername,
+          }),
+        )
+
+        setTimeout(() => {
+          router.push(`/tournament/${code}`)
+        }, 2000)
+      } catch (err) {
+        console.error("[v0] Error joining tournament:", err)
+        setError("Failed to join tournament")
+      } finally {
+        setJoining(false)
+        setVerifyingLocation(false)
+      }
     }
-  }
 
   if (loading) {
     return (
@@ -238,10 +316,59 @@ export default function JoinTournamentPage() {
             />
           </div>
 
+          {!isRegistered && (
+            <>
+              <div>
+                <label className="text-sm font-medium mb-2 block">How would you describe your strength?</label>
+                <RadioGroup
+                  value={ratingBand}
+                  onValueChange={(v) => setRatingBand(v as RatingBandValue)}
+                  className="flex flex-col gap-2"
+                >
+                  {RATING_BANDS.map((band) => (
+                    <label
+                      key={band.value}
+                      className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                    >
+                      <RadioGroupItem value={band.value} id={`band-${band.value}`} />
+                      <span className="text-sm">{band.label}</span>
+                    </label>
+                  ))}
+                </RadioGroup>
+              </div>
+              <div>
+                <label htmlFor="ratingPrecise" className="text-sm font-medium mb-2 block">
+                  Optional: exact rating (number)
+                </label>
+                <Input
+                  id="ratingPrecise"
+                  type="number"
+                  placeholder="e.g. 1847"
+                  min={100}
+                  max={3000}
+                  value={ratingPrecise}
+                  onChange={(e) => setRatingPrecise(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  disabled={joining}
+                  className="w-full"
+                />
+              </div>
+            </>
+          )}
+
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button onClick={handleJoin} disabled={joining || !playerName.trim()} className="w-full" size="lg">
-            {joining ? (
+          <Button
+            onClick={handleJoin}
+            disabled={joining || !playerName.trim() || (!isRegistered && !ratingBand) || verifyingLocation}
+            className="w-full"
+            size="lg"
+          >
+            {verifyingLocation ? (
+              <>
+                <MapPin className="mr-2 h-4 w-4" />
+                Verifying location...
+              </>
+            ) : joining ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Joining...

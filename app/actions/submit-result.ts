@@ -59,11 +59,27 @@ export async function submitMatchResult(
     return { success: false, error: "Match is already completed" }
   }
 
-  const player1Data = match.player1_data as any
-  const player2Data = match.player2_data as any
+  // Player data is JSON stringified; parse and check userId (camelCase in Player) or user_id (snake_case)
+  const parsePlayerData = (data: unknown): { userId?: string | null; user_id?: string } | null => {
+    if (!data) return null
+    if (typeof data === "string") {
+      try {
+        return JSON.parse(data) as { userId?: string | null; user_id?: string }
+      } catch {
+        return null
+      }
+    }
+    return data as { userId?: string | null; user_id?: string }
+  }
 
-  const isPlayer1 = player1Data?.user_id === user.id
-  const isPlayer2 = player2Data?.user_id === user.id
+  const player1Data = parsePlayerData(match.player1_data)
+  const player2Data = parsePlayerData(match.player2_data)
+
+  const getPlayerUserId = (p: ReturnType<typeof parsePlayerData>) =>
+    p?.userId ?? p?.user_id ?? null
+
+  const isPlayer1 = getPlayerUserId(player1Data) === user.id
+  const isPlayer2 = getPlayerUserId(player2Data) === user.id
 
   if (!isPlayer1 && !isPlayer2) {
     console.log("[v0] User is not a player in this match:", { userId: user.id, match })

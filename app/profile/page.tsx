@@ -7,20 +7,31 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { geocodeLocation } from "@/lib/geocode"
+import { RATING_BANDS, type RatingBandValue } from "@/lib/rating-bands"
+import { AvatarPicker } from "@/components/avatar-picker"
+import { uploadAvatar, updateProfileAvatarUrl, removeAvatar } from "@/lib/avatar-upload"
+import { toast } from "sonner"
+import Link from "next/link"
+import { Home } from "lucide-react"
 
 export default function ProfilePage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [ratingBand, setRatingBand] = useState<RatingBandValue | "">("")
   const [rating, setRating] = useState("")
   const [country, setCountry] = useState("")
   const [city, setCity] = useState("")
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isInActiveTournament, setIsInActiveTournament] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -33,15 +44,18 @@ export default function ProfilePage() {
         router.push("/auth/login")
         return
       }
+      setUserId(user.id)
 
       const { data: profile } = await supabase.from("users").select("*").eq("id", user.id).single()
 
       if (profile) {
         setName(profile.name || "")
         setEmail(profile.email || "")
+        setRatingBand((profile.rating_band as RatingBandValue) || "")
         setRating(profile.rating?.toString() || "")
         setCountry(profile.country || "")
         setCity(profile.city || "")
+        setAvatarUrl(profile.avatar_url || null)
       }
 
       const { data: activeTournament } = await supabase.rpc("is_user_in_active_tournament", { user_id: user.id })
@@ -71,11 +85,13 @@ export default function ProfilePage() {
         .update({
           name,
           email: email || null,
-          rating: rating ? Number.parseInt(rating) : null,
+          rating_band: ratingBand || null,
+          rating: rating ? Number.parseInt(rating, 10) : null,
           country: country || null,
           city: city || null,
-          latitude, // Update coordinates when location changes
+          latitude,
           longitude,
+          avatar_url: avatarUrl,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id)
@@ -94,8 +110,44 @@ export default function ProfilePage() {
     router.push("/")
   }
 
+  const handleAvatarSelect = async (file: File) => {
+    if (!userId) return
+    setAvatarUploading(true)
+    const result = await uploadAvatar(userId, file)
+    setAvatarUploading(false)
+    if ("error" in result) {
+      toast.error(result.error)
+      return
+    }
+    setAvatarUrl(result.url)
+    const updateResult = await updateProfileAvatarUrl(userId, result.url)
+    if (updateResult.error) toast.error(updateResult.error)
+    else toast.success("Photo updated")
+  }
+
+  const handleAvatarClear = async () => {
+    if (!userId) return
+    setAvatarUploading(true)
+    const result = await removeAvatar(userId)
+    setAvatarUploading(false)
+    if (result.error) toast.error(result.error)
+    else {
+      setAvatarUrl(null)
+      toast.success("Photo removed")
+    }
+  }
+
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-4">
+    <div className="flex min-h-svh w-full flex-col items-center p-4">
+      <div className="mb-4 w-full max-w-sm">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <Home className="h-4 w-4" />
+          Home
+        </Link>
+      </div>
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader>
@@ -105,6 +157,16 @@ export default function ProfilePage() {
           <CardContent>
             <form onSubmit={handleUpdateProfile}>
               <div className="flex flex-col gap-4">
+                <div className="flex flex-col items-center gap-2">
+                  <Label>Photo</Label>
+                  <AvatarPicker
+                    value={avatarUrl}
+                    onSelect={handleAvatarSelect}
+                    onClear={handleAvatarClear}
+                    disabled={avatarUploading}
+                    size="lg"
+                  />
+                </div>
                 <div className="grid gap-2">
                   <Label htmlFor="name">Name</Label>
                   <Input id="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} />
@@ -114,8 +176,26 @@ export default function ProfilePage() {
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
+                  <Label>Strength</Label>
+                  <RadioGroup
+                    value={ratingBand}
+                    onValueChange={(v) => setRatingBand(v as RatingBandValue)}
+                    className="flex flex-col gap-2"
+                  >
+                    {RATING_BANDS.map((band) => (
+                      <label
+                        key={band.value}
+                        className="flex items-center gap-3 rounded-lg border p-2 cursor-pointer hover:bg-muted/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                      >
+                        <RadioGroupItem value={band.value} id={`profile-band-${band.value}`} />
+                        <span className="text-sm">{band.label}</span>
+                      </label>
+                    ))}
+                  </RadioGroup>
+                </div>
+                <div className="grid gap-2">
                   <Label htmlFor="rating">
-                    Rating
+                    Optional: exact rating (number)
                     {isInActiveTournament && (
                       <span className="ml-2 text-xs text-amber-500">(Cannot edit during active tournament)</span>
                     )}
@@ -123,9 +203,12 @@ export default function ProfilePage() {
                   <Input
                     id="rating"
                     type="number"
+                    placeholder="e.g. 1847"
+                    min={100}
+                    max={3000}
                     value={rating}
                     disabled={isInActiveTournament}
-                    onChange={(e) => setRating(e.target.value)}
+                    onChange={(e) => setRating(e.target.value.replace(/\D/g, "").slice(0, 4))}
                   />
                 </div>
                 <div className="grid gap-2">

@@ -3,11 +3,25 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Zap, MapPin, Hash, User, LogOut, Plus } from "lucide-react"
+import { Zap, MapPin, Hash, User, LogOut, Plus, AlertCircle, Compass, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import {
+  listNearbyTournaments,
+  listTournaments,
+  getInterestCounts,
+  getUserInterests,
+  type TournamentData,
+} from "@/lib/database/tournament-db"
+import { LandingTournamentCard } from "@/components/landing-tournament-card"
+import { toggleInterest } from "@/app/actions/express-interest"
+import { toast } from "sonner"
+
+const NEARBY_RADIUS_KM = 15
+const NEARBY_HOURS = 24
+const FALLBACK_LIST_LIMIT = 8
 
 export default function Home() {
   const router = useRouter()
@@ -16,6 +30,16 @@ export default function Home() {
 
   const [user, setUser] = useState<{ id: string; name: string } | null>(null)
   const [loadingAuth, setLoadingAuth] = useState(true)
+
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
+  const [locationStatus, setLocationStatus] = useState<"pending" | "granted" | "denied" | "unsupported">("pending")
+  const [nearbyTournaments, setNearbyTournaments] = useState<TournamentData[]>([])
+  const [fallbackTournaments, setFallbackTournaments] = useState<TournamentData[]>([])
+  const [loadingNearby, setLoadingNearby] = useState(false)
+  const [loadingFallback, setLoadingFallback] = useState(false)
+  const [interestCounts, setInterestCounts] = useState<Record<string, number>>({})
+  const [userInterests, setUserInterests] = useState<Set<string>>(new Set())
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -78,6 +102,107 @@ export default function Home() {
     }
   }, [])
 
+  // Request location and load nearby or fallback tournaments
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationStatus("unsupported")
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+        })
+        setLocationStatus("granted")
+      },
+      () => {
+        setLocationStatus("denied")
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 300000 }
+    )
+  }, [])
+
+  useEffect(() => {
+    if (locationStatus !== "granted" || !userLocation) return
+
+    let cancelled = false
+    setLoadingNearby(true)
+    listNearbyTournaments(userLocation.lat, userLocation.lon, NEARBY_RADIUS_KM, NEARBY_HOURS, 10)
+      .then((data) => {
+        if (!cancelled) setNearbyTournaments(data)
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingNearby(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [locationStatus, userLocation])
+
+  useEffect(() => {
+    if (locationStatus !== "denied" && locationStatus !== "unsupported") return
+
+    let cancelled = false
+    setLoadingFallback(true)
+    listTournaments(FALLBACK_LIST_LIMIT)
+      .then((data) => {
+        if (!cancelled) setFallbackTournaments(data.filter((t) => t.status !== "completed"))
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingFallback(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [locationStatus])
+
+  const showNearby = locationStatus === "granted" && userLocation
+  const showFallback = (locationStatus === "denied" || locationStatus === "unsupported") && !showNearby
+  const hasNearbyList = showNearby && nearbyTournaments.length > 0
+  const hasFallbackList = showFallback && fallbackTournaments.length > 0
+
+  // Load interest counts and user's interests when tournament list or user changes
+  const displayedTournaments = showNearby ? nearbyTournaments : fallbackTournaments
+  const tournamentIds = displayedTournaments.map((t) => t.id)
+  useEffect(() => {
+    if (tournamentIds.length === 0) return
+    let cancelled = false
+    Promise.all([
+      getInterestCounts(tournamentIds),
+      user ? getUserInterests(user.id, tournamentIds) : Promise.resolve(new Set<string>()),
+    ]).then(([counts, interests]) => {
+      if (!cancelled) {
+        setInterestCounts(counts)
+        setUserInterests(interests)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [tournamentIds.join(","), user?.id])
+
+  const handleToggleInterest = async (tournamentId: string) => {
+    setTogglingId(tournamentId)
+    try {
+      const result = await toggleInterest(tournamentId)
+      if (!result.ok) {
+        toast.error(result.error ?? "Could not update interest")
+        return
+      }
+      setInterestCounts((prev) => ({ ...prev, [tournamentId]: result.count }))
+      setUserInterests((prev) => {
+        const next = new Set(prev)
+        if (result.interested) next.add(tournamentId)
+        else next.delete(tournamentId)
+        return next
+      })
+    } finally {
+      setTogglingId(null)
+    }
+  }
+
   const handleLogout = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -92,7 +217,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4 relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
@@ -102,59 +227,158 @@ export default function Home() {
         />
       </div>
 
-      {/* Auth buttons - top right */}
-      <div className="absolute top-4 right-4 flex gap-2 z-10">
-        {loadingAuth ? (
-          <div className="text-sm text-muted-foreground">Loading...</div>
-        ) : user ? (
-          <>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/profile">
-                <User className="h-4 w-4 mr-2" />
-                {user.name}
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/auth/login">
-                <User className="h-4 w-4 mr-2" />
-                Login
-              </Link>
-            </Button>
-            <Button variant="default" size="sm" asChild className="bg-primary hover:bg-primary/90">
-              <Link href="/auth/signup">Sign Up</Link>
-            </Button>
-          </>
-        )}
-      </div>
-
-      <div className="w-full max-w-md space-y-8 relative z-10">
-        {/* Header with enhanced branding */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <Zap
-              className="h-16 w-16 text-primary animate-float drop-shadow-lg"
-              strokeWidth={2.5}
-              fill="currentColor"
-            />
-          </div>
-          <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+      {/* Header */}
+      <header className="relative z-10 flex items-center justify-between p-4">
+        <Link href="/" className="flex items-center gap-2">
+          <Zap className="h-8 w-8 text-primary" strokeWidth={2.5} fill="currentColor" />
+          <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
             Parego
-          </h1>
-          <p className="text-xl font-semibold text-primary tracking-wide">Pair. Play. Go.</p>
-          <p className="text-sm text-muted-foreground">Over-the-board tournament pairing made simple</p>
+          </span>
+        </Link>
+        <div className="flex items-center gap-2">
+          {loadingAuth ? (
+            <span className="text-sm text-muted-foreground">Loading...</span>
+          ) : user ? (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/profile">
+                  <User className="h-4 w-4 mr-2" />
+                  {user.name}
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/auth/login">Login</Link>
+              </Button>
+              <Button variant="default" size="sm" asChild className="bg-primary hover:bg-primary/90">
+                <Link href="/auth/signup">Sign Up</Link>
+              </Button>
+            </>
+          )}
+        </div>
+      </header>
+
+      <div className="relative z-10 max-w-lg mx-auto px-4 pb-12 space-y-8">
+        {/* Hero copy */}
+        <div className="text-center space-y-1 pt-2">
+          <h1 className="text-2xl font-bold tracking-tight">Tournaments near you</h1>
+          <p className="text-muted-foreground text-sm">Find one, view it, or join—no signup required to browse.</p>
         </div>
 
-        {/* Main action buttons with enhanced styling */}
-        <div className="space-y-4">
-          {/* Join with Code */}
-          <Card className="overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+        {/* Location pending */}
+        {locationStatus === "pending" && (
+          <Card className="border-2 border-primary/20">
+            <CardContent className="p-6 flex flex-col items-center gap-3 text-center">
+              <Compass className="h-10 w-10 text-primary animate-pulse" />
+              <div>
+                <p className="font-medium">Getting your location...</p>
+                <p className="text-sm text-muted-foreground">We use it only to show nearby tournaments. Allow access to see what’s happening around you.</p>
+              </div>
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Nearby list (when location granted) */}
+        {showNearby && (
+          <>
+            {loadingNearby ? (
+              <Card>
+                <CardContent className="p-8 flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Searching nearby...</p>
+                </CardContent>
+              </Card>
+            ) : hasNearbyList ? (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Within {NEARBY_RADIUS_KM} km · next {NEARBY_HOURS} hours
+                </p>
+                <div className="space-y-2">
+                  {nearbyTournaments.map((t) => (
+                    <LandingTournamentCard
+                      key={t.id}
+                      tournament={t}
+                      userCoords={userLocation}
+                      showDistance={true}
+                      interestCount={interestCounts[t.id] ?? 0}
+                      userInterested={userInterests.has(t.id)}
+                      onToggleInterest={user ? handleToggleInterest : undefined}
+                      togglingInterest={togglingId === t.id}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center space-y-3">
+                  <MapPin className="h-10 w-10 mx-auto text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">No tournaments nearby right now</p>
+                    <p className="text-sm text-muted-foreground">Try a different radius or join with a code below.</p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/nearby">Adjust distance & time</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
+        {/* Location denied / unsupported: fallback */}
+        {showFallback && (
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardContent className="p-4 flex flex-col gap-3">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Location is off</p>
+                  <p className="text-sm text-muted-foreground">
+                    We need location to show tournaments near you. You can still browse recent tournaments or join with a code. To actually join and play, you’ll need to be at the venue.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/nearby">Try “Find nearby”</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Fallback list: recent tournaments when no location */}
+        {hasFallbackList && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-medium text-muted-foreground">Recent tournaments</h2>
+            <div className="space-y-2">
+              {fallbackTournaments.map((t) => (
+                <LandingTournamentCard
+                  key={t.id}
+                  tournament={t}
+                  userCoords={null}
+                  showDistance={false}
+                  interestCount={interestCounts[t.id] ?? 0}
+                  userInterested={userInterests.has(t.id)}
+                  onToggleInterest={user ? handleToggleInterest : undefined}
+                  togglingInterest={togglingId === t.id}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Join with code & Find nearby */}
+        <div className="space-y-3 pt-2">
+          <h2 className="text-sm font-medium text-muted-foreground">Or</h2>
+          <Card className="overflow-hidden border-2 hover:border-primary/50 transition-all duration-300">
             <CardContent className="p-0">
               {showCodeInput ? (
                 <div className="p-4 space-y-3">
@@ -170,27 +394,16 @@ export default function Home() {
                           setJoinCode("")
                         }
                       }}
-                      className="text-center text-lg font-mono tracking-widest uppercase border-primary/50 focus:border-primary"
+                      className="text-center font-mono tracking-widest uppercase"
                       maxLength={8}
                       autoFocus
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 bg-transparent"
-                      onClick={() => {
-                        setShowCodeInput(false)
-                        setJoinCode("")
-                      }}
-                    >
+                    <Button variant="outline" className="flex-1" onClick={() => { setShowCodeInput(false); setJoinCode("") }}>
                       Cancel
                     </Button>
-                    <Button
-                      className="flex-1 bg-primary hover:bg-primary/90"
-                      onClick={handleJoinWithCode}
-                      disabled={!joinCode.trim()}
-                    >
+                    <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleJoinWithCode} disabled={!joinCode.trim()}>
                       Join
                     </Button>
                   </div>
@@ -198,15 +411,12 @@ export default function Home() {
               ) : (
                 <Button
                   variant="ghost"
-                  className="w-full h-24 text-lg justify-start px-6 hover:bg-primary/5 rounded-none group"
+                  className="w-full h-16 justify-start px-6 hover:bg-primary/5 rounded-none group"
                   onClick={() => setShowCodeInput(true)}
                 >
-                  <Hash
-                    className="h-8 w-8 mr-4 text-primary group-hover:scale-110 transition-transform"
-                    strokeWidth={2.5}
-                  />
+                  <Hash className="h-6 w-6 mr-4 text-primary group-hover:scale-110 transition-transform" strokeWidth={2.5} />
                   <div className="text-left">
-                    <div className="font-bold text-lg">Join with Code</div>
+                    <div className="font-bold">Join with code</div>
                     <div className="text-sm text-muted-foreground font-normal">Enter code or scan QR</div>
                   </div>
                 </Button>
@@ -214,52 +424,44 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* Find Nearby */}
-          <Card className="overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+          <Card className="overflow-hidden border-2 hover:border-primary/50 transition-all duration-300">
             <CardContent className="p-0">
               <Button
                 variant="ghost"
-                className="w-full h-24 text-lg justify-start px-6 hover:bg-primary/5 rounded-none group"
+                className="w-full h-16 justify-start px-6 hover:bg-primary/5 rounded-none group"
                 onClick={() => router.push("/nearby")}
+                asChild
               >
-                <MapPin
-                  className="h-8 w-8 mr-4 text-primary group-hover:scale-110 transition-transform"
-                  strokeWidth={2.5}
-                />
-                <div className="text-left">
-                  <div className="font-bold text-lg">Find Nearby</div>
-                  <div className="text-sm text-muted-foreground font-normal">Discover local tournaments</div>
-                </div>
+                <Link href="/nearby">
+                  <MapPin className="h-6 w-6 mr-4 text-primary group-hover:scale-110 transition-transform" strokeWidth={2.5} />
+                  <div className="text-left">
+                    <div className="font-bold">Find nearby</div>
+                    <div className="text-sm text-muted-foreground font-normal">Distance & time filters</div>
+                  </div>
+                </Link>
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Organizer section - only for logged in users */}
+        {/* Create tournament (logged in) */}
         {user && (
           <div className="pt-4 border-t">
-            <Button
-              variant="outline"
-              className="w-full bg-transparent border-2 hover:border-primary hover:bg-primary/5 font-semibold"
-              onClick={() => router.push("/create")}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Tournament
+            <Button variant="outline" className="w-full border-2 hover:border-primary hover:bg-primary/5 font-semibold" asChild>
+              <Link href="/create">
+                <Plus className="h-4 w-4 mr-2" />
+                Create tournament
+              </Link>
             </Button>
           </div>
         )}
 
-        {/* Not logged in - show sign up prompt */}
+        {/* Soft signup prompt when not logged in */}
         {!loadingAuth && !user && (
           <div className="text-center pt-4 border-t">
-            <p className="text-sm text-muted-foreground mb-3">Track your progress and organize tournaments</p>
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-              className="border-2 hover:border-primary hover:bg-primary/5 bg-transparent"
-            >
-              <Link href="/auth/signup">Sign Up</Link>
+            <p className="text-sm text-muted-foreground mb-3">Create and run tournaments, track your progress</p>
+            <Button variant="outline" size="sm" asChild className="border-2 hover:border-primary hover:bg-primary/5 bg-transparent">
+              <Link href="/auth/signup">Sign up</Link>
             </Button>
           </div>
         )}

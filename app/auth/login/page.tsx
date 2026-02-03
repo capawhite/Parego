@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { Home } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -44,7 +45,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-4">
+    <div className="flex min-h-svh w-full flex-col items-center p-4">
+      <div className="mb-4 w-full max-w-sm">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <Home className="h-4 w-4" />
+          Home
+        </Link>
+      </div>
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader>

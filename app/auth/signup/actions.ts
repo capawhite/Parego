@@ -3,10 +3,21 @@
 import { createClient } from "@/lib/supabase/server"
 import { geocodeLocation } from "@/lib/geocode"
 
+/** Check if email is available for signup (call when user enters email). */
+export async function checkEmailAvailable(email: string): Promise<{ available: boolean; error?: string }> {
+  const trimmed = email?.trim()
+  if (!trimmed) return { available: false }
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc("check_email_available", { p_email: trimmed })
+  if (error) return { available: false, error: error.message }
+  return { available: data === true }
+}
+
 export async function signUp(formData: {
   email: string
   password: string
   name: string
+  ratingBand?: string
   rating?: number
   country?: string
   city?: string
@@ -15,7 +26,7 @@ export async function signUp(formData: {
 
   const supabase = await createClient()
 
-  const { email, password, name, rating, country, city } = formData
+  const { email, password, name, ratingBand, rating, country, city } = formData
 
   console.log("[v0] Server: Signing up with email:", email)
 
@@ -31,10 +42,10 @@ export async function signUp(formData: {
         `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}`,
       data: {
         name,
-        rating: rating || null,
+        rating: rating ?? null,
         country: country || null,
         city: city || null,
-        latitude, // Store coordinates in user metadata
+        latitude,
         longitude,
         email: email,
       },
@@ -62,6 +73,8 @@ export async function signUp(formData: {
     .update({
       latitude,
       longitude,
+      rating_band: ratingBand || null,
+      rating: rating ?? null,
     })
     .eq("id", authData.user.id)
 
