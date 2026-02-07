@@ -78,7 +78,8 @@ export default function ProfilePage() {
       if (!user) throw new Error("Not authenticated")
 
       const { latitude, longitude } = await geocodeLocation(city, country)
-      console.log("[v0] Profile update: Geocoded coordinates:", { latitude, longitude })
+      if (process.env.NODE_ENV === "development")
+        console.log("[v0] Profile update: Geocoded coordinates:", { latitude, longitude })
 
       const { error: updateError } = await supabase
         .from("users")

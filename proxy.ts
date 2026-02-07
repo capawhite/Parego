@@ -27,7 +27,8 @@ export async function proxy(request: NextRequest) {
 
   await supabase.auth.getUser()
 
-  console.log("[v0] Middleware: processing request for", request.nextUrl.pathname)
+  if (process.env.NODE_ENV === "development")
+    console.log("[v0] Middleware: processing request for", request.nextUrl.pathname)
 
   return supabaseResponse
 }

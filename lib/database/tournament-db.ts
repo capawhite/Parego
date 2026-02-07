@@ -75,7 +75,8 @@ export async function loadTournament(tournamentId: string) {
   }
 
   if (!data) {
-    console.log("[v0] Tournament not found:", tournamentId)
+    if (process.env.NODE_ENV === "development")
+      console.log("[v0] Tournament not found:", tournamentId)
     return null
   }
 
@@ -547,6 +548,22 @@ export interface InterestedUser {
   user_id: string
   name: string | null
   created_at: string
+}
+
+/** Fetch avatar URLs for given user IDs. Returns map of userId -> avatarUrl. */
+export async function getAvatarUrls(userIds: string[]): Promise<Record<string, string>> {
+  if (userIds.length === 0) return {}
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, avatar_url")
+    .in("id", userIds)
+  if (error) return {}
+  const map: Record<string, string> = {}
+  for (const row of data ?? []) {
+    if (row.avatar_url) map[row.id] = row.avatar_url
+  }
+  return map
 }
 
 /** List interested users for a tournament (for organizer view). Joins users for display name. */

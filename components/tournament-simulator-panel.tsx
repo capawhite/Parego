@@ -27,10 +27,12 @@ export function TournamentSimulatorPanel() {
       (btn) => btn.textContent === "White Wins" || btn.textContent === "Draw" || btn.textContent === "Black Wins",
     )
 
-    console.log(`[v0] Simulator found ${resultButtons.length} result buttons`)
+    if (process.env.NODE_ENV === "development")
+      console.log(`[v0] Simulator found ${resultButtons.length} result buttons`)
 
     if (resultButtons.length === 0) {
-      console.log("[v0] Simulator: No active matches found, stopping")
+      if (process.env.NODE_ENV === "development")
+        console.log("[v0] Simulator: No active matches found, stopping")
       stopSimulation()
       return
     }
@@ -43,7 +45,8 @@ export function TournamentSimulatorPanel() {
       }
     }
 
-    console.log(`[v0] Simulator: Found ${matches.length} active matches`)
+    if (process.env.NODE_ENV === "development")
+      console.log(`[v0] Simulator: Found ${matches.length} active matches`)
 
     // Process up to batchSize matches
     const toProcess = Math.min(batchSize, matches.length)
@@ -55,14 +58,16 @@ export function TournamentSimulatorPanel() {
       const buttonIndex = random < 0.45 ? 0 : random < 0.55 ? 1 : 2
       const button = matchButtons[buttonIndex] as HTMLButtonElement
 
-      console.log(`[v0] Simulator: Clicking ${button.textContent}`)
+      if (process.env.NODE_ENV === "development")
+        console.log(`[v0] Simulator: Clicking ${button.textContent}`)
       button.click()
 
       resultsEnteredRef.current += 1
       setResultsEntered((prev) => prev + 1)
 
       if (maxResults > 0 && resultsEnteredRef.current >= maxResults) {
-        console.log(`[v0] Simulator: Reached max results (${maxResults})`)
+        if (process.env.NODE_ENV === "development")
+          console.log(`[v0] Simulator: Reached max results (${maxResults})`)
         isRunningRef.current = false
         stopSimulation()
         return
@@ -71,7 +76,7 @@ export function TournamentSimulatorPanel() {
   }
 
   const startSimulation = () => {
-    console.log("[v0] Simulator: Starting...")
+    if (process.env.NODE_ENV === "development") console.log("[v0] Simulator: Starting...")
     setIsRunning(true)
     isRunningRef.current = true
     resultsEnteredRef.current = 0
@@ -89,7 +94,7 @@ export function TournamentSimulatorPanel() {
   }
 
   const stopSimulation = () => {
-    console.log("[v0] Simulator: Stopping...")
+    if (process.env.NODE_ENV === "development") console.log("[v0] Simulator: Stopping...")
     isRunningRef.current = false
     if (intervalId) {
       clearInterval(intervalId)

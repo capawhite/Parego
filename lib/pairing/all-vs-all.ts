@@ -31,7 +31,8 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
     settings: TournamentSettings,
     maxMatches?: number,
   ): Match[] {
-    console.log("[v0] All vs All: Creating pairings", {
+    if (process.env.NODE_ENV === "development")
+      console.log("[v0] All vs All: Creating pairings", {
       availableCount: availablePlayers.length,
       historicalMatchCount: allHistoricalMatches.length,
       maxMatches: maxMatches ?? "unlimited",
@@ -50,7 +51,8 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
     const saturationRatio = uniquePairingsPlayed / maxPossibleUniquePairings
     const isSaturated = saturationRatio >= 0.9
 
-    console.log("[v0] Tournament saturation:", {
+    if (process.env.NODE_ENV === "development")
+      console.log("[v0] Tournament saturation:", {
       uniquePairingsPlayed,
       maxPossibleUniquePairings,
       saturationRatio: `${(saturationRatio * 100).toFixed(1)}%`,

@@ -26,14 +26,14 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      console.log("[v0] Attempting login...")
+      if (process.env.NODE_ENV === "development") console.log("[v0] Attempting login...")
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
       if (error) throw error
 
-      console.log("[v0] Login successful, redirecting...")
+      if (process.env.NODE_ENV === "development") console.log("[v0] Login successful, redirecting...")
       // Use window.location.href for full page reload to establish session
       window.location.href = "/"
     } catch (error: unknown) {

@@ -30,7 +30,8 @@ export function AlgorithmComparisonPanel({
 
   const runComparison = () => {
     setComparing(true)
-    console.log("[v0] Starting algorithm comparison for tournament:", tournamentId)
+    if (process.env.NODE_ENV === "development")
+      console.log("[v0] Starting algorithm comparison for tournament:", tournamentId)
 
     try {
       // Sort matches by their completion order
@@ -42,7 +43,8 @@ export function AlgorithmComparisonPanel({
           return aTime - bTime
         })
 
-      console.log("[v0] Found completed matches:", completedMatches.length)
+      if (process.env.NODE_ENV === "development")
+        console.log("[v0] Found completed matches:", completedMatches.length)
 
       // Initialize both algorithm states
       const allVsAllAlgo = getPairingAlgorithm("all-vs-all")
@@ -84,9 +86,10 @@ export function AlgorithmComparisonPanel({
           {},
         )
 
-        console.log(
-          `[v0] Round ${round}: All vs All created ${allVsAllPairings.length} pairings, Balanced created ${balancedPairings.length} pairings`,
-        )
+        if (process.env.NODE_ENV === "development")
+          console.log(
+            `[v0] Round ${round}: All vs All created ${allVsAllPairings.length} pairings, Balanced created ${balancedPairings.length} pairings`,
+          )
 
         // Check if pairings diverged
         const diverged = !pairingsMatch(allVsAllPairings, balancedPairings)
@@ -121,7 +124,8 @@ export function AlgorithmComparisonPanel({
         round++
       }
 
-      console.log("[v0] Comparison complete. Results:", comparisonResults)
+      if (process.env.NODE_ENV === "development")
+        console.log("[v0] Comparison complete. Results:", comparisonResults)
       setResults(comparisonResults)
     } catch (error) {
       console.error("[v0] Comparison error:", error)

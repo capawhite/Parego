@@ -38,7 +38,8 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
     const Ta = (settings.incrementSeconds || 0) * 1000 // Convert to ms
     const Tp = Tf * 2 + Ta * 2 * 40 // Max estimated game time (40 moves)
 
-    console.log("[v0] Balanced Strength: Creating pairings", {
+    if (process.env.NODE_ENV === "development")
+      console.log("[v0] Balanced Strength: Creating pairings", {
       availableCount: availablePlayers.length,
       totalPlayers: J,
       tables: M,
@@ -48,7 +49,8 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
     })
 
     if (availablePlayers.length === 1) {
-      console.log("[v0] Single player waiting - will be paired immediately when next player finishes")
+      if (process.env.NODE_ENV === "development")
+        console.log("[v0] Single player waiting - will be paired immediately when next player finishes")
       return []
     }
 
@@ -123,8 +125,9 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
       }
     })
 
-    console.log(
-      "[v0] Players with wait data:",
+    if (process.env.NODE_ENV === "development")
+      console.log(
+        "[v0] Players with wait data:",
       playersWithWaitData.map((p) => ({
         name: p.name,
         rank: rankedPlayers.indexOf(p) + 1,
@@ -189,11 +192,13 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
         pairedPlayerIds.add(player2.id)
         usedTables.add(table)
 
-        console.log("[v0] Paired at table", table, ":", whitePlayer.name, "vs", blackPlayer.name)
+        if (process.env.NODE_ENV === "development")
+          console.log("[v0] Paired at table", table, ":", whitePlayer.name, "vs", blackPlayer.name)
       }
     }
 
-    console.log("[v0] Balanced Strength created", matches.length, "matches")
+    if (process.env.NODE_ENV === "development")
+      console.log("[v0] Balanced Strength created", matches.length, "matches")
     return matches
   },
 

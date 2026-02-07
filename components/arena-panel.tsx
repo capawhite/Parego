@@ -9,6 +9,7 @@ import { CurrentRound } from "./current-round"
 import { Leaderboard } from "./leaderboard"
 import { TournamentPodium } from "./tournament-podium"
 import { TournamentSettingsPanel, type TournamentSettings } from "./tournament-settings" // Import TournamentSettings
+import { Badge } from "@/components/ui/badge"
 import { PlayersList } from "@/components/players-list"
 import type { ArenaState, Player, Match, MatchResult } from "@/lib/types" // Added Match import and MatchResult
 import { getPairingAlgorithm } from "@/lib/pairing"
@@ -48,6 +49,7 @@ import {
   getInterestCount,
   getInterestedUsers,
   getUserInterested,
+  getAvatarUrls,
   type InterestedUser,
 } from "@/lib/database/tournament-db"
 import { generateQRCode } from "@/lib/qr-utils" // Fixed import to use correct path for generateQRCode
@@ -249,20 +251,30 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         const activeMatches = dbMatches.filter((m) => !m.result?.completed)
         const completedMatches = dbMatches.filter((m) => m.result?.completed)
 
-        console.log(
-          "[v0] Loaded",
-          dbPlayers.length,
-          "players,",
-          activeMatches.length,
-          "active matches,",
-          completedMatches.length,
-          "completed matches",
-        )
+        if (DEBUG)
+          console.log(
+            "[v0] Loaded",
+            dbPlayers.length,
+            "players,",
+            activeMatches.length,
+            "active matches,",
+            completedMatches.length,
+            "completed matches",
+          )
 
         if (user) {
           const playerMatch = dbPlayers.find((p) => p.userId === user.id)
           setCurrentPlayerInTournament(playerMatch || null)
         }
+
+        // Fetch avatar URLs for players with userId
+        const userIds = dbPlayers.map((p) => p.userId).filter((id): id is string => !!id)
+        const avatarUrls = userIds.length > 0 ? await getAvatarUrls(userIds) : {}
+        const enrichedPlayers = dbPlayers.map((p) =>
+          p.userId && avatarUrls[p.userId]
+            ? { ...p, avatarUrl: avatarUrls[p.userId] }
+            : { ...p, avatarUrl: null }
+        )
 
         // Convert start_time from ISO string to numeric timestamp
         const startTimeMs = tournament.start_time
@@ -271,7 +283,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
         setArenaState((prev) => ({
           ...prev,
-          players: dbPlayers.length > 0 ? dbPlayers : prev.players,
+          players: enrichedPlayers.length > 0 ? enrichedPlayers : prev.players,
           tableCount: tournament.tables_count,
           settings:
             {
@@ -416,14 +428,15 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const occupiedTables = getOccupiedTables()
       const availableTables = arenaState.tableCount - occupiedTables.length
 
-      console.log(`[v0] ${algorithm.name}: Pairing check`, {
-        algorithm: algorithm.id,
-        totalPlayers: arenaState.players.length,
-        availablePlayers: availablePlayers.length,
-        activeMatches: activePairingMatches.length,
-        totalTables: arenaState.tableCount,
-        availableTables,
-      })
+      if (DEBUG)
+        console.log(`[v0] ${algorithm.name}: Pairing check`, {
+          algorithm: algorithm.id,
+          totalPlayers: arenaState.players.length,
+          availablePlayers: availablePlayers.length,
+          activeMatches: activePairingMatches.length,
+          totalTables: arenaState.tableCount,
+          availableTables,
+        })
 
       // Use algorithm-specific logic to determine if pairing should happen
       if (algorithm.shouldPair(availablePlayers, activePairingMatches, arenaState.players.length, availableTables)) {
@@ -439,10 +452,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
         if (newMatches.length > 0) {
           const matchesWithTables = assignTablesToMatches(newMatches)
-          console.log(
-            `[v0] ${algorithm.name}: Creating new matches:`,
-            matchesWithTables.map((m) => `${m.player1.name} vs ${m.player2.name} (Table ${m.tableNumber})`),
-          )
+          if (DEBUG)
+            console.log(
+              `[v0] ${algorithm.name}: Creating new matches:`,
+              matchesWithTables.map((m) => `${m.player1.name} vs ${m.player2.name} (Table ${m.tableNumber})`),
+            )
 
           setArenaState((prev) => ({
             ...prev,
@@ -521,10 +535,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           const newPlayers = dbPlayers.filter((p) => !existingPlayerIds.has(p.id))
 
           if (newPlayers.length > 0) {
-            console.log(
-              "[v0] New players joined:",
-              newPlayers.map((p) => p.name),
-            )
+            if (DEBUG)
+              console.log(
+                "[v0] New players joined:",
+                newPlayers.map((p) => p.name),
+              )
             return {
               ...prev,
               players: [...prev.players, ...newPlayers],
@@ -1883,12 +1898,21 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   </Button>
                 </Link>
               </div>
-              {organizerName && (
-                <p className="text-sm text-muted-foreground">
-                  Organized by <span className="font-semibold">{organizerName}</span>
-                  {isOrganizer && <span className="text-primary ml-1">(You)</span>}
-                </p>
-              )}
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <Badge variant="secondary" className="font-normal">
+                  {userRole === "organizer"
+                    ? "Organizer"
+                    : userRole === "registered-player" || userRole === "guest-player"
+                      ? "Player"
+                      : "Visitor"}
+                </Badge>
+                {organizerName && (
+                  <p className="text-sm text-muted-foreground">
+                    Organized by <span className="font-semibold">{organizerName}</span>
+                    {isOrganizer && <span className="text-primary ml-1">(You)</span>}
+                  </p>
+                )}
+              </div>
               {tournamentMetadata?.latitude != null && tournamentMetadata?.longitude != null && (
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&destination=${tournamentMetadata.latitude},${tournamentMetadata.longitude}`}
@@ -2341,11 +2365,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                 showSimulator={showSimulator}
                 onToggleSimulator={setShowSimulator}
               />
-
-              {console.log("[v0] Comparison panel check:", {
-                allTimeMatchesLength: arenaState.allTimeMatches.length,
-                shouldShow: arenaState.allTimeMatches.length > 0,
-              })}
 
               {arenaState.allTimeMatches.length > 0 && (
                 <AlgorithmComparisonPanel

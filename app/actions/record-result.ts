@@ -42,10 +42,11 @@ export async function recordMatchResult(
   }
 
   if (tournament.organizer_id !== user.id) {
-    console.log("[v0] Permission denied: User is not the organizer", {
-      userId: user.id,
-      organizerId: tournament.organizer_id,
-    })
+    if (process.env.NODE_ENV === "development")
+      console.log("[v0] Permission denied: User is not the organizer", {
+        userId: user.id,
+        organizerId: tournament.organizer_id,
+      })
     return { success: false, error: "Only the tournament organizer can record results" }
   }
 

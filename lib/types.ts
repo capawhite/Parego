@@ -17,6 +17,7 @@ export interface Player {
   hasLeft?: boolean // player was removed mid-tournament (for leaderboard display)
   userId?: string | null // Link to registered user
   isGuest?: boolean // Flag for guest players
+  avatarUrl?: string | null // Profile avatar (from users table)
 
   // Extended player data (optional)
   rating?: number | null // Player's chess rating

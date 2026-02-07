@@ -42,7 +42,7 @@ export async function geocodeLocation(
       }
     }
 
-    console.log("[v0] No geocoding results found for:", query)
+    if (process.env.NODE_ENV === "development") console.log("[v0] No geocoding results found for:", query)
     return { latitude: null, longitude: null }
   } catch (error) {
     console.error("[v0] Geocoding error:", error)
@@ -71,7 +71,8 @@ export function getBrowserLocation(): Promise<{
         })
       },
       (error) => {
-        console.log("[v0] Browser geolocation denied or failed:", error.message)
+        if (process.env.NODE_ENV === "development")
+          console.log("[v0] Browser geolocation denied or failed:", error.message)
         resolve(null)
       },
       {

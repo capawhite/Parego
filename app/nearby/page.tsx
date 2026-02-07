@@ -42,7 +42,8 @@ export default function NearbyPage() {
             setRequestingLocation(false)
           },
           async (error) => {
-            console.log("[v0] GPS location error, attempting to use registered location")
+            if (process.env.NODE_ENV === "development")
+              console.log("[v0] GPS location error, attempting to use registered location")
 
             // Get user's profile location
             const {

@@ -22,8 +22,11 @@ interface PairingScore {
   colorImbalance: number // added to track color balance
 }
 
+const DEBUG = process.env.NODE_ENV === "development"
+
 export function pairPlayers(availablePlayers: Player[], allHistoricalMatches: Match[], maxMatches?: number): Match[] {
-  console.log("[v0] pairPlayers called with:", {
+  if (DEBUG)
+    console.log("[v0] pairPlayers called with:", {
     availableCount: availablePlayers.length,
     availableNames: availablePlayers.map((p) => p.name),
     historicalMatchCount: allHistoricalMatches.length,
@@ -43,7 +46,8 @@ export function pairPlayers(availablePlayers: Player[], allHistoricalMatches: Ma
   const saturationRatio = uniquePairingsPlayed / maxPossibleUniquePairings
   const isSaturated = saturationRatio >= 0.9 // 90%+ completion means tournament is saturated
 
-  console.log("[v0] Tournament saturation:", {
+  if (DEBUG)
+    console.log("[v0] Tournament saturation:", {
     uniquePairingsPlayed,
     maxPossibleUniquePairings,
     saturationRatio: `${(saturationRatio * 100).toFixed(1)}%`,
@@ -93,13 +97,13 @@ export function pairPlayers(availablePlayers: Player[], allHistoricalMatches: Ma
   let pairingsToUse: PairingScore[]
 
   if (isSaturated) {
-    console.log("[v0] Tournament saturated - allowing all pairings including rematches")
+    if (DEBUG) console.log("[v0] Tournament saturated - allowing all pairings including rematches")
     pairingsToUse = possiblePairings // Use all pairings, including very recent rematches
   } else {
     pairingsToUse = possiblePairings.filter((p) => p.rematchLevel === "none")
 
     if (pairingsToUse.length === 0) {
-      console.log("[v0] No new pairings available, allowing older rematches...")
+      if (DEBUG) console.log("[v0] No new pairings available, allowing older rematches...")
       pairingsToUse = possiblePairings.filter((p) => p.rematchLevel !== "very-recent")
     }
 
@@ -113,7 +117,8 @@ export function pairPlayers(availablePlayers: Player[], allHistoricalMatches: Ma
 
   const bestMatches = findBestPairingSubset(pairingsToUse, maxMatches)
 
-  console.log("[v0] Best matches found:", {
+  if (DEBUG)
+    console.log("[v0] Best matches found:", {
     matchCount: bestMatches.length,
     matches: bestMatches.map((m) => `${m.player1.name} vs ${m.player2.name}`),
   })

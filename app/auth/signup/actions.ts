@@ -22,16 +22,17 @@ export async function signUp(formData: {
   country?: string
   city?: string
 }) {
-  console.log("[v0] Server: Starting signup process...")
+  if (process.env.NODE_ENV === "development") console.log("[v0] Server: Starting signup process...")
 
   const supabase = await createClient()
 
   const { email, password, name, ratingBand, rating, country, city } = formData
 
-  console.log("[v0] Server: Signing up with email:", email)
+  if (process.env.NODE_ENV === "development") console.log("[v0] Server: Signing up with email:", email)
 
   const { latitude, longitude } = await geocodeLocation(city, country)
-  console.log("[v0] Server: Geocoded coordinates:", { latitude, longitude })
+  if (process.env.NODE_ENV === "development")
+    console.log("[v0] Server: Geocoded coordinates:", { latitude, longitude })
 
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: email,
@@ -63,7 +64,8 @@ export async function signUp(formData: {
     return { error: authError?.message || "Failed to create account" }
   }
 
-  console.log("[v0] Server: Auth signup successful, user ID:", authData.user.id)
+  if (process.env.NODE_ENV === "development")
+    console.log("[v0] Server: Auth signup successful, user ID:", authData.user.id)
 
   // Wait a moment for the trigger to complete
   await new Promise((resolve) => setTimeout(resolve, 500))
@@ -93,7 +95,8 @@ export async function signUp(formData: {
     return { error: "Profile creation failed. Please try logging in or contact support." }
   }
 
-  console.log("[v0] Server: Profile created successfully with coordinates")
+  if (process.env.NODE_ENV === "development")
+    console.log("[v0] Server: Profile created successfully with coordinates")
 
   return { success: true, userId: authData.user.id }
 }

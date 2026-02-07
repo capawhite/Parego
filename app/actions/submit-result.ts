@@ -24,7 +24,7 @@ export async function submitMatchResult(
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    console.log("[v0] Authentication failed:", authError)
+    if (process.env.NODE_ENV === "development") console.log("[v0] Authentication failed:", authError)
     return { success: false, error: "You must be logged in to submit results" }
   }
 
@@ -82,7 +82,8 @@ export async function submitMatchResult(
   const isPlayer2 = getPlayerUserId(player2Data) === user.id
 
   if (!isPlayer1 && !isPlayer2) {
-    console.log("[v0] User is not a player in this match:", { userId: user.id, match })
+    if (process.env.NODE_ENV === "development")
+      console.log("[v0] User is not a player in this match:", { userId: user.id, match })
     return { success: false, error: "You are not a player in this match" }
   }
 

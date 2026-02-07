@@ -1,5 +1,6 @@
 "use client"
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { LogOut, MapPin, CheckCircle2, Loader2 } from "lucide-react"
@@ -47,7 +48,7 @@ export function PlayersList({
   const isActive = status === "active"
 
   const activeCount = players.filter(
-    (p) => p.active && !p.paused && !p.markedForRemoval && !p.markedForPause && !p.markedForRemoval,
+    (p) => p.active && !p.paused && !p.markedForRemoval && !p.markedForPause,
   ).length
 
   const activePlayers = players.filter((p) => !p.markedForRemoval)
@@ -78,9 +79,22 @@ export function PlayersList({
               {activePlayers.map((player) => (
                 <div
                   key={player.id}
-                  className="flex justify-between items-center p-1.5 bg-muted rounded hover:bg-muted/80 text-sm"
+                  className="flex justify-between items-center gap-2 p-1.5 bg-muted rounded hover:bg-muted/80 text-sm"
                   style={{ opacity: player.markedForPause ? 0.5 : 1 }}
                 >
+                  <Avatar className="size-8 shrink-0">
+                    {player.avatarUrl ? (
+                      <AvatarImage src={player.avatarUrl} alt={player.name} />
+                    ) : null}
+                    <AvatarFallback className="text-xs font-medium">
+                      {player.name
+                        .split(/\s+/)
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2) || "?"}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1 flex-wrap">
                       <span className="font-medium text-sm">{player.name}</span>
@@ -173,8 +187,21 @@ export function PlayersList({
                   {removedPlayers.map((player) => (
                     <div
                       key={player.id}
-                      className="flex justify-between items-center p-1.5 bg-muted/50 rounded opacity-60 text-sm"
+                      className="flex justify-between items-center gap-2 p-1.5 bg-muted/50 rounded opacity-60 text-sm"
                     >
+                      <Avatar className="size-8 shrink-0 opacity-75">
+                        {player.avatarUrl ? (
+                          <AvatarImage src={player.avatarUrl} alt={player.name} />
+                        ) : null}
+                        <AvatarFallback className="text-xs font-medium">
+                          {player.name
+                            .split(/\s+/)
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2) || "?"}
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium text-sm">{player.name}</span>
