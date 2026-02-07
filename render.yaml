@@ -1,0 +1,8 @@
+# Render Blueprint - used when creating/updating services from this repo
+# For existing services: update Build Command manually in Dashboard to match below
+services:
+  - type: web
+    name: parego
+    runtime: node
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run build
+    startCommand: pnpm run start
