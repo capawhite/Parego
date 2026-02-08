@@ -64,6 +64,10 @@ interface LandingTournamentCardProps {
   showDistance?: boolean
   /** Number of users who expressed interest */
   interestCount?: number
+  /** Number of players currently in the tournament */
+  playerCount?: number
+  /** First few player names for preview (e.g. first 5) */
+  playerNames?: string[]
   /** Whether current user has expressed interest */
   userInterested?: boolean
   /** Callback when user toggles interest (requires sign-in). Omit or not provided when not logged in. */
@@ -78,6 +82,8 @@ export function LandingTournamentCard({
   userCoords,
   showDistance = true,
   interestCount = 0,
+  playerCount = 0,
+  playerNames = [],
   userInterested = false,
   onToggleInterest,
   togglingInterest = false,
@@ -105,12 +111,12 @@ export function LandingTournamentCard({
   return (
     <Card
       className={cn(
-        "overflow-hidden border-2 transition-all duration-200 hover:border-primary/40 hover:shadow-md",
+        "overflow-hidden border-2 transition-all duration-200 hover:border-primary/40 hover:shadow-md h-full flex flex-col",
         className
       )}
     >
-      <CardContent className="p-0">
-        <div className="p-4 space-y-3">
+      <CardContent className="p-0 flex flex-col flex-1">
+        <div className="p-4 space-y-3 flex-1">
           <Link href={`/tournament/${tournament.id}`} className="block">
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-semibold text-lg leading-tight truncate flex-1 min-w-0">
@@ -141,11 +147,26 @@ export function LandingTournamentCard({
                 <span className="text-primary font-medium">{formatDistance(distance)} from you</span>
               )}
             </div>
-            {interestCount > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {interestCount} {interestCount === 1 ? "person" : "people"} interested
-              </p>
-            )}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+              {playerCount > 0 && (
+                <span>
+                  <span className="font-medium text-foreground">
+                    {playerCount} {playerCount === 1 ? "player" : "players"}
+                  </span>
+                  {playerNames.length > 0 && (
+                    <span className="text-muted-foreground ml-1 min-w-0 truncate block sm:inline" title={playerNames.slice(0, 5).join(", ") + (playerCount > 5 ? ` +${playerCount - 5} more` : "")}>
+                      — {playerNames.slice(0, 5).join(", ")}
+                      {playerCount > 5 ? ` +${playerCount - 5} more` : ""}
+                    </span>
+                  )}
+                </span>
+              )}
+              {interestCount > 0 && (
+                <span>
+                  {interestCount} {interestCount === 1 ? "person" : "people"} interested
+                </span>
+              )}
+            </div>
           </Link>
           {tournament.latitude != null && tournament.longitude != null && (
             <a
@@ -159,12 +180,12 @@ export function LandingTournamentCard({
             </a>
           )}
         </div>
-        <div className="flex border-t bg-muted/30">
+        <div className="flex border-t bg-muted/30 min-h-[44px]">
           {canToggle ? (
             <Button
               variant="ghost"
               size="sm"
-              className={cn("flex-1 rounded-none", userInterested && "text-primary")}
+              className={cn("flex-1 rounded-none min-h-[44px] touch-manipulation", userInterested && "text-primary")}
               onClick={(e) => {
                 e.preventDefault()
                 onToggleInterest?.(tournament.id)
@@ -181,15 +202,15 @@ export function LandingTournamentCard({
               {userInterested ? "Interested" : "Interest"}
             </Button>
           ) : null}
-          <Button variant="ghost" size="sm" className="flex-1 rounded-none" asChild>
+          <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation" asChild>
             <Link href={`/tournament/${tournament.id}`}>
-              <Eye className="h-4 w-4 mr-2" />
+              <Eye className="h-4 w-4 mr-2 shrink-0" />
               View
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" className="flex-1 rounded-none" asChild>
+          <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation" asChild>
             <Link href={`/join/${tournament.id}`}>
-              <LogIn className="h-4 w-4 mr-2" />
+              <LogIn className="h-4 w-4 mr-2 shrink-0" />
               Join
             </Link>
           </Button>

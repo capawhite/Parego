@@ -210,11 +210,11 @@ export default function CreateTournamentPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background p-4">
+    <main className="min-h-screen bg-background p-4 sm:p-6">
       <div className="max-w-lg mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
+          <Button variant="ghost" size="icon" className="min-h-10 min-w-10 touch-manipulation shrink-0" onClick={() => router.push("/")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -246,23 +246,23 @@ export default function CreateTournamentPage() {
             {/* Visibility */}
             <div className="space-y-2">
               <Label>Visibility</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   type="button"
                   variant={visibility === "public" ? "default" : "outline"}
-                  className={`flex-1 ${visibility !== "public" ? "bg-transparent" : ""}`}
+                  className={`flex-1 min-h-10 touch-manipulation min-w-0 ${visibility !== "public" ? "bg-transparent" : ""}`}
                   onClick={() => setVisibility("public")}
                 >
-                  <Globe className="h-4 w-4 mr-2" />
+                  <Globe className="h-4 w-4 mr-2 shrink-0" />
                   Public
                 </Button>
                 <Button
                   type="button"
                   variant={visibility === "private" ? "default" : "outline"}
-                  className={`flex-1 ${visibility !== "private" ? "bg-transparent" : ""}`}
+                  className={`flex-1 min-h-10 touch-manipulation min-w-0 ${visibility !== "private" ? "bg-transparent" : ""}`}
                   onClick={() => setVisibility("private")}
                 >
-                  <Lock className="h-4 w-4 mr-2" />
+                  <Lock className="h-4 w-4 mr-2 shrink-0" />
                   Private
                 </Button>
               </div>

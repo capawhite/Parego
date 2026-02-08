@@ -473,6 +473,50 @@ export async function getInterestCount(tournamentId: string): Promise<number> {
   return count ?? 0
 }
 
+/** Batch: player count per tournament id */
+export async function getPlayerCounts(tournamentIds: string[]): Promise<Record<string, number>> {
+  if (tournamentIds.length === 0) return {}
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("players")
+    .select("tournament_id")
+    .in("tournament_id", tournamentIds)
+  if (error) {
+    console.error("[tournament-db] getPlayerCounts error:", error)
+    return Object.fromEntries(tournamentIds.map((id) => [id, 0]))
+  }
+  const counts: Record<string, number> = {}
+  for (const id of tournamentIds) counts[id] = 0
+  for (const row of data ?? []) {
+    counts[row.tournament_id] = (counts[row.tournament_id] ?? 0) + 1
+  }
+  return counts
+}
+
+/** Batch: first N player names per tournament (for preview on cards). Limit 5 per tournament. */
+export async function getPlayerPreviews(
+  tournamentIds: string[],
+  limitPerTournament = 5
+): Promise<Record<string, string[]>> {
+  if (tournamentIds.length === 0) return {}
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("players")
+    .select("tournament_id, name")
+    .in("tournament_id", tournamentIds)
+  if (error) {
+    console.error("[tournament-db] getPlayerPreviews error:", error)
+    return Object.fromEntries(tournamentIds.map((id) => [id, []]))
+  }
+  const byTournament: Record<string, string[]> = {}
+  for (const id of tournamentIds) byTournament[id] = []
+  for (const row of data ?? []) {
+    const list = byTournament[row.tournament_id]
+    if (list && list.length < limitPerTournament) list.push(row.name)
+  }
+  return byTournament
+}
+
 /** Batch: count of interested users per tournament id */
 export async function getInterestCounts(tournamentIds: string[]): Promise<Record<string, number>> {
   if (tournamentIds.length === 0) return {}

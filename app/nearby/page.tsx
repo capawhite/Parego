@@ -5,7 +5,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, MapPin, Clock, Navigation, AlertCircle, MapPinOff, ExternalLink } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { listNearbyTournaments, type TournamentData } from "@/lib/database/tournament-db"
+import {
+  listNearbyTournaments,
+  getPlayerCounts,
+  getPlayerPreviews,
+  type TournamentData,
+} from "@/lib/database/tournament-db"
 import { createClient } from "@/lib/supabase/client"
 
 type RadiusOption = 5 | 10 | 25 | 50
@@ -26,6 +31,8 @@ export default function NearbyPage() {
 
   const [radius, setRadius] = useState<RadiusOption>(10)
   const [timeWindow, setTimeWindow] = useState<TimeOption>(12)
+  const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({})
+  const [playerPreviews, setPlayerPreviews] = useState<Record<string, string[]>>({})
 
   // Get user's registered location and request geolocation
   useEffect(() => {
@@ -96,6 +103,15 @@ export default function NearbyPage() {
       try {
         const results = await listNearbyTournaments(userLocation.lat, userLocation.lon, radius, timeWindow, 10)
         setTournaments(results)
+        const ids = results.map((t) => t.id)
+        if (ids.length > 0) {
+          const [counts, previews] = await Promise.all([
+            getPlayerCounts(ids),
+            getPlayerPreviews(ids, 5),
+          ])
+          setPlayerCounts(counts)
+          setPlayerPreviews(previews)
+        }
       } catch (err) {
         console.error("[v0] Error fetching nearby tournaments:", err)
         setError("Failed to load tournaments. Please try again.")
@@ -140,11 +156,11 @@ export default function NearbyPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background p-4">
+    <main className="min-h-screen bg-background p-4 sm:p-6">
       <div className="max-w-lg mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
+          <Button variant="ghost" size="icon" className="min-h-10 min-w-10 touch-manipulation shrink-0" onClick={() => router.push("/")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -163,13 +179,13 @@ export default function NearbyPage() {
             {/* Radius */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Distance</label>
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5 flex-wrap">
                 {([5, 10, 25, 50] as RadiusOption[]).map((r) => (
                   <Button
                     key={r}
                     variant={radius === r ? "default" : "outline"}
                     size="sm"
-                    className={`flex-1 ${radius !== r ? "bg-transparent" : ""}`}
+                    className={`flex-1 min-w-0 min-h-10 touch-manipulation sm:flex-initial ${radius !== r ? "bg-transparent" : ""}`}
                     onClick={() => setRadius(r)}
                   >
                     {r} km
@@ -187,7 +203,7 @@ export default function NearbyPage() {
                     key={t}
                     variant={timeWindow === t ? "default" : "outline"}
                     size="sm"
-                    className={`flex-1 ${timeWindow !== t ? "bg-transparent" : ""}`}
+                    className={`flex-1 min-h-10 touch-manipulation ${timeWindow !== t ? "bg-transparent" : ""}`}
                     onClick={() => setTimeWindow(t)}
                   >
                     {t} hours
@@ -272,6 +288,16 @@ export default function NearbyPage() {
                               {formatStartTime(tournament.start_time)}
                             </span>
                           </div>
+                          {(playerCounts[tournament.id] ?? 0) > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {playerCounts[tournament.id]} {playerCounts[tournament.id] === 1 ? "player" : "players"}
+                              {(playerPreviews[tournament.id] ?? []).length > 0 && (
+                                <span> — {(playerPreviews[tournament.id] ?? []).slice(0, 4).join(", ")}
+                                  {(playerCounts[tournament.id] ?? 0) > 4 ? " …" : ""}
+                                </span>
+                              )}
+                            </p>
+                          )}
                           {tournament.latitude != null && tournament.longitude != null && (
                             <a
                               href={`https://www.google.com/maps/dir/?api=1&destination=${tournament.latitude},${tournament.longitude}`}

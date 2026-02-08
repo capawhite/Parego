@@ -139,7 +139,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex min-h-svh w-full flex-col items-center p-4">
+    <div className="flex min-h-svh w-full flex-col items-center p-4 sm:p-6">
       <div className="mb-4 w-full max-w-sm">
         <Link
           href="/"

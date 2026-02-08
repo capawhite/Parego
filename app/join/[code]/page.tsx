@@ -32,6 +32,7 @@ export default function JoinTournamentPage() {
   const [verifyingLocation, setVerifyingLocation] = useState(false)
   const [ratingBand, setRatingBand] = useState<RatingBandValue | "">("")
   const [ratingPrecise, setRatingPrecise] = useState("")
+  const [alreadyJoined, setAlreadyJoined] = useState(false)
 
   useEffect(() => {
     async function checkAuth() {
@@ -84,6 +85,38 @@ export default function JoinTournamentPage() {
     }
   }, [code])
 
+  // Prevent duplicate joins: check DB for registered users, localStorage for guests
+  useEffect(() => {
+    if (loading || !tournament || !code) return
+
+    async function checkAlreadyJoined() {
+      // Guest: check localStorage (same browser session)
+      if (!isRegistered) {
+        try {
+          const stored = localStorage.getItem("tournamentPlayer")
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            if (parsed?.tournamentId === code) {
+              setAlreadyJoined(true)
+            }
+          }
+        } catch {
+          // ignore parse errors
+        }
+        return
+      }
+
+      // Registered: check if user is already in this tournament
+      if (userId) {
+        const players = await loadPlayers(code)
+        const found = players.some((p) => p.userId === userId)
+        if (found) setAlreadyJoined(true)
+      }
+    }
+
+    checkAlreadyJoined()
+  }, [loading, tournament, code, isRegistered, userId])
+
   const runProximityCheck = (): Promise<{ ok: boolean; checkedInAt: string | null; presenceSource: "gps" | null }> => {
       return new Promise((resolve) => {
         const hasVenue = tournament?.latitude != null && tournament?.longitude != null
@@ -122,7 +155,7 @@ export default function JoinTournamentPage() {
     }
 
     const handleJoin = async () => {
-      if (!playerName.trim()) {
+      if (isRegistered && !playerName.trim()) {
         setError("Please enter your name")
         return
       }
@@ -152,6 +185,23 @@ export default function JoinTournamentPage() {
           return
         }
 
+        // Defensive: registered users - verify not already in tournament (e.g. joined from another tab)
+        if (isRegistered && userId) {
+          const supabaseClient = createClient()
+          const { data: existingByUser } = await supabaseClient
+            .from("players")
+            .select("id")
+            .eq("tournament_id", code)
+            .eq("user_id", userId)
+            .maybeSingle()
+          if (existingByUser) {
+            setError("You have already joined this tournament.")
+            setAlreadyJoined(true)
+            setJoining(false)
+            return
+          }
+        }
+
         const preciseNum = ratingPrecise.trim() ? parseInt(ratingPrecise.trim(), 10) : null
         const playerRating = resolveRating(
           preciseNum != null && !isNaN(preciseNum) ? preciseNum : null,
@@ -163,6 +213,22 @@ export default function JoinTournamentPage() {
         const isGuest = !isRegistered
 
         if (!isRegistered) {
+          // Defensive: guest already joined in this session (localStorage)
+          try {
+            const stored = localStorage.getItem("tournamentPlayer")
+            if (stored) {
+              const parsed = JSON.parse(stored)
+              if (parsed?.tournamentId === code) {
+                setError("You have already joined this tournament.")
+                setAlreadyJoined(true)
+                setJoining(false)
+                return
+              }
+            }
+          } catch {
+            // ignore
+          }
+
           const supabase = createClient()
 
           // Fetch existing player names to avoid collisions
@@ -257,6 +323,25 @@ export default function JoinTournamentPage() {
     )
   }
 
+  if (alreadyJoined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md p-6 text-center">
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <Trophy className="h-6 w-6 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Already Joined</h1>
+          <p className="text-muted-foreground mb-4">
+            You have already joined <span className="font-semibold">{tournament?.name}</span>
+          </p>
+          <Button onClick={() => router.push(`/tournament/${code}`)} className="w-full" size="lg">
+            Go to Tournament
+          </Button>
+        </Card>
+      </div>
+    )
+  }
+
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -275,7 +360,7 @@ export default function JoinTournamentPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-6">
       <Card className="w-full max-w-md p-6">
         <div className="text-center mb-6">
           <Trophy className="h-12 w-12 mx-auto mb-4 text-primary" />
@@ -298,23 +383,25 @@ export default function JoinTournamentPage() {
         </div>
 
         <div className="space-y-4">
-          <div>
-            <label htmlFor="playerName" className="text-sm font-medium mb-2 block">
-              Your Name
-            </label>
-            <Input
-              id="playerName"
-              type="text"
-              placeholder="Enter your name"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleJoin()
-              }}
-              disabled={joining || (isRegistered && !!playerName)}
-              className="w-full"
-            />
-          </div>
+          {isRegistered && (
+            <div>
+              <label htmlFor="playerName" className="text-sm font-medium mb-2 block">
+                Your Name
+              </label>
+              <Input
+                id="playerName"
+                type="text"
+                placeholder="Enter your name"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleJoin()
+                }}
+                disabled={joining || !!playerName}
+                className="w-full"
+              />
+            </div>
+          )}
 
           {!isRegistered && (
             <>
@@ -328,7 +415,7 @@ export default function JoinTournamentPage() {
                   {RATING_BANDS.map((band) => (
                     <label
                       key={band.value}
-                      className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                      className="flex items-center gap-3 rounded-lg border p-3 min-h-[48px] cursor-pointer hover:bg-muted/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 touch-manipulation"
                     >
                       <RadioGroupItem value={band.value} id={`band-${band.value}`} />
                       <span className="text-sm">{band.label}</span>
@@ -359,7 +446,12 @@ export default function JoinTournamentPage() {
 
           <Button
             onClick={handleJoin}
-            disabled={joining || !playerName.trim() || (!isRegistered && !ratingBand) || verifyingLocation}
+            disabled={
+              joining ||
+              (isRegistered && !playerName.trim()) ||
+              (!isRegistered && !ratingBand) ||
+              verifyingLocation
+            }
             className="w-full"
             size="lg"
           >

@@ -1889,11 +1889,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Consolidate header elements */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl font-bold">{displayName}</h1>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 mb-1">
+                <h1 className="text-xl sm:text-2xl font-bold truncate">{displayName}</h1>
                 <Link href="/">
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8 shrink-0">
                     <Home className="h-4 w-4" />
                   </Button>
                 </Link>
@@ -1929,24 +1929,24 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               )}
             </div>
 
-            <TabsList className="grid grid-cols-4 h-auto">
+            <TabsList className="grid grid-cols-4 h-auto w-full sm:w-auto min-h-[44px]">
               {!effectivePlayerView && (
-                <TabsTrigger value="players" className="text-xs sm:text-sm h-10 px-3">
+                <TabsTrigger value="players" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                   <Users className="h-4 w-4 mr-1" />
                   Players
                 </TabsTrigger>
               )}
-              <TabsTrigger value="pairings" className="text-xs sm:text-sm h-10 px-3">
+              <TabsTrigger value="pairings" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                 <Swords className="h-4 w-4 mr-1" />
                 Pairings
               </TabsTrigger>
               {arenaState.status !== "completed" && (
-                <TabsTrigger value="results" className="text-xs sm:text-sm h-10 px-3">
+                <TabsTrigger value="results" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                   <Trophy className="h-4 w-4 mr-1" />
                   Results
                 </TabsTrigger>
               )}
-              <TabsTrigger value="standings" className="text-xs sm:text-sm h-10 px-3">
+              <TabsTrigger value="standings" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                 <Award className="h-4 w-4 mr-1" />
                 Standings
               </TabsTrigger>

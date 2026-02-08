@@ -12,6 +12,8 @@ import {
   listNearbyTournaments,
   listTournaments,
   getInterestCounts,
+  getPlayerCounts,
+  getPlayerPreviews,
   getUserInterests,
   type TournamentData,
 } from "@/lib/database/tournament-db"
@@ -38,6 +40,8 @@ export default function Home() {
   const [loadingNearby, setLoadingNearby] = useState(false)
   const [loadingFallback, setLoadingFallback] = useState(false)
   const [interestCounts, setInterestCounts] = useState<Record<string, number>>({})
+  const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({})
+  const [playerPreviews, setPlayerPreviews] = useState<Record<string, string[]>>({})
   const [userInterests, setUserInterests] = useState<Set<string>>(new Set())
   const [togglingId, setTogglingId] = useState<string | null>(null)
 
@@ -171,10 +175,14 @@ export default function Home() {
     let cancelled = false
     Promise.all([
       getInterestCounts(tournamentIds),
+      getPlayerCounts(tournamentIds),
+      getPlayerPreviews(tournamentIds, 5),
       user ? getUserInterests(user.id, tournamentIds) : Promise.resolve(new Set<string>()),
-    ]).then(([counts, interests]) => {
+    ]).then(([interestCountsData, counts, previews, interests]) => {
       if (!cancelled) {
-        setInterestCounts(counts)
+        setInterestCounts(interestCountsData)
+        setPlayerCounts(counts)
+        setPlayerPreviews(previews)
         setUserInterests(interests)
       }
     })
@@ -228,35 +236,35 @@ export default function Home() {
       </div>
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between p-4">
-        <Link href="/" className="flex items-center gap-2">
-          <Zap className="h-8 w-8 text-primary" strokeWidth={2.5} fill="currentColor" />
-          <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+      <header className="relative z-10 flex items-center justify-between gap-3 p-4">
+        <Link href="/" className="flex items-center gap-2 min-w-0">
+          <Zap className="h-8 w-8 shrink-0 text-primary" strokeWidth={2.5} fill="currentColor" />
+          <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent truncate">
             Parego
           </span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {loadingAuth ? (
             <span className="text-sm text-muted-foreground">Loading...</span>
           ) : user ? (
             <>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/profile">
-                  <User className="h-4 w-4 mr-2" />
-                  {user.name}
+              <Button variant="ghost" size="sm" className="min-h-10 min-w-10" asChild>
+                <Link href="/profile" className="flex items-center gap-2">
+                  <User className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline max-w-[100px] truncate">{user.name}</span>
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
+              <Button variant="ghost" size="sm" className="min-h-10 min-w-10" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 shrink-0 sm:mr-2" />
+                <span className="hidden sm:inline">Logout</span>
               </Button>
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" size="sm" className="min-h-10" asChild>
                 <Link href="/auth/login">Login</Link>
               </Button>
-              <Button variant="default" size="sm" asChild className="bg-primary hover:bg-primary/90">
+              <Button variant="default" size="sm" className="min-h-10 bg-primary hover:bg-primary/90" asChild>
                 <Link href="/auth/signup">Sign Up</Link>
               </Button>
             </>
@@ -264,10 +272,10 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="relative z-10 max-w-lg mx-auto px-4 pb-12 space-y-8">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pb-12 space-y-8">
         {/* Hero copy */}
-        <div className="text-center space-y-1 pt-2">
-          <h1 className="text-2xl font-bold tracking-tight">Tournaments near you</h1>
+        <div className="text-center space-y-1 pt-2 px-1">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Tournaments near you</h1>
           <p className="text-muted-foreground text-sm">Find one, view it, or join—no signup required to browse.</p>
         </div>
 
@@ -300,7 +308,7 @@ export default function Home() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Within {NEARBY_RADIUS_KM} km · next {NEARBY_HOURS} hours
                 </p>
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {nearbyTournaments.map((t) => (
                     <LandingTournamentCard
                       key={t.id}
@@ -308,6 +316,8 @@ export default function Home() {
                       userCoords={userLocation}
                       showDistance={true}
                       interestCount={interestCounts[t.id] ?? 0}
+                      playerCount={playerCounts[t.id] ?? 0}
+                      playerNames={playerPreviews[t.id] ?? []}
                       userInterested={userInterests.has(t.id)}
                       onToggleInterest={user ? handleToggleInterest : undefined}
                       togglingInterest={togglingId === t.id}
@@ -358,7 +368,7 @@ export default function Home() {
         {hasFallbackList && (
           <div className="space-y-3">
             <h2 className="text-sm font-medium text-muted-foreground">Recent tournaments</h2>
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {fallbackTournaments.map((t) => (
                 <LandingTournamentCard
                   key={t.id}
@@ -366,6 +376,8 @@ export default function Home() {
                   userCoords={null}
                   showDistance={false}
                   interestCount={interestCounts[t.id] ?? 0}
+                  playerCount={playerCounts[t.id] ?? 0}
+                  playerNames={playerPreviews[t.id] ?? []}
                   userInterested={userInterests.has(t.id)}
                   onToggleInterest={user ? handleToggleInterest : undefined}
                   togglingInterest={togglingId === t.id}
@@ -376,7 +388,7 @@ export default function Home() {
         )}
 
         {/* Join with code & Find nearby */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-3 pt-2 max-w-md">
           <h2 className="text-sm font-medium text-muted-foreground">Or</h2>
           <Card className="overflow-hidden border-2 hover:border-primary/50 transition-all duration-300">
             <CardContent className="p-0">
@@ -446,7 +458,7 @@ export default function Home() {
 
         {/* Create tournament (logged in) */}
         {user && (
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t max-w-md">
             <Button variant="outline" className="w-full border-2 hover:border-primary hover:bg-primary/5 font-semibold" asChild>
               <Link href="/create">
                 <Plus className="h-4 w-4 mr-2" />
@@ -458,7 +470,7 @@ export default function Home() {
 
         {/* Soft signup prompt when not logged in */}
         {!loadingAuth && !user && (
-          <div className="text-center pt-4 border-t">
+          <div className="text-center pt-4 border-t max-w-md mx-auto">
             <p className="text-sm text-muted-foreground mb-3">Create and run tournaments, track your progress</p>
             <Button variant="outline" size="sm" asChild className="border-2 hover:border-primary hover:bg-primary/5 bg-transparent">
               <Link href="/auth/signup">Sign up</Link>
