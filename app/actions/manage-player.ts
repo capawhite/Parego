@@ -118,8 +118,29 @@ export async function addPlayer(
     return { success: false, error: "Cannot add players to a completed tournament" }
   }
 
-  // 3. Insert the player
-  const { error: insertError } = await supabase.from("players").insert({
+  // 3. Check per-tournament name uniqueness (case-insensitive)
+  const { data: existingPlayers, error: fetchError } = await supabase
+    .from("players")
+    .select("name")
+    .eq("tournament_id", tournamentId)
+
+  if (!fetchError && existingPlayers) {
+    const nameLower = playerData.name.trim().toLowerCase()
+    if (nameLower) {
+      const taken = existingPlayers.some((p) => (p.name || "").trim().toLowerCase() === nameLower)
+      if (taken) {
+        return {
+          success: false,
+          error: `${playerData.name} already exists in this tournament. Use a different name, e.g. ${playerData.name} R. or ${playerData.name} (Madrid).`,
+        }
+      }
+    }
+  }
+
+  // 4. Insert the player
+  const { error: insertError } = await supabase
+    .from("players")
+    .insert({
     id: playerData.id,
     tournament_id: tournamentId,
     name: playerData.name,
@@ -141,14 +162,14 @@ export async function addPlayer(
     colors: [],
     points_earned: [],
     table_numbers: [],
-  })
+    })
 
   if (insertError) {
     console.error("[v0] Error adding player:", insertError)
     return { success: false, error: "Failed to add player" }
   }
 
-  // 4. Revalidate the tournament page
+  // 5. Revalidate the tournament page
   revalidatePath(`/tournament/${tournamentId}`)
 
   return { success: true }

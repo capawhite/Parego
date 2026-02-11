@@ -42,10 +42,11 @@ import { DEFAULT_SETTINGS } from "@/lib/types"
 import {
   saveTournament,
   loadTournament,
-  savePlayers,
   loadPlayers,
+  savePlayers,
   saveMatches,
   loadMatches,
+  playerNameExistsInTournament,
   getInterestCount,
   getInterestedUsers,
   getUserInterested,
@@ -61,9 +62,17 @@ import { createClient } from "@/lib/supabase/client" // Import createClient for 
 import Link from "next/link" // Import Link for navigation
 import { Label } from "@/components/ui/label" // Import Label for forms
 import { generateGuestUsername } from "@/lib/guest-names" // Import memorable guest name generator
+import {
+  addGuestSession,
+  getGuestSessionHistory,
+  getConversionPromptDismissed,
+  type GuestSessionEntry,
+} from "@/lib/guest-session-history"
+import { ConversionPrompt, type ConversionTrigger } from "@/components/conversion-prompt"
 import { cn } from "@/lib/utils"
 import { toggleInterest } from "@/app/actions/express-interest"
 import { verifyAndCheckIn, markPresentOverride, checkVenueProximity } from "@/app/actions/check-in"
+import { renamePlayer } from "@/app/actions/rename-player"
 import { resolveRating } from "@/lib/rating-bands"
 import { toast } from "sonner"
 
@@ -157,7 +166,10 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [togglingInterest, setTogglingInterest] = useState(false)
   const [checkingIn, setCheckingIn] = useState(false)
   const [markingPresentPlayerId, setMarkingPresentPlayerId] = useState<string | null>(null)
+  const [renamingPlayerId, setRenamingPlayerId] = useState<string | null>(null)
   const [joiningSelf, setJoiningSelf] = useState(false)
+  const [pastGuestSessions, setPastGuestSessions] = useState<GuestSessionEntry[]>([])
+  const [showConversionPrompt, setShowConversionPrompt] = useState<ConversionTrigger | null>(null)
 
   const isOrganizer = currentUserId !== null && currentUserId === organizerId
 
@@ -194,6 +206,43 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   // Organizers always see full UI even if they also joined as a player
   const effectivePlayerView =
     !isOrganizer && (isPlayerView ?? (playerSession?.role === "player" && !!playerSession?.playerId))
+
+  useEffect(() => {
+    setPastGuestSessions(getGuestSessionHistory())
+  }, [])
+
+  // Trigger 1: Repeat play - guest/visitor with past sessions
+  useEffect(() => {
+    if (
+      !isLoading &&
+      pastGuestSessions.length > 0 &&
+      (userRole === "guest-player" || userRole === "visitor") &&
+      !getConversionPromptDismissed("repeat_play") &&
+      !showConversionPrompt
+    ) {
+      setShowConversionPrompt("repeat_play")
+    }
+  }, [isLoading, pastGuestSessions.length, userRole, showConversionPrompt])
+
+  // Trigger 3: Rated game - guest sees pairing in rated tournament
+  const guestHasMatch =
+    userRole === "guest-player" &&
+    playerSession?.playerId &&
+    arenaState.pairedMatches.some(
+      (m) => m.player1.id === playerSession.playerId || m.player2.id === playerSession.playerId,
+    )
+  const tournamentUsesRatings = arenaState.settings.pairingAlgorithm === "balanced-strength"
+
+  useEffect(() => {
+    if (
+      guestHasMatch &&
+      tournamentUsesRatings &&
+      !getConversionPromptDismissed("rated_game") &&
+      !showConversionPrompt
+    ) {
+      setShowConversionPrompt("rated_game")
+    }
+  }, [guestHasMatch, tournamentUsesRatings, showConversionPrompt])
 
   useEffect(() => {
     const loadFromDatabase = async () => {
@@ -578,7 +627,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
 
-  const addPlayer = async (name: string, userId?: string, isGuest = false) => {
+  const addPlayer = async (name: string, userId?: string, isGuest = false, addToGuestHistory = false) => {
     if (!name.trim()) return
 
     const isDuplicate = arenaState.players.some((player) => {
@@ -676,6 +725,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       } catch (error) {
         console.error("[v0] Error saving player to database:", error)
       }
+      if (isGuest && tournamentId && addToGuestHistory) {
+        addGuestSession({
+          tournamentId,
+          playerId: newPlayer.id,
+          displayName: name,
+        })
+      }
     }
   }
 
@@ -687,7 +743,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const handleAddGuestPlayer = async () => {
     const existingNames = arenaState.players.map((p) => p.name)
     const guestUsername = generateGuestUsername(existingNames)
-    await addPlayer(guestUsername, undefined, true)
+    // Only add to guest history when the visitor adds themselves (!currentUserId), not when organizer adds a guest
+    await addPlayer(guestUsername, undefined, true, !currentUserId)
   }
 
   const handleToggleInterest = async () => {
@@ -740,7 +797,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             resolve(true)
           },
           () => {
-            toast.error("Could not get your location. Allow location access and try again.")
+            toast.info("Location unavailable. Ask the organizer to mark you present at the venue.")
             resolve(false)
           },
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
@@ -777,6 +834,27 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     }
   }
 
+  const handleRenamePlayer = async (playerId: string, newName: string) => {
+    if (!tournamentId) return
+    setRenamingPlayerId(playerId)
+    try {
+      const result = await renamePlayer(tournamentId, playerId, newName)
+      if (!result.success) throw new Error(result.error)
+      toast.success("Player renamed")
+      setArenaState((prev) => ({
+        ...prev,
+        players: prev.players.map((p) => (p.id === playerId ? { ...p, name: newName } : p)),
+        pairedMatches: prev.pairedMatches.map((m) => ({
+          ...m,
+          player1: m.player1.id === playerId ? { ...m.player1, name: newName } : m.player1,
+          player2: m.player2.id === playerId ? { ...m.player2, name: newName } : m.player2,
+        })),
+      }))
+    } finally {
+      setRenamingPlayerId(null)
+    }
+  }
+
   const joinAsSelf = async () => {
     if (!currentUserId || !userName) return
 
@@ -793,6 +871,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       return
     }
 
+    const nameTaken = tournamentId ? await playerNameExistsInTournament(tournamentId, userName) : false
+    if (nameTaken) {
+      toast.error(
+        `${userName} already exists in this tournament. Try a different name, e.g. ${userName} R. or ${userName} (Madrid).`,
+      )
+      return
+    }
+
     const hasVenue =
       tournamentMetadata?.latitude != null && tournamentMetadata?.longitude != null
     let checkedInAt: number | null = null
@@ -800,11 +886,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
     if (hasVenue && tournamentId) {
       setJoiningSelf(true)
-      const runProximity = (): Promise<boolean> =>
+      const runProximity = (): Promise<{ checkedInAt: number | null; presenceSource: "gps" | null }> =>
         new Promise((resolve) => {
           if (!navigator.geolocation) {
-            toast.error("Location is required to join at the venue.")
-            resolve(false)
+            toast.info("Location unavailable. You can still join; the organizer will confirm you at the venue.")
+            resolve({ checkedInAt: null, presenceSource: null })
             return
           }
           navigator.geolocation.getCurrentPosition(
@@ -815,32 +901,23 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                 position.coords.longitude,
               )
               if (!result.ok) {
-                toast.error(result.error)
-                resolve(false)
+                toast.info("You're not at the venue yet. You can still join; the organizer will confirm you when you arrive.")
+                resolve({ checkedInAt: null, presenceSource: null })
                 return
               }
-              checkedInAt = Date.now()
-              presenceSource = "gps"
-              resolve(true)
+              resolve({ checkedInAt: Date.now(), presenceSource: "gps" })
             },
             () => {
-              toast.error("Could not get your location. Allow location access to join at the venue.")
-              resolve(false)
+              toast.info("Location unavailable. You can still join; the organizer will confirm you at the venue.")
+              resolve({ checkedInAt: null, presenceSource: null })
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
           )
         })
-      let ok = await runProximity()
-      if (!ok) {
-        toast.info("Retrying in 2 seconds...")
-        await new Promise((r) => setTimeout(r, 2000))
-        ok = await runProximity()
-      }
+      const proximity = await runProximity()
+      checkedInAt = proximity.checkedInAt
+      presenceSource = proximity.presenceSource
       setJoiningSelf(false)
-      if (!ok) {
-        toast.error("You must be at the venue to join. Get closer or ask the organizer to mark you present.")
-        return
-      }
     }
 
     const newPlayer: Player = {
@@ -1577,6 +1654,15 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         return
       }
 
+      // Trigger 2: Result affects rankings - guest submits result
+      if (
+        userRole === "guest-player" &&
+        !getConversionPromptDismissed("result_rankings") &&
+        !showConversionPrompt
+      ) {
+        setShowConversionPrompt("result_rankings")
+      }
+
       const updatedMatch = response.match
 
       if (updatedMatch) {
@@ -1863,6 +1949,16 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             showSimulator={showSimulator}
             onToggleSimulator={(show) => setShowSimulator(show)}
             isOrganizer={isOrganizer}
+          />
+        )}
+
+        {showConversionPrompt && (
+          <ConversionPrompt
+            open
+            triggerKey={showConversionPrompt}
+            onOpenChange={(open) => {
+              if (!open) setShowConversionPrompt(null)
+            }}
           />
         )}
 
@@ -2244,6 +2340,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                     onRemovePlayer={removePlayer}
                     onMarkPresent={isOrganizer ? handleMarkPresent : undefined}
                     markingPresentPlayerId={markingPresentPlayerId}
+                    onRenamePlayer={isOrganizer ? handleRenamePlayer : undefined}
+                    renamingPlayerId={renamingPlayerId}
                     status={arenaState.status}
                     isOrganizer={isOrganizer}
                     currentUserId={currentUserId}

@@ -5,12 +5,12 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { loadTournament, loadPlayers, type TournamentData } from "@/lib/database/tournament-db"
+import { loadTournament, loadPlayers, playerNameExistsInTournament, type TournamentData } from "@/lib/database/tournament-db"
 import { Loader2, Users, Trophy, MapPin } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
-import { generateGuestUsername } from "@/lib/guest-names"
 import { checkVenueProximity } from "@/app/actions/check-in"
+import { addGuestSession } from "@/lib/guest-session-history"
 import { toast } from "sonner"
 import { RATING_BANDS, resolveRating, type RatingBandValue } from "@/lib/rating-bands"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -32,6 +32,7 @@ export default function JoinTournamentPage() {
   const [verifyingLocation, setVerifyingLocation] = useState(false)
   const [ratingBand, setRatingBand] = useState<RatingBandValue | "">("")
   const [ratingPrecise, setRatingPrecise] = useState("")
+  const [guestName, setGuestName] = useState("")
   const [alreadyJoined, setAlreadyJoined] = useState(false)
 
   useEffect(() => {
@@ -125,16 +126,16 @@ export default function JoinTournamentPage() {
           return
         }
         if (!navigator.geolocation) {
-          toast.error("Location is required to join at the venue.")
-          resolve({ ok: false, checkedInAt: null, presenceSource: null })
+          toast.info("Location unavailable. You can still join; the organizer will confirm you at the venue.")
+          resolve({ ok: true, checkedInAt: null, presenceSource: null })
           return
         }
         navigator.geolocation.getCurrentPosition(
           async (position) => {
             const result = await checkVenueProximity(code, position.coords.latitude, position.coords.longitude)
             if (!result.ok) {
-              toast.error(result.error)
-              resolve({ ok: false, checkedInAt: null, presenceSource: null })
+              toast.info("You're not at the venue yet. You can still join; the organizer will confirm you when you arrive.")
+              resolve({ ok: true, checkedInAt: null, presenceSource: null })
               return
             }
             resolve({
@@ -146,8 +147,8 @@ export default function JoinTournamentPage() {
             })
           },
           () => {
-            toast.error("Could not get your location. Allow location access to join at the venue.")
-            resolve({ ok: false, checkedInAt: null, presenceSource: null })
+            toast.info("Location unavailable. You can still join; the organizer will confirm you at the venue.")
+            resolve({ ok: true, checkedInAt: null, presenceSource: null })
           },
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
         )
@@ -165,24 +166,21 @@ export default function JoinTournamentPage() {
 
       try {
         setVerifyingLocation(true)
-        let proximity = await runProximityCheck()
-        if (!proximity.ok) {
-          toast.info("Retrying in 2 seconds...")
-          await new Promise((r) => setTimeout(r, 2000))
-          proximity = await runProximityCheck()
-        }
+        const proximity = await runProximityCheck()
         setVerifyingLocation(false)
-        if (!proximity.ok) {
-          setError("You must be at the venue to join. Enable location and get closer, or ask the organizer to add you.")
-          setJoining(false)
-          return
-        }
 
-        // Guests must choose strength; registered users use profile rating
-        if (!isRegistered && !ratingBand) {
-          setError("Please choose how you'd describe your strength.")
-          setJoining(false)
-          return
+        // Guests must provide name and strength
+        if (!isRegistered) {
+          if (!guestName.trim()) {
+            setError("Please enter your name for the pairings board.")
+            setJoining(false)
+            return
+          }
+          if (!ratingBand) {
+            setError("Please choose how you'd describe your strength.")
+            setJoining(false)
+            return
+          }
         }
 
         // Defensive: registered users - verify not already in tournament (e.g. joined from another tab)
@@ -208,9 +206,17 @@ export default function JoinTournamentPage() {
           ratingBand ? (ratingBand as RatingBandValue) : undefined,
         )
 
-        let finalName = playerName.trim()
-        let guestUsername = null
+        let finalName = isRegistered ? playerName.trim() : guestName.trim()
         const isGuest = !isRegistered
+
+        const nameTaken = await playerNameExistsInTournament(code, finalName)
+        if (nameTaken) {
+          setError(
+            `${finalName} already exists in this tournament. Try a different name, e.g. ${finalName} R. or ${finalName} (Madrid).`,
+          )
+          setJoining(false)
+          return
+        }
 
         if (!isRegistered) {
           // Defensive: guest already joined in this session (localStorage)
@@ -228,15 +234,6 @@ export default function JoinTournamentPage() {
           } catch {
             // ignore
           }
-
-          const supabase = createClient()
-
-          // Fetch existing player names to avoid collisions
-          const { data: existingPlayers } = await supabase.from("players").select("name").eq("tournament_id", code)
-
-          const existingNames = existingPlayers?.map((p) => p.name) || []
-          guestUsername = generateGuestUsername(existingNames)
-          finalName = guestUsername
         }
 
         const supabase = createClient()
@@ -284,9 +281,16 @@ export default function JoinTournamentPage() {
             playerId: newPlayerId,
             role: "player",
             isGuest: isGuest,
-            guestUsername: guestUsername,
           }),
         )
+
+        if (isGuest) {
+          addGuestSession({
+            tournamentId: code,
+            playerId: newPlayerId,
+            displayName: finalName,
+          })
+        }
 
         setTimeout(() => {
           router.push(`/tournament/${code}`)
@@ -406,6 +410,20 @@ export default function JoinTournamentPage() {
           {!isRegistered && (
             <>
               <div>
+                <label htmlFor="guestName" className="text-sm font-medium mb-2 block">
+                  Your name (for pairings and announcements)
+                </label>
+                <Input
+                  id="guestName"
+                  type="text"
+                  placeholder="e.g. Alex or nickname"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  disabled={joining}
+                  className="w-full"
+                />
+              </div>
+              <div>
                 <label className="text-sm font-medium mb-2 block">How would you describe your strength?</label>
                 <RadioGroup
                   value={ratingBand}
@@ -449,7 +467,7 @@ export default function JoinTournamentPage() {
             disabled={
               joining ||
               (isRegistered && !playerName.trim()) ||
-              (!isRegistered && !ratingBand) ||
+              (!isRegistered && (!guestName.trim() || !ratingBand)) ||
               verifyingLocation
             }
             className="w-full"

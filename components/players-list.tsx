@@ -3,7 +3,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { LogOut, MapPin, CheckCircle2, Loader2 } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { LogOut, MapPin, CheckCircle2, Loader2, Pencil } from "lucide-react"
 import type { Player } from "@/lib/types"
 import {
   AlertDialog,
@@ -13,6 +14,14 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useState } from "react"
 
 interface PlayersListProps {
@@ -23,6 +32,10 @@ interface PlayersListProps {
   onMarkPresent?: (playerId: string) => Promise<void>
   /** When marking a player present, pass the player id to show loading state */
   markingPresentPlayerId?: string | null
+  /** Organizer renames a player. Optional; when provided, "Rename" is shown for organizer. */
+  onRenamePlayer?: (playerId: string, newName: string) => Promise<void>
+  /** When renaming, pass the player id to show loading state */
+  renamingPlayerId?: string | null
   status: "setup" | "active" | "completed"
   allowPause?: boolean
   showRemovedPlayers?: boolean
@@ -36,6 +49,8 @@ export function PlayersList({
   onTogglePause,
   onMarkPresent,
   markingPresentPlayerId = null,
+  onRenamePlayer,
+  renamingPlayerId = null,
   status,
   allowPause = true,
   showRemovedPlayers = false,
@@ -43,7 +58,11 @@ export function PlayersList({
   currentUserId = null,
 }: PlayersListProps) {
   const [confirmRemovalPlayerId, setConfirmRemovalPlayerId] = useState<string | null>(null)
+  const [renamePlayerId, setRenamePlayerId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+  const [renameError, setRenameError] = useState<string | null>(null)
   const confirmRemovalPlayer = players.find((p) => p.id === confirmRemovalPlayerId)
+  const renamePlayer = players.find((p) => p.id === renamePlayerId)
 
   const isActive = status === "active"
 
@@ -165,6 +184,26 @@ export function PlayersList({
                         )}
                       </Button>
                     )}
+                    {isOrganizer && onRenamePlayer && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setRenamePlayerId(player.id)
+                          setRenameValue(player.name)
+                          setRenameError(null)
+                        }}
+                        disabled={renamingPlayerId === player.id}
+                        className="h-7 px-2 text-[11px]"
+                        title="Rename"
+                      >
+                        {renamingPlayerId === player.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Pencil className="h-3 w-3" />
+                        )}
+                      </Button>
+                    )}
                     {canRemovePlayer(player) && (
                       <Button
                         variant="ghost"
@@ -252,6 +291,57 @@ export function PlayersList({
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={!!renamePlayerId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRenamePlayerId(null)
+            setRenameError(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename player</DialogTitle>
+            <DialogDescription>
+              Change the display name for {renamePlayer?.name}. This will update pairings and standings.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Input
+              value={renameValue}
+              onChange={(e) => {
+                setRenameValue(e.target.value)
+                setRenameError(null)
+              }}
+              placeholder="Player name"
+              className="h-10"
+            />
+            {renameError && <p className="text-sm text-destructive">{renameError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenamePlayerId(null)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!renameValue.trim() || renamingPlayerId === renamePlayerId}
+              onClick={async () => {
+                if (!renamePlayerId || !onRenamePlayer || !renameValue.trim()) return
+                setRenameError(null)
+                try {
+                  await onRenamePlayer(renamePlayerId, renameValue.trim())
+                  setRenamePlayerId(null)
+                } catch (e) {
+                  setRenameError(e instanceof Error ? e.message : "Could not rename")
+                }
+              }}
+            >
+              {renamingPlayerId === renamePlayerId ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

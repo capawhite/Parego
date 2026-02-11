@@ -155,6 +155,17 @@ export async function savePlayers(tournamentId: string, players: Player[]) {
   }
 }
 
+/** Check if a display name already exists in the tournament (case-insensitive). Used for per-tournament uniqueness. */
+export async function playerNameExistsInTournament(
+  tournamentId: string,
+  displayName: string,
+): Promise<boolean> {
+  const players = await loadPlayers(tournamentId)
+  const nameLower = displayName.trim().toLowerCase()
+  if (!nameLower) return false
+  return players.some((p) => (p.name || "").trim().toLowerCase() === nameLower)
+}
+
 // Load players from database
 export async function loadPlayers(tournamentId: string): Promise<Player[]> {
   const supabase = createClient()

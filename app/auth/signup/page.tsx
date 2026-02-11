@@ -15,8 +15,11 @@ import { AvatarPicker } from "@/components/avatar-picker"
 import { uploadAvatar, updateProfileAvatarUrl } from "@/lib/avatar-upload"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
+import { getGuestSessionHistory, type GuestSessionEntry } from "@/lib/guest-session-history"
+import { claimGuestHistory } from "@/app/actions/claim-guest-history"
+import { Checkbox } from "@/components/ui/checkbox"
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 7
 
 export default function SignUpPage() {
   const [step, setStep] = useState(1)
@@ -33,6 +36,8 @@ export default function SignUpPage() {
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isDetectingLocation, setIsDetectingLocation] = useState(true)
+  const [guestHistory, setGuestHistory] = useState<GuestSessionEntry[]>([])
+  const [claimedPlayerIds, setClaimedPlayerIds] = useState<Set<string>>(new Set())
   const router = useRouter()
 
   useEffect(() => {
@@ -49,6 +54,10 @@ export default function SignUpPage() {
       }
     }
     detectLocation()
+  }, [])
+
+  useEffect(() => {
+    setGuestHistory(getGuestSessionHistory())
   }, [])
 
   const goNext = () => {
@@ -86,6 +95,8 @@ export default function SignUpPage() {
         return password.length >= 6
       case 6:
         return true // location optional
+      case 7:
+        return true // claim optional
       default:
         return false
     }
@@ -125,6 +136,14 @@ export default function SignUpPage() {
       email: email.trim(),
       password,
     })
+    if (!signInError && claimedPlayerIds.size > 0) {
+      const claimResult = await claimGuestHistory([...claimedPlayerIds])
+      if (claimResult.success && (claimResult.claimedCount ?? 0) > 0) {
+        toast.success(`Linked ${claimResult.claimedCount} past tournament(s) to your account`)
+      } else if (!claimResult.success && claimResult.error) {
+        toast.error(claimResult.error)
+      }
+    }
     setIsLoading(false)
     if (!signInError) {
       router.push("/")
@@ -369,12 +388,51 @@ export default function SignUpPage() {
                   type="button"
                   variant="ghost"
                   className="w-full text-muted-foreground"
-                  onClick={handleSubmit}
+                  onClick={goNext}
                   disabled={isLoading}
                 >
-                  Skip and create account
+                  Skip
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Step 7: Claim past play */}
+          {step === 7 && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Have you played before?</h2>
+                <p className="text-sm text-muted-foreground">
+                  Link past tournament play from this device to your new account.
+                </p>
+              </div>
+              {guestHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4">No past play to claim on this device.</p>
+              ) : (
+                <div className="space-y-2">
+                  {guestHistory.map((entry) => (
+                    <label
+                      key={`${entry.tournamentId}-${entry.playerId}`}
+                      className="flex items-center gap-3 rounded-xl border-2 border-muted bg-card p-4 cursor-pointer transition-all hover:border-primary/30 hover:bg-primary/5 has-[:checked]:border-primary has-[:checked]:bg-primary/10"
+                    >
+                      <Checkbox
+                        checked={claimedPlayerIds.has(entry.playerId)}
+                        onCheckedChange={(checked) => {
+                          setClaimedPlayerIds((prev) => {
+                            const next = new Set(prev)
+                            if (checked) next.add(entry.playerId)
+                            else next.delete(entry.playerId)
+                            return next
+                          })
+                        }}
+                      />
+                      <span className="text-sm font-medium">
+                        {entry.displayName} — tournament {entry.tournamentId}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
