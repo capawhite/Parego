@@ -56,7 +56,13 @@ export async function saveTournament(
     .select()
 
   if (error) {
-    console.error("[v0] Error saving tournament:", error)
+    // Supabase/PostgrestError can log as {} - extract fields explicitly (they may be non-enumerable)
+    const err = error as Record<string, unknown>
+    const msg = (err.message as string) ?? (error instanceof Error ? error.message : String(error))
+    const code = (err.code as string) ?? ""
+    const details = (err.details as string) ?? ""
+    const hint = (err.hint as string) ?? ""
+    console.error("[v0] Error saving tournament:", msg, code ? `(${code})` : "", details || hint || "")
     throw error
   }
 

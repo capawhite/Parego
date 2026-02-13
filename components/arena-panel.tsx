@@ -393,6 +393,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               : String(arenaState.tournamentStartTime)
             : undefined
 
+        // RLS requires organizer_id = auth.uid() on insert/update; use current user when organizer not yet set (e.g. new tournament)
         await saveTournament(
           tournamentId,
           displayName,
@@ -401,7 +402,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           arenaState.settings,
           tournamentMetadata?.city,
           tournamentMetadata?.country,
-          organizerId ?? undefined,
+          organizerId ?? currentUserId ?? undefined,
           tournamentMetadata?.latitude,
           tournamentMetadata?.longitude,
           tournamentMetadata?.visibility ?? "public",
@@ -428,6 +429,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     arenaState.tournamentStartTime,
     tournamentMetadata,
     organizerId,
+    currentUserId,
     isLoading,
   ])
 
@@ -1178,7 +1180,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           arenaState.settings,
           tournamentMetadata?.city,
           tournamentMetadata?.country,
-          organizerId ?? undefined,
+          organizerId ?? currentUserId ?? undefined,
           tournamentMetadata?.latitude,
           tournamentMetadata?.longitude,
           tournamentMetadata?.visibility ?? "public",
