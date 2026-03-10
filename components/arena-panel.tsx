@@ -241,6 +241,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     setArenaState,
     currentPlayerId: playerSession?.playerId ?? null,
     onNewPairing: handleNewPairing,
+    onTournamentStatusChange: (status) => {
+      if (status === "completed") {
+        setShowPodium(true)
+      }
+      if (status === "active" && effectivePlayerView) {
+        setActiveTab("results")
+      }
+    },
   })
 
   useEffect(() => {
@@ -1726,7 +1734,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
     try {
       const { submitMatchResult } = await import("@/app/actions/submit-result")
-      const response = await submitMatchResult(matchId, submission.result, true)
+      const response = await submitMatchResult(matchId, submission.result, true, playerSession.playerId)
 
       if (!response.success) {
         console.error("[v0] Server rejected submission:", response.error)

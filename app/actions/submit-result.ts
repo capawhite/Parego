@@ -1,8 +1,9 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createBrowserClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
-import { getSubmissionSide, type ResultType } from "@/lib/result-utils"
+import { getSubmissionSide, parsePlayerData, type ResultType } from "@/lib/result-utils"
 
 interface SubmitResultResponse {
   success: boolean
@@ -10,32 +11,38 @@ interface SubmitResultResponse {
   match?: any
 }
 
+/**
+ * Submit a match result. Works for both registered users (via auth) and
+ * guests (via playerId). When a playerId is provided and the user is not
+ * authenticated, we verify the playerId against the match data and use an
+ * admin client to bypass RLS.
+ */
 export async function submitMatchResult(
   matchId: string,
   result: ResultType,
   confirmed: boolean,
+  playerId?: string,
 ): Promise<SubmitResultResponse> {
   const supabase = await createClient()
 
   const {
     data: { user },
-    error: authError,
   } = await supabase.auth.getUser()
 
-  if (authError || !user) {
-    if (process.env.NODE_ENV === "development") console.log("[v0] Authentication failed:", authError)
-    return { success: false, error: "You must be logged in to submit results" }
+  // Need either auth or a playerId
+  if (!user && !playerId) {
+    return { success: false, error: "You must be logged in or provide a player ID to submit results" }
   }
 
-  const { data: match, error: fetchError } = await supabase
+  // Use admin client to bypass RLS for guests
+  const adminClient = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+
+  const { data: match, error: fetchError } = await adminClient
     .from("matches")
-    .select(
-      `
-      *,
-      player1_data,
-      player2_data
-    `,
-    )
+    .select("*")
     .eq("id", matchId)
     .single()
 
@@ -44,7 +51,7 @@ export async function submitMatchResult(
     return { success: false, error: "Match not found" }
   }
 
-  const { data: tournament } = await supabase
+  const { data: tournament } = await adminClient
     .from("tournaments")
     .select("status")
     .eq("id", match.tournament_id)
@@ -58,17 +65,36 @@ export async function submitMatchResult(
     return { success: false, error: "Match is already completed" }
   }
 
-  const side = getSubmissionSide(user.id, match.player1_data, match.player2_data)
+  // Determine which side this user/player is on
+  let side: "player1" | "player2" | null = null
+
+  if (user) {
+    side = getSubmissionSide(user.id, match.player1_data, match.player2_data)
+  }
+
+  if (!side && playerId) {
+    // Guest path: verify playerId against match player IDs
+    if (match.player1_id === playerId) {
+      side = "player1"
+    } else if (match.player2_id === playerId) {
+      side = "player2"
+    } else {
+      // Also check the serialised player data for embedded id fields
+      const p1 = parsePlayerData(match.player1_data)
+      const p2 = parsePlayerData(match.player2_data)
+      if ((p1 as any)?.id === playerId) side = "player1"
+      else if ((p2 as any)?.id === playerId) side = "player2"
+    }
+  }
+
   if (!side) {
-    if (process.env.NODE_ENV === "development")
-      console.log("[v0] User is not a player in this match:", { userId: user.id, match })
     return { success: false, error: "You are not a player in this match" }
   }
 
   const submissionField = side === "player1" ? "player1_submission" : "player2_submission"
   const timestampField = side === "player1" ? "player1_submission_time" : "player2_submission_time"
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await adminClient
     .from("matches")
     .update({
       [submissionField]: confirmed ? result : null,
@@ -81,9 +107,8 @@ export async function submitMatchResult(
     return { success: false, error: "Failed to save result" }
   }
 
-  const { data: updatedMatch } = await supabase.from("matches").select("*").eq("id", matchId).single()
+  const { data: updatedMatch } = await adminClient.from("matches").select("*").eq("id", matchId).single()
 
-  // Revalidate the tournament page
   revalidatePath(`/tournament/${match.tournament_id}`)
 
   return { success: true, match: updatedMatch }
