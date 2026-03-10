@@ -86,7 +86,15 @@ export function useRealtime({
           if (DEBUG) console.log("[realtime] players changed — re-fetching")
           try {
             const players = await loadPlayers(tournamentId)
-            setArenaState((prev) => ({ ...prev, players }))
+            setArenaState((prev) => {
+              const prevIds = prev.players.map((p) => `${p.id}:${p.name}:${p.score}:${p.paused}`).join(",")
+              const newIds = players.map((p) => `${p.id}:${p.name}:${p.score}:${p.paused}`).join(",")
+              if (prevIds === newIds && prev.players.length === players.length) {
+                if (DEBUG) console.log("[realtime] players unchanged — skipping state update")
+                return prev
+              }
+              return { ...prev, players }
+            })
           } catch (err) {
             console.error("[realtime] failed to refresh players:", err)
           }
@@ -114,6 +122,16 @@ export function useRealtime({
             const allTimeMatches = allMatches.filter((m) => !!m.result?.completed)
 
             setArenaState((prev) => {
+              // Skip no-op updates to avoid re-render / effect cascades
+              const prevPairedIds = prev.pairedMatches.map((m) => m.id).sort().join(",")
+              const newPairedIds = pairedMatches.map((m) => m.id).sort().join(",")
+              const prevAllTimeLen = prev.allTimeMatches.length
+              const noChange = prevPairedIds === newPairedIds && prevAllTimeLen === allTimeMatches.length
+              if (noChange) {
+                if (DEBUG) console.log("[realtime] matches unchanged — skipping state update")
+                return prev
+              }
+
               // Detect if the local player has been placed into a new match
               if (currentPlayerId && onNewPairing) {
                 const prevIds = new Set(prev.pairedMatches.map((m) => m.id))
@@ -124,7 +142,6 @@ export function useRealtime({
                 )
                 if (newMatch) {
                   if (DEBUG) console.log("[realtime] new pairing detected for player", currentPlayerId)
-                  // Fire outside of setState to avoid triggering inside a render cycle
                   setTimeout(() => onNewPairing(newMatch), 0)
                 }
               }

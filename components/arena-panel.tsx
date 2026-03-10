@@ -76,6 +76,7 @@ import { renamePlayer } from "@/app/actions/rename-player"
 import { resolveRating } from "@/lib/rating-bands"
 import { toast } from "sonner"
 import { useRealtime } from "@/hooks/tournament/use-realtime"
+import { getDeviceId } from "@/lib/device-id"
 
 const TOURNAMENT_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
 
@@ -234,7 +235,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     [playerSession?.playerId],
   )
 
-  useRealtime({
+  const { suppressRealtime } = useRealtime({
     tournamentId,
     isReady: !isLoading,
     setArenaState,
@@ -420,6 +421,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
     const saveToDatabase = async () => {
       try {
+        suppressRealtime()
         const statusToSave = arenaState.status === "completed" ? "completed" : arenaState.isActive ? "active" : "setup"
         const startTimeIso =
           arenaState.tournamentStartTime != null
@@ -648,6 +650,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     // Save all active (non-completed) matches
     const activeMatches = arenaState.pairedMatches.filter((m) => !m.result?.completed)
     if (activeMatches.length > 0) {
+      suppressRealtime()
       saveMatches(tournamentId, activeMatches).catch((err) => console.error("[v0] Failed to save active matches:", err))
     }
   }, [arenaState.pairedMatches.length, tournamentId, arenaState.isActive])
@@ -723,7 +726,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     if (tournamentId) {
       try {
         const supabase = createClient()
-        await supabase.from("players").insert({
+        const deviceId = addToGuestHistory ? getDeviceId() : null
+        const { error: insertErr } = await supabase.from("players").insert({
           id: newPlayer.id,
           tournament_id: tournamentId,
           name: newPlayer.name,
@@ -745,14 +749,25 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           colors: [],
           points_earned: [],
           table_numbers: [],
-          // Added fields for DB
           rating: newPlayer.rating,
           buchholz: 0,
           sonneborn_berger: 0,
           is_paused: false,
           is_removed: false,
           country: newPlayer.country,
+          device_id: deviceId,
         })
+        if (insertErr) {
+          if (insertErr.code === "23505") {
+            toast.error("You've already joined this tournament from this device.")
+            setArenaState((prev) => ({
+              ...prev,
+              players: prev.players.filter((p) => p.id !== newPlayer.id),
+            }))
+            return
+          }
+          console.error("[v0] Error saving player to database:", insertErr)
+        }
       } catch (error) {
         console.error("[v0] Error saving player to database:", error)
       }
@@ -888,6 +903,25 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
   const joinAsSelf = async () => {
     if (!currentUserId || !userName) return
+
+    if (arenaState.status === "completed") {
+      toast.error("This tournament has ended. You can no longer join.")
+      return
+    }
+
+    if (arenaState.isActive && !arenaState.settings.allowLateJoin) {
+      toast.error("Late joins are not allowed in this tournament.")
+      return
+    }
+
+    if (arenaState.isActive) {
+      const newTotalPlayers = arenaState.players.filter((p) => !p.hasLeft).length + 1
+      const maxPairings = Math.floor(newTotalPlayers / 2)
+      if (maxPairings > arenaState.tableCount) {
+        toast.error(`Cannot join: all ${arenaState.tableCount} tables are full.`)
+        return
+      }
+    }
 
     if (isCurrentUserInTournament) {
       toast.error("You are already in this tournament")
@@ -1061,19 +1095,20 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           const supabase = createClient()
 
           if (arenaState.status === "active") {
-            if (DEBUG) console.log("[v0] Marking player as paused (removed) in database")
+            if (DEBUG) console.log("[v0] Marking player as removed in database")
             const { error } = await supabase
               .from("players")
               .update({
-                paused: true, // Use paused column to mark as removed
+                paused: true,
+                is_removed: true,
               })
               .eq("id", playerId)
               .eq("tournament_id", tournamentId)
 
             if (error) {
-              console.error("[v0] Failed to mark player as paused in database:", error)
+              console.error("[v0] Failed to mark player as removed in database:", error)
             } else {
-              if (DEBUG) console.log("[v0] Player marked as paused in database successfully")
+              if (DEBUG) console.log("[v0] Player marked as removed in database successfully")
             }
           } else {
             // Delete player from database during setup
@@ -1524,12 +1559,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       return
     }
 
-    if (!player.paused && !arenaState.settings.allowSelfPause) {
+    const isSelfPause = !isOrganizer && (playerId === currentPlayerInTournament?.id || playerId === playerSession?.playerId)
+
+    if (!player.paused && isSelfPause && !arenaState.settings.allowSelfPause) {
       alert("Self-pause is not allowed in this tournament.")
       return
     }
 
-    if (!player.paused && player.gamesPlayed < arenaState.settings.minGamesBeforePause) {
+    if (!player.paused && isSelfPause && player.gamesPlayed < arenaState.settings.minGamesBeforePause) {
       alert(`Players must complete at least ${arenaState.settings.minGamesBeforePause} games before pausing.`)
       return
     }
@@ -1539,17 +1576,34 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     )
 
     if (!player.paused && isCurrentlyPaired) {
-      // Mark for pause instead of immediate pause
       setArenaState((prev) => ({
         ...prev,
         players: prev.players.map((p) => (p.id === playerId ? { ...p, markedForPause: !p.markedForPause } : p)),
       }))
+      if (tournamentId) {
+        const supabase = createClient()
+        supabase
+          .from("players")
+          .update({ is_paused: !player.markedForPause })
+          .eq("id", playerId)
+          .eq("tournament_id", tournamentId)
+          .then(({ error }) => { if (error) console.error("[v0] Failed to persist is_paused:", error) })
+      }
     } else {
-      // Toggle pause/unpause immediately if not paired or already paused
+      const newPaused = !player.paused
       setArenaState((prev) => ({
         ...prev,
-        players: prev.players.map((p) => (p.id === playerId ? { ...p, paused: !p.paused, markedForPause: false } : p)),
+        players: prev.players.map((p) => (p.id === playerId ? { ...p, paused: newPaused, markedForPause: false } : p)),
       }))
+      if (tournamentId) {
+        const supabase = createClient()
+        supabase
+          .from("players")
+          .update({ paused: newPaused, is_paused: false })
+          .eq("id", playerId)
+          .eq("tournament_id", tournamentId)
+          .then(({ error }) => { if (error) console.error("[v0] Failed to persist pause:", error) })
+      }
     }
   }
 
@@ -2390,6 +2444,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   <PlayersList
                     players={arenaState.players}
                     onRemovePlayer={removePlayer}
+                    onTogglePause={isOrganizer ? togglePause : undefined}
                     onMarkPresent={isOrganizer ? handleMarkPresent : undefined}
                     markingPresentPlayerId={markingPresentPlayerId}
                     onRenamePlayer={isOrganizer ? handleRenamePlayer : undefined}

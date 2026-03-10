@@ -13,6 +13,7 @@ import { checkVenueProximity } from "@/app/actions/check-in"
 import { addGuestSession } from "@/lib/guest-session-history"
 import { toast } from "sonner"
 import { RATING_BANDS, resolveRating, type RatingBandValue } from "@/lib/rating-bands"
+import { getDeviceId } from "@/lib/device-id"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 export default function JoinTournamentPage() {
@@ -165,6 +166,23 @@ export default function JoinTournamentPage() {
       setError("")
 
       try {
+        // Block joining completed tournaments
+        if (tournament?.status === "completed") {
+          setError("This tournament has ended. You can no longer join.")
+          setJoining(false)
+          return
+        }
+
+        // Block late joins when not allowed
+        if (tournament?.status === "active") {
+          const allowLateJoin = tournament.settings?.allowLateJoin ?? true
+          if (!allowLateJoin) {
+            setError("This tournament is already in progress and late joins are not allowed.")
+            setJoining(false)
+            return
+          }
+        }
+
         setVerifyingLocation(true)
         const proximity = await runProximityCheck()
         setVerifyingLocation(false)
@@ -238,6 +256,7 @@ export default function JoinTournamentPage() {
 
         const supabase = createClient()
         const newPlayerId = globalThis.crypto.randomUUID()
+        const deviceId = getDeviceId() || null
 
         const { error: insertError } = await supabase.from("players").insert({
           id: newPlayerId,
@@ -264,9 +283,16 @@ export default function JoinTournamentPage() {
           checked_in_at: proximity.checkedInAt,
           presence_source: proximity.presenceSource,
           rating: playerRating,
+          device_id: deviceId,
         })
 
         if (insertError) {
+          if (insertError.code === "23505") {
+            setError("You've already joined this tournament from this device.")
+            setAlreadyJoined(true)
+            setJoining(false)
+            return
+          }
           console.error("[v0] Error joining tournament:", insertError)
           setError("Failed to join tournament. Please try again.")
           return

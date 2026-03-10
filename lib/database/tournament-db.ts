@@ -240,14 +240,17 @@ export async function loadPlayers(tournamentId: string): Promise<Player[]> {
     score: p.points || 0,
     gamesPlayed: p.games_played || 0,
     streak: p.current_streak || 0,
-    performance: 0, // Calculated field, not stored
+    performance: 0,
     active: !p.paused,
     paused: p.paused || false,
+    hasLeft: p.is_removed || false,
+    markedForRemoval: p.is_removed || false,
+    markedForPause: p.is_paused && !p.paused ? true : false,
     joinedAt: new Date(p.created_at).getTime(),
-    opponentIds: Array.isArray(p.opponents) ? p.opponents : [], // Ensure it's always an array
-    gameResults: Array.isArray(p.results) ? p.results : [], // Ensure it's always an array
-    pieceColors: Array.isArray(p.colors) ? p.colors : [], // Ensure it's always an array
-    tableNumbers: Array.isArray(p.table_numbers) ? p.table_numbers : [], // Ensure it's always an array
+    opponentIds: Array.isArray(p.opponents) ? p.opponents : [],
+    gameResults: Array.isArray(p.results) ? p.results : [],
+    pieceColors: Array.isArray(p.colors) ? p.colors : [],
+    tableNumbers: Array.isArray(p.table_numbers) ? p.table_numbers : [],
     userId: p.user_id ?? null,
     isGuest: p.is_guest ?? false,
     checkedInAt: p.checked_in_at ? new Date(p.checked_in_at).getTime() : null,
