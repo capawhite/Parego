@@ -4,23 +4,33 @@ import type React from "react"
 import { Toaster } from "sonner"
 import "./globals.css"
 
-import { Geist, Geist_Mono, Source_Serif_4, Geist as V0_Font_Geist, Geist_Mono as V0_Font_Geist_Mono, Source_Serif_4 as V0_Font_Source_Serif_4 } from 'next/font/google'
+import { Russo_One, Chakra_Petch, Geist_Mono } from "next/font/google"
 
-// Initialize fonts
-const _geist = V0_Font_Geist({ subsets: ['latin'], weight: ["100","200","300","400","500","600","700","800","900"] })
-const _geistMono = V0_Font_Geist_Mono({ subsets: ['latin'], weight: ["100","200","300","400","500","600","700","800","900"] })
-const _sourceSerif_4 = V0_Font_Source_Serif_4({ subsets: ['latin'], weight: ["200","300","400","500","600","700","800","900"] })
-
-const _sourceSerif = Source_Serif_4({
+const russo = Russo_One({
   subsets: ["latin"],
-  weight: ["200", "300", "400", "500", "600", "700", "800", "900"],
+  weight: "400",
+  variable: "--font-heading",
+  display: "swap",
+})
+
+const chakra = Chakra_Petch({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sans",
+  display: "swap",
+})
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-mono",
+  display: "swap",
 })
 
 export const metadata: Metadata = {
   title: "Parego - Chess Tournament Pairing",
   description:
     "Pair. Play. Go. Simple over-the-board chess tournament management with instant pairing and easy join links.",
-  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -30,7 +40,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`} suppressHydrationWarning>
+      <body
+        className={`${russo.variable} ${chakra.variable} ${geistMono.variable} font-sans antialiased`}
+        suppressHydrationWarning
+      >
         {children}
         <Toaster richColors position="top-center" />
       </body>

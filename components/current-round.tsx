@@ -2,8 +2,8 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { AlertCircle } from "lucide-react"
-import type { Match } from "@/lib/types"
+import { AlertCircle, Clock } from "lucide-react"
+import type { Match, Player } from "@/lib/types"
 import { MatchResultSubmitter } from "@/components/match-result-submitter"
 
 interface CurrentRoundProps {
@@ -13,7 +13,98 @@ interface CurrentRoundProps {
   onPlayerConfirm?: (matchId: string) => void
   onPlayerCancel?: (matchId: string) => void
   playerSession?: { playerId: string; role: "player" | "organizer" }
-  canRecordResults?: boolean // Permission to show record buttons (organizer only)
+  canRecordResults?: boolean
+  allPlayers?: Player[]
+}
+
+function WaitingRoom({
+  playerId,
+  allPlayers,
+}: {
+  playerId: string
+  allPlayers: Player[]
+}) {
+  const sorted = [...allPlayers]
+    .filter((p) => !p.hasLeft)
+    .sort((a, b) => b.score - a.score || b.gamesPlayed - a.gamesPlayed)
+
+  const rank = sorted.findIndex((p) => p.id === playerId) + 1
+  const me = sorted.find((p) => p.id === playerId)
+  const topTen = sorted.slice(0, 10)
+
+  return (
+    <div className="space-y-3">
+      {/* Status card */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center">
+                <Clock className="h-4 w-4 text-primary" />
+              </div>
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-sm">Waiting to be paired</p>
+              <p className="text-xs text-muted-foreground">You'll be notified when your next match is ready</p>
+            </div>
+            {me && (
+              <div className="ml-auto text-right flex-shrink-0">
+                <p className="text-lg font-bold leading-none">{me.score}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">pts</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Mini standings */}
+      {topTen.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-xs mb-2 text-muted-foreground uppercase tracking-wide">
+            Standings
+          </h3>
+          <div className="space-y-0.5">
+            {topTen.map((p, i) => {
+              const isMe = p.id === playerId
+              return (
+                <div
+                  key={p.id}
+                  className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors ${
+                    isMe ? "bg-primary/10 font-semibold" : "hover:bg-muted/40"
+                  }`}
+                >
+                  <span
+                    className={`w-5 text-center text-xs font-bold flex-shrink-0 ${
+                      i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 truncate">{p.name}</span>
+                  <span className="font-bold tabular-nums">{p.score}</span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">
+                    {p.gamesPlayed}g
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          {rank > 10 && me && (
+            <>
+              <div className="text-center text-muted-foreground text-xs py-1">•••</div>
+              <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm bg-primary/10 font-semibold">
+                <span className="w-5 text-center text-xs font-bold text-muted-foreground flex-shrink-0">{rank}</span>
+                <span className="flex-1 truncate">{me.name}</span>
+                <span className="font-bold tabular-nums">{me.score}</span>
+                <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{me.gamesPlayed}g</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function CurrentRound({
@@ -24,6 +115,7 @@ export function CurrentRound({
   onPlayerCancel,
   playerSession,
   canRecordResults = false,
+  allPlayers = [],
 }: CurrentRoundProps) {
   const visibleMatches =
     playerSession?.role === "player"
@@ -44,17 +136,13 @@ export function CurrentRound({
     return 0
   })
 
-  if (playerSession?.role === "player" && sortedPendingMatches.length === 0 && completedMatches.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">You don't have any matches yet.</p>
-        <p className="text-sm text-muted-foreground mt-2">Wait for the organizer to pair the next round.</p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-2">
+      {/* Waiting Room — shown when player has no pending match */}
+      {playerSession?.role === "player" && sortedPendingMatches.length === 0 && (
+        <WaitingRoom playerId={playerSession.playerId} allPlayers={allPlayers} />
+      )}
+
       {sortedPendingMatches.length > 0 && (
         <div>
           <h3 className="font-semibold text-xs mb-1 text-muted-foreground uppercase tracking-wide">

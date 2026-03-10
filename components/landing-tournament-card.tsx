@@ -208,7 +208,7 @@ export function LandingTournamentCard({
               View
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation" asChild>
+          <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation bg-[#F97316]/10 text-[#F97316] hover:bg-[#F97316] hover:text-white font-semibold transition-colors" asChild>
             <Link href={`/join/${tournament.id}`}>
               <LogIn className="h-4 w-4 mr-2 shrink-0" />
               Join

@@ -161,6 +161,57 @@ export async function savePlayers(tournamentId: string, players: Player[]) {
   }
 }
 
+export interface InsertPlayerData {
+  id: string
+  name: string
+  userId?: string | null
+  isGuest?: boolean
+  rating?: number | null
+  country?: string | null
+  checkedInAt?: number | null
+  presenceSource?: "gps" | "qr" | "override" | null
+}
+
+/** Insert a single new player row into the DB. Used by addPlayer and joinAsSelf. */
+export async function insertPlayer(tournamentId: string, player: InsertPlayerData) {
+  const supabase = createClient()
+  const { error } = await supabase.from("players").insert({
+    id: player.id,
+    tournament_id: tournamentId,
+    name: player.name,
+    user_id: player.userId ?? null,
+    is_guest: player.isGuest ?? false,
+    points: 0,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    games_played: 0,
+    white_count: 0,
+    black_count: 0,
+    current_streak: 0,
+    on_streak: false,
+    paused: false,
+    game_history: [],
+    opponents: [],
+    results: [],
+    colors: [],
+    points_earned: [],
+    table_numbers: [],
+    rating: player.rating ?? null,
+    buchholz: 0,
+    sonneborn_berger: 0,
+    is_paused: false,
+    is_removed: false,
+    country: player.country ?? null,
+    checked_in_at: player.checkedInAt != null ? new Date(player.checkedInAt).toISOString() : null,
+    presence_source: player.presenceSource ?? null,
+  })
+  if (error) {
+    console.error("[arena] Error inserting player:", error)
+    throw error
+  }
+}
+
 /** Check if a display name already exists in the tournament (case-insensitive). Used for per-tournament uniqueness. */
 export async function playerNameExistsInTournament(
   tournamentId: string,

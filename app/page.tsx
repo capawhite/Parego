@@ -225,16 +225,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-accent-foreground/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        />
-      </div>
-
+    <main className="min-h-svh">
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between gap-3 p-4">
         <Link href="/" className="flex items-center gap-2 min-w-0">
@@ -272,7 +263,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pb-12 space-y-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12 space-y-8">
         {/* Hero copy */}
         <div className="text-center space-y-1 pt-2 px-1">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Tournaments near you</h1>

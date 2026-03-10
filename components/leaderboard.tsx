@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
 import type { Player } from "@/lib/types"
+import { calculatePerformance, sortPlayersByStandings } from "@/lib/standings"
 
 interface LeaderboardProps {
   players: Player[]
@@ -14,38 +15,7 @@ interface LeaderboardProps {
 
 export function Leaderboard({ players, isPlayerView = false, onOverrideResult }: LeaderboardProps) {
   const [viewMode, setViewMode] = useState<"points" | "performance">("points")
-
-  const calculatePerformance = (player: Player): number => {
-    if (player.gamesPlayed === 0) return 0
-    return Math.round((player.score / player.gamesPlayed) * 100) / 100
-  }
-
-  const sorted = [...players].sort((a, b) => {
-    if (viewMode === "performance") {
-      // Sort by performance (points per game)
-      const perfA = calculatePerformance(a)
-      const perfB = calculatePerformance(b)
-      if (perfB !== perfA) return perfB - perfA
-
-      // Tiebreaker: total score
-      if (b.score !== a.score) return b.score - a.score
-
-      // Tiebreaker 2: games played (fewer games = higher rank for same performance)
-      return a.gamesPlayed - b.gamesPlayed
-    } else {
-      // Default points view
-      // Primary sort: by score descending
-      if (b.score !== a.score) return b.score - a.score
-
-      // Tiebreaker 1: tournament performance (points per game)
-      const perfA = calculatePerformance(a)
-      const perfB = calculatePerformance(b)
-      if (perfB !== perfA) return perfB - perfA
-
-      // Tiebreaker 2: games played (more games = higher rank)
-      return b.gamesPlayed - a.gamesPlayed
-    }
-  })
+  const sorted = sortPlayersByStandings(players, viewMode)
 
   const renderCompactMatchHistory = (player: Player) => {
     if (!player.gameResults || player.gameResults.length === 0) return null

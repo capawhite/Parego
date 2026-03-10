@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Trophy, MapPin, Clock, Globe, Lock } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { saveTournament } from "@/lib/database/tournament-db"
 import { DEFAULT_SETTINGS } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
 
 export default function CreateTournamentPage() {
   const router = useRouter()
@@ -139,17 +141,17 @@ export default function CreateTournamentPage() {
   const handleCreate = async () => {
     if (!user) return
     if (!tournamentName.trim()) {
-      alert("Please enter a tournament name")
+      toast.error("Please enter a tournament name")
       return
     }
 
     if (pairingAlgorithm === "balanced-strength") {
       if (baseTimeMinutes < 1 || baseTimeMinutes > 300) {
-        alert("Base time must be between 1 and 300 minutes")
+        toast.error("Base time must be between 1 and 300 minutes")
         return
       }
       if (incrementSeconds < 0 || incrementSeconds > 180) {
-        alert("Increment must be between 0 and 180 seconds")
+        toast.error("Increment must be between 0 and 180 seconds")
         return
       }
     }
@@ -191,7 +193,7 @@ export default function CreateTournamentPage() {
       router.push(`/tournament/${tournamentId}`)
     } catch (error) {
       console.error("[v0] Error creating tournament:", error)
-      alert("Failed to create tournament. Please try again.")
+      toast.error("Failed to create tournament. Please try again.")
     } finally {
       setIsCreating(false)
     }
@@ -199,7 +201,7 @@ export default function CreateTournamentPage() {
 
   if (loadingAuth) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
+      <main className="min-h-svh bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
       </main>
     )
@@ -210,7 +212,7 @@ export default function CreateTournamentPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background p-4 sm:p-6">
+    <main className="min-h-svh bg-background p-4 sm:p-6">
       <div className="max-w-lg mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -319,16 +321,15 @@ export default function CreateTournamentPage() {
             {/* Pairing Algorithm */}
             <div className="space-y-2">
               <Label htmlFor="pairing-algorithm">Pairing Algorithm</Label>
-              <select
-                id="pairing-algorithm"
-                value={pairingAlgorithm}
-                onChange={(e) => setPairingAlgorithm(e.target.value)}
-                disabled={isCreating}
-                className="w-full h-10 px-3 py-2 text-sm border border-input bg-background rounded-md"
-              >
-                <option value="all-vs-all">All vs All (Arena)</option>
-                <option value="balanced-strength">Arena (Balanced Strength)</option>
-              </select>
+              <Select value={pairingAlgorithm} onValueChange={setPairingAlgorithm} disabled={isCreating}>
+                <SelectTrigger id="pairing-algorithm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-vs-all">All vs All (Arena)</SelectItem>
+                  <SelectItem value="balanced-strength">Arena (Balanced Strength)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Time Control */}

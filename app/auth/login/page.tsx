@@ -11,6 +11,9 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Home } from "lucide-react"
+import { toast } from "sonner"
+import { claimGuestHistory } from "@/app/actions/claim-guest-history"
+import { getGuestSessionHistory, clearGuestSessionHistory } from "@/lib/guest-session-history"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -34,6 +37,20 @@ export default function LoginPage() {
       if (error) throw error
 
       if (process.env.NODE_ENV === "development") console.log("[v0] Login successful, redirecting...")
+
+      // Silently claim any guest history from this device
+      const guestSessions = getGuestSessionHistory()
+      if (guestSessions.length > 0) {
+        const playerIds = guestSessions.map((s) => s.playerId)
+        const claim = await claimGuestHistory(playerIds)
+        clearGuestSessionHistory()
+        if (claim.success && claim.claimedCount && claim.claimedCount > 0) {
+          toast.success(
+            `${claim.claimedCount} past ${claim.claimedCount === 1 ? "game" : "games"} linked to your account.`,
+          )
+        }
+      }
+
       // Use window.location.href for full page reload to establish session
       window.location.href = "/"
     } catch (error: unknown) {

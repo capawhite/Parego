@@ -80,6 +80,19 @@ export function hasPlayedInTournamentAsGuest(tournamentId: string): boolean {
   return getGuestSessionHistory().some((e) => e.tournamentId === tournamentId)
 }
 
+/**
+ * Clear all guest session history from this device.
+ * Call after a successful claim so the entries are not re-submitted on next sign-in.
+ */
+export function clearGuestSessionHistory(): void {
+  if (typeof window === "undefined") return
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore
+  }
+}
+
 const CONVERSION_DISMISSED_KEY = "parego_conversion_dismissed"
 
 /** Check if the user has dismissed this conversion prompt this session. */

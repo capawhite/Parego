@@ -9,56 +9,24 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { signUp, checkEmailAvailable } from "./actions"
-import { RATING_BANDS, type RatingBandValue } from "@/lib/rating-bands"
-import { ChevronLeft, ChevronRight, Loader2, Home } from "lucide-react"
-import { AvatarPicker } from "@/components/avatar-picker"
-import { uploadAvatar, updateProfileAvatarUrl } from "@/lib/avatar-upload"
+import { ChevronLeft, ChevronRight, Loader2, Home, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
-import { getGuestSessionHistory, type GuestSessionEntry } from "@/lib/guest-session-history"
 import { claimGuestHistory } from "@/app/actions/claim-guest-history"
-import { Checkbox } from "@/components/ui/checkbox"
+import { getGuestSessionHistory, clearGuestSessionHistory } from "@/lib/guest-session-history"
 
-const TOTAL_STEPS = 7
+const TOTAL_STEPS = 3
 
 export default function SignUpPage() {
   const [step, setStep] = useState(1)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
-  const [ratingBand, setRatingBand] = useState<RatingBandValue | "">("")
-  const [ratingPrecise, setRatingPrecise] = useState("")
-  const [country, setCountry] = useState("")
-  const [city, setCity] = useState("")
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken">("idle")
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [isDetectingLocation, setIsDetectingLocation] = useState(true)
-  const [guestHistory, setGuestHistory] = useState<GuestSessionEntry[]>([])
-  const [claimedPlayerIds, setClaimedPlayerIds] = useState<Set<string>>(new Set())
   const router = useRouter()
-
-  useEffect(() => {
-    const detectLocation = async () => {
-      try {
-        const response = await fetch("https://ipapi.co/json/")
-        const data = await response.json()
-        if (data.country_name) setCountry(data.country_name)
-        if (data.city) setCity(data.city)
-      } catch {
-        // use manual entry
-      } finally {
-        setIsDetectingLocation(false)
-      }
-    }
-    detectLocation()
-  }, [])
-
-  useEffect(() => {
-    setGuestHistory(getGuestSessionHistory())
-  }, [])
 
   const goNext = () => {
     setError(null)
@@ -86,17 +54,9 @@ export default function SignUpPage() {
       case 1:
         return name.trim().length > 0
       case 2:
-        return ratingBand !== ""
-      case 3:
-        return true // avatar optional
-      case 4:
         return email.trim().length > 0 && emailStatus !== "taken"
-      case 5:
+      case 3:
         return password.length >= 6
-      case 6:
-        return true // location optional
-      case 7:
-        return true // claim optional
       default:
         return false
     }
@@ -106,46 +66,35 @@ export default function SignUpPage() {
     if (isLoading) return
     setIsLoading(true)
     setError(null)
-    const preciseNum = ratingPrecise.trim() ? parseInt(ratingPrecise.trim(), 10) : undefined
     const result = await signUp({
       email: email.trim(),
       password,
       name: name.trim(),
-      ratingBand: ratingBand || undefined,
-      rating: preciseNum != null && !isNaN(preciseNum) ? preciseNum : undefined,
-      country: country || undefined,
-      city: city || undefined,
     })
     if (result.error) {
       setIsLoading(false)
       setError(result.error)
       return
     }
-    if (result.userId && avatarFile) {
-      const uploadResult = await uploadAvatar(result.userId, avatarFile)
-      if ("error" in uploadResult) {
-        toast.warning(
-          "Account created! Your photo couldn't be saved (storage not set up). You can add one in Profile later.",
-        )
-      } else {
-        await updateProfileAvatarUrl(result.userId, uploadResult.url)
-      }
-    }
     const supabase = createClient()
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     })
-    if (!signInError && claimedPlayerIds.size > 0) {
-      const claimResult = await claimGuestHistory([...claimedPlayerIds])
-      if (claimResult.success && (claimResult.claimedCount ?? 0) > 0) {
-        toast.success(`Linked ${claimResult.claimedCount} past tournament(s) to your account`)
-      } else if (!claimResult.success && claimResult.error) {
-        toast.error(claimResult.error)
-      }
-    }
     setIsLoading(false)
     if (!signInError) {
+      // Silently claim any guest history from this device
+      const guestSessions = getGuestSessionHistory()
+      if (guestSessions.length > 0) {
+        const playerIds = guestSessions.map((s) => s.playerId)
+        const claim = await claimGuestHistory(playerIds)
+        clearGuestSessionHistory()
+        if (claim.success && claim.claimedCount && claim.claimedCount > 0) {
+          toast.success(
+            `${claim.claimedCount} past ${claim.claimedCount === 1 ? "game" : "games"} linked to your account.`,
+          )
+        }
+      }
       router.push("/")
       return
     }
@@ -164,10 +113,10 @@ export default function SignUpPage() {
 
   if (success) {
     return (
-      <div className="min-h-svh flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background to-primary/5">
+      <div className="min-h-svh flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-md text-center space-y-6">
           <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-            <span className="text-2xl text-primary">✓</span>
+            <CheckCircle className="h-8 w-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold">Account created</h1>
           <p className="text-muted-foreground">Redirecting you to login...</p>
@@ -180,7 +129,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-svh flex flex-col bg-gradient-to-b from-background to-primary/5">
+    <div className="min-h-svh flex flex-col">
       <div className="w-full px-4 pt-6">
         <div className="max-w-md mx-auto">
           <Link
@@ -234,67 +183,8 @@ export default function SignUpPage() {
             </div>
           )}
 
-          {/* Step 2: Strength (funny options + optional exact) */}
+          {/* Step 2: Email */}
           {step === 2 && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">How would you describe your strength?</h2>
-                <p className="text-sm text-muted-foreground">Helps us pair you with similar players</p>
-              </div>
-              <RadioGroup
-                value={ratingBand}
-                onValueChange={(v) => setRatingBand(v as RatingBandValue)}
-                className="flex flex-col gap-2"
-              >
-                {RATING_BANDS.map((band) => (
-                  <label
-                    key={band.value}
-                    className="flex items-center gap-3 rounded-xl border-2 border-muted bg-card p-4 cursor-pointer transition-all hover:border-primary/30 hover:bg-primary/5 has-[:checked]:border-primary has-[:checked]:bg-primary/10"
-                  >
-                    <RadioGroupItem value={band.value} id={`signup-band-${band.value}`} className="sr-only" />
-                    <span className="text-sm font-medium">{band.label}</span>
-                  </label>
-                ))}
-              </RadioGroup>
-              <div className="space-y-2 pt-2">
-                <label htmlFor="ratingPrecise" className="text-sm text-muted-foreground">
-                  Or enter your exact rating (optional)
-                </label>
-                <Input
-                  id="ratingPrecise"
-                  type="number"
-                  placeholder="e.g. 1847"
-                  min={100}
-                  max={3000}
-                  value={ratingPrecise}
-                  onChange={(e) => setRatingPrecise(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  className="h-12 text-base"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Avatar (optional) */}
-          {step === 3 && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Add a photo?</h2>
-                <p className="text-sm text-muted-foreground">Optional — helps others recognize you at tournaments</p>
-              </div>
-              <AvatarPicker
-                selectedFile={avatarFile}
-                onSelect={setAvatarFile}
-                onClear={() => setAvatarFile(null)}
-                size="lg"
-              />
-              <Button type="button" variant="ghost" className="w-full text-muted-foreground" onClick={goNext}>
-                Skip
-              </Button>
-            </div>
-          )}
-
-          {/* Step 4: Email */}
-          {step === 4 && (
             <div className="space-y-8 animate-in fade-in duration-200">
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold">Email</h2>
@@ -335,8 +225,8 @@ export default function SignUpPage() {
             </div>
           )}
 
-          {/* Step 5: Password */}
-          {step === 5 && (
+          {/* Step 3: Password */}
+          {step === 3 && (
             <div className="space-y-8 animate-in fade-in duration-200">
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold">Password</h2>
@@ -357,82 +247,6 @@ export default function SignUpPage() {
                   className="h-12 text-base"
                 />
               </div>
-            </div>
-          )}
-
-          {/* Step 6: Location */}
-          {step === 6 && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Where are you?</h2>
-                <p className="text-sm text-muted-foreground">Optional — helps show nearby tournaments</p>
-              </div>
-              <div className="space-y-3">
-                <Input
-                  type="text"
-                  placeholder={isDetectingLocation ? "Detecting..." : "Country"}
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  disabled={isDetectingLocation}
-                  className="h-12 text-base"
-                />
-                <Input
-                  type="text"
-                  placeholder={isDetectingLocation ? "..." : "City"}
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  disabled={isDetectingLocation}
-                  className="h-12 text-base"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full text-muted-foreground"
-                  onClick={goNext}
-                  disabled={isLoading}
-                >
-                  Skip
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 7: Claim past play */}
-          {step === 7 && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Have you played before?</h2>
-                <p className="text-sm text-muted-foreground">
-                  Link past tournament play from this device to your new account.
-                </p>
-              </div>
-              {guestHistory.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">No past play to claim on this device.</p>
-              ) : (
-                <div className="space-y-2">
-                  {guestHistory.map((entry) => (
-                    <label
-                      key={`${entry.tournamentId}-${entry.playerId}`}
-                      className="flex items-center gap-3 rounded-xl border-2 border-muted bg-card p-4 cursor-pointer transition-all hover:border-primary/30 hover:bg-primary/5 has-[:checked]:border-primary has-[:checked]:bg-primary/10"
-                    >
-                      <Checkbox
-                        checked={claimedPlayerIds.has(entry.playerId)}
-                        onCheckedChange={(checked) => {
-                          setClaimedPlayerIds((prev) => {
-                            const next = new Set(prev)
-                            if (checked) next.add(entry.playerId)
-                            else next.delete(entry.playerId)
-                            return next
-                          })
-                        }}
-                      />
-                      <span className="text-sm font-medium">
-                        {entry.displayName} — tournament {entry.tournamentId}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 

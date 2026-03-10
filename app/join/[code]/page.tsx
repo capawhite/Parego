@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { loadTournament, loadPlayers, playerNameExistsInTournament, type TournamentData } from "@/lib/database/tournament-db"
-import { Loader2, Users, Trophy, MapPin } from "lucide-react"
+import { Loader2, Users, Trophy, MapPin, Check } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { checkVenueProximity } from "@/app/actions/check-in"
@@ -292,6 +292,14 @@ export default function JoinTournamentPage() {
           })
         }
 
+        // Request browser notification permission so we can alert the player when paired.
+        // Only ask if the API exists and permission hasn't been set already.
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+          Notification.requestPermission().catch(() => {
+            // Permission denied or not supported — silently ignore.
+          })
+        }
+
         setTimeout(() => {
           router.push(`/tournament/${code}`)
         }, 2000)
@@ -364,7 +372,7 @@ export default function JoinTournamentPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-6">
+    <div className="min-h-svh flex items-center justify-center bg-background p-4 sm:p-6">
       <Card className="w-full max-w-md p-6">
         <div className="text-center mb-6">
           <Trophy className="h-12 w-12 mx-auto mb-4 text-primary" />
@@ -374,7 +382,7 @@ export default function JoinTournamentPage() {
             <Users className="h-4 w-4" />
             <span>{playerCount} players joined</span>
           </div>
-          {isRegistered && <div className="mt-2 text-xs text-primary">✓ Joining as registered user</div>}
+          {isRegistered && <div className="mt-2 text-xs text-primary flex items-center justify-center gap-1"><Check className="h-3 w-3" /> Joining as registered user</div>}
           {!isRegistered && (
             <div className="mt-2 text-xs text-muted-foreground">
               Joining as guest •{" "}

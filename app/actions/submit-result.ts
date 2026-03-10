@@ -2,8 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-
-type ResultType = "player1-win" | "draw" | "player2-win"
+import { getSubmissionSide, type ResultType } from "@/lib/result-utils"
 
 interface SubmitResultResponse {
   success: boolean
@@ -59,36 +58,15 @@ export async function submitMatchResult(
     return { success: false, error: "Match is already completed" }
   }
 
-  // Player data is JSON stringified; parse and check userId (camelCase in Player) or user_id (snake_case)
-  const parsePlayerData = (data: unknown): { userId?: string | null; user_id?: string } | null => {
-    if (!data) return null
-    if (typeof data === "string") {
-      try {
-        return JSON.parse(data) as { userId?: string | null; user_id?: string }
-      } catch {
-        return null
-      }
-    }
-    return data as { userId?: string | null; user_id?: string }
-  }
-
-  const player1Data = parsePlayerData(match.player1_data)
-  const player2Data = parsePlayerData(match.player2_data)
-
-  const getPlayerUserId = (p: ReturnType<typeof parsePlayerData>) =>
-    p?.userId ?? p?.user_id ?? null
-
-  const isPlayer1 = getPlayerUserId(player1Data) === user.id
-  const isPlayer2 = getPlayerUserId(player2Data) === user.id
-
-  if (!isPlayer1 && !isPlayer2) {
+  const side = getSubmissionSide(user.id, match.player1_data, match.player2_data)
+  if (!side) {
     if (process.env.NODE_ENV === "development")
       console.log("[v0] User is not a player in this match:", { userId: user.id, match })
     return { success: false, error: "You are not a player in this match" }
   }
 
-  const submissionField = isPlayer1 ? "player1_submission" : "player2_submission"
-  const timestampField = isPlayer1 ? "player1_submission_time" : "player2_submission_time"
+  const submissionField = side === "player1" ? "player1_submission" : "player2_submission"
+  const timestampField = side === "player1" ? "player1_submission_time" : "player2_submission_time"
 
   const { error: updateError } = await supabase
     .from("matches")
