@@ -250,6 +250,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         setActiveTab("results")
       }
     },
+    // Organizer auto-completes matches when both players submit the same result.
+    // Player clients can't write to matches/players tables due to RLS.
+    onAutoComplete: isOrganizer ? (matchId, winnerId, isDraw) => {
+      if (DEBUG) console.log("[v0] Organizer auto-completing match from Realtime:", matchId)
+      recordResult(matchId, winnerId, isDraw)
+    } : undefined,
   })
 
   useEffect(() => {
@@ -655,7 +661,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   }, [tournamentId, arenaState.status, activeTab])
 
   useEffect(() => {
-    if (!tournamentId || !arenaState.isActive) return
+    if (!tournamentId || !arenaState.isActive || !isOrganizer) return
 
     // Save all active (non-completed) matches
     const activeMatches = arenaState.pairedMatches.filter((m) => !m.result?.completed)
@@ -663,7 +669,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       suppressRealtime()
       saveMatches(tournamentId, activeMatches).catch((err) => console.error("[v0] Failed to save active matches:", err))
     }
-  }, [arenaState.pairedMatches.length, tournamentId, arenaState.isActive])
+  }, [arenaState.pairedMatches.length, tournamentId, arenaState.isActive, isOrganizer])
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000)
@@ -1381,7 +1387,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         return player
       })
 
-      if (tournamentId) {
+      if (tournamentId && isOrganizer) {
         savePlayers(tournamentId, newPlayers).catch((err) => {
           console.error("[v0] Error saving players after match completion:", err)
         })
@@ -1499,7 +1505,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         player2: m.player2.markedForRemoval ? { ...m.player2, markedForRemoval: false } : m.player2,
       }))
 
-      if (tournamentId) {
+      if (tournamentId && isOrganizer) {
         savePlayers(tournamentId, playersAfterRemoval).catch((err) => {
           console.error("[v0] Error saving players after result:", err)
         })
@@ -1962,8 +1968,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       // Remove players that are marked as left
       updated.players = updated.players.filter((p) => !p.markedForRemoval || p.hasLeft)
 
-      // Save updated player and match states
-      if (tournamentId) {
+      // Save updated player and match states (organizer only — players lack RLS write access)
+      if (tournamentId && isOrganizer) {
         savePlayers(tournamentId, updated.players).catch((err) => {
           console.error("[v0] Error saving players after match completion:", err)
         })
