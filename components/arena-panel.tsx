@@ -425,7 +425,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   }, [tournamentId, isOrganizer, currentUserId])
 
   useEffect(() => {
-    if (!tournamentId || isLoading) return
+    if (!tournamentId || isLoading || !isOrganizer) return
 
     const saveToDatabase = async () => {
       try {
@@ -476,6 +476,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     organizerId,
     currentUserId,
     isLoading,
+    isOrganizer,
   ])
 
   useEffect(() => {
