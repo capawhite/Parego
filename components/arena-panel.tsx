@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" // Added CardDescription
 import { Input } from "@/components/ui/input"
@@ -75,6 +75,7 @@ import { verifyAndCheckIn, markPresentOverride, checkVenueProximity } from "@/ap
 import { renamePlayer } from "@/app/actions/rename-player"
 import { resolveRating } from "@/lib/rating-bands"
 import { toast } from "sonner"
+import { useRealtime } from "@/hooks/tournament/use-realtime"
 
 const TOURNAMENT_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
 
@@ -133,6 +134,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [isFullScreenPairings, setIsFullScreenPairings] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("players")
+  const [hasNewPairing, setHasNewPairing] = useState(false)
   // const [effectivePlayerView, setIsPlayerView] = useState(false) // Moved to props
   const [playerSession, setPlayerSession] = useState<ArenaSessionData | null>(null)
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false)
@@ -206,6 +208,39 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   // Organizers always see full UI even if they also joined as a player
   const effectivePlayerView =
     !isOrganizer && (isPlayerView ?? (playerSession?.role === "player" && !!playerSession?.playerId))
+
+  // Fires when the local player is paired into a new match (via Realtime)
+  const handleNewPairing = useCallback(
+    (match: Match) => {
+      const pid = playerSession?.playerId
+      if (!pid) return
+      const opponentName = match.player1.id === pid ? match.player2.name : match.player1.name
+      const tableLabel = match.tableNumber ? ` · Table ${match.tableNumber}` : ""
+
+      toast.success("You've been paired!", {
+        description: `vs ${opponentName}${tableLabel}`,
+        duration: 8000,
+      })
+
+      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+        new Notification("You've been paired!", {
+          body: `vs ${opponentName}${tableLabel} — tap to open`,
+          icon: "/icon-192.png",
+        })
+      }
+
+      setHasNewPairing(true)
+    },
+    [playerSession?.playerId],
+  )
+
+  useRealtime({
+    tournamentId,
+    isReady: !isLoading,
+    setArenaState,
+    currentPlayerId: playerSession?.playerId ?? null,
+    onNewPairing: handleNewPairing,
+  })
 
   useEffect(() => {
     setPastGuestSessions(getGuestSessionHistory())
@@ -564,15 +599,9 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     }
   }, [initialTournamentId, arenaState.isActive])
 
-  // When in player view, switch away from Players tab (which is hidden)
-  useEffect(() => {
-    if (effectivePlayerView && activeTab === "players") {
-      setActiveTab("pairings")
-    }
-  }, [effectivePlayerView, activeTab])
 
   useEffect(() => {
-    if (!tournamentId || !arenaState.isActive || activeTab !== "players") return
+    if (!tournamentId || arenaState.status === "completed" || activeTab !== "players") return
 
     const refreshPlayers = async () => {
       try {
@@ -611,7 +640,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     refreshPlayers()
 
     return () => clearInterval(interval)
-  }, [tournamentId, arenaState.isActive, activeTab])
+  }, [tournamentId, arenaState.status, activeTab])
 
   useEffect(() => {
     if (!tournamentId || !arenaState.isActive) return
@@ -1984,7 +2013,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           </Card>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(tab) => {
+            setActiveTab(tab)
+            if (tab === "results") setHasNewPairing(false)
+          }}
+          className="w-full"
+        >
           {/* Consolidate header elements */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex-1 min-w-0">
@@ -2027,21 +2063,26 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               )}
             </div>
 
-            <TabsList className="grid grid-cols-4 h-auto w-full sm:w-auto min-h-[44px]">
-              {!effectivePlayerView && (
-                <TabsTrigger value="players" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
-                  <Users className="h-4 w-4 mr-1" />
-                  Players
-                </TabsTrigger>
-              )}
+            <TabsList
+              className={`grid h-auto w-full sm:w-auto min-h-[44px] ${
+                arenaState.status === "completed" ? "grid-cols-3" : "grid-cols-4"
+              }`}
+            >
+              <TabsTrigger value="players" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
+                <Users className="h-4 w-4 mr-1" />
+                Players
+              </TabsTrigger>
               <TabsTrigger value="pairings" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                 <Swords className="h-4 w-4 mr-1" />
                 Pairings
               </TabsTrigger>
               {arenaState.status !== "completed" && (
-                <TabsTrigger value="results" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
+                <TabsTrigger value="results" className="relative text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                   <Trophy className="h-4 w-4 mr-1" />
                   Results
+                  {hasNewPairing && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  )}
                 </TabsTrigger>
               )}
               <TabsTrigger value="standings" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
@@ -2077,10 +2118,9 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             )}
           </div>
 
-          {!effectivePlayerView && (
-            <TabsContent value="players" className="space-y-2">
-              {/* Express interest card */}
-              <Card className="mb-4 border-primary/20">
+          <TabsContent value="players" className="space-y-2">
+              {/* Express interest card — only for visitors who haven't joined yet */}
+              {!isCurrentUserInTournament && !playerSession?.playerId && <Card className="mb-4 border-primary/20">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center justify-between">
                     <span className="flex items-center gap-2">
@@ -2131,62 +2171,72 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                     </div>
                   )}
                 </CardContent>
-              </Card>
+              </Card>}
 
               {/* Tournament Setup Card - only show in setup status */}
               {arenaState.status === "setup" && (
-                <Card className="mb-4">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Tournament Setup</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex flex-wrap gap-3 items-end">
-                      <div className="flex-1 min-w-[120px] space-y-1.5">
-                        <Label htmlFor="tables" className="text-sm">
-                          Tables
-                        </Label>
-                        <Input
-                          id="tables"
-                          type="number"
-                          placeholder="# of tables"
-                          value={tableCountInput}
-                          onChange={(e) => setTableCountInput(e.target.value)}
-                          className="w-20 h-8 text-sm"
-                          disabled={!isOrganizer}
-                        />
+                isOrganizer ? (
+                  <Card className="mb-4">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Tournament Setup</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex flex-wrap gap-3 items-end">
+                        <div className="flex-1 min-w-[120px] space-y-1.5">
+                          <Label htmlFor="tables" className="text-sm">
+                            Tables
+                          </Label>
+                          <Input
+                            id="tables"
+                            type="number"
+                            placeholder="# of tables"
+                            value={tableCountInput}
+                            onChange={(e) => setTableCountInput(e.target.value)}
+                            className="w-20 h-8 text-sm"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-[120px] space-y-1.5">
+                          <Label htmlFor="duration" className="text-sm">
+                            Duration (min)
+                          </Label>
+                          <Input
+                            id="duration"
+                            type="number"
+                            placeholder="Min"
+                            value={tournamentDurationInput}
+                            onChange={(e) => setTournamentDurationInput(e.target.value)}
+                            className="w-20 h-8 text-sm"
+                          />
+                        </div>
+                        {permissions.canStartTournament && (
+                          <Button onClick={handleStartTournament} className="w-full h-8 text-sm" size="sm">
+                            Start Tournament
+                          </Button>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-[120px] space-y-1.5">
-                        <Label htmlFor="duration" className="text-sm">
-                          Duration (min)
-                        </Label>
-                        <Input
-                          id="duration"
-                          type="number"
-                          placeholder="Min"
-                          value={tournamentDurationInput}
-                          onChange={(e) => setTournamentDurationInput(e.target.value)}
-                          className="w-20 h-8 text-sm"
-                          disabled={!isOrganizer}
-                        />
-                      </div>
-              {permissions.canStartTournament && (
-                <Button onClick={handleStartTournament} className="w-full h-8 text-sm" size="sm">
-                  Start Tournament
-                </Button>
-              )}
-                      {!isOrganizer && (
-                        <p className="text-xs text-muted-foreground text-center py-2 flex-1">
-                          Waiting for organizer to start the tournament
+                      <div className="space-y-0.5">
+                        <p className="text-xs text-muted-foreground">
+                          {arenaState.players.length} players • Need {maxSimultaneousPairings} tables for full pairings
                         </p>
-                      )}
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">
-                        {arenaState.players.length} players • Need {maxSimultaneousPairings} tables for full pairings
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="mb-4 border-amber-400/30 bg-amber-50/40 dark:bg-amber-950/20">
+                    <CardContent className="pt-4 pb-4">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="h-5 w-5 animate-spin text-amber-500 flex-shrink-0" />
+                        <div>
+                          <p className="font-semibold text-sm">Waiting for the organizer to start</p>
+                          <p className="text-xs text-muted-foreground">
+                            {arenaState.players.filter((p) => !p.hasLeft).length} player
+                            {arenaState.players.filter((p) => !p.hasLeft).length !== 1 ? "s" : ""} registered so far
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
               )}
 
               {tournamentId && permissions.canAccessQR && (
@@ -2351,7 +2401,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                 </CardContent>
               </Card>
             </TabsContent>
-          )}
 
           <TabsContent value="pairings">
             {pendingMatches.length > 0 ? (
@@ -2418,32 +2467,53 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   </p>
                 </CardContent>
               </Card>
-            ) : !effectivePlayerView && arenaState.isActive && showSimulator ? (
-              <div className="mb-4">
-                <TournamentSimulatorPanel />
-              </div>
-            ) : null}
-            {arenaState.status !== "completed" && arenaState.pairedMatches.length > 0 ? (
-              <div className="space-y-4">
-                <CurrentRound
-                  matches={arenaState.pairedMatches}
-                  onRecordResult={recordResult}
-                  playerSession={playerSession}
-                  playerSubmissions={playerSubmissions}
-                  onPlayerSubmit={handlePlayerSubmit}
-                  onPlayerConfirm={handlePlayerConfirm}
-                  onPlayerCancel={handlePlayerCancel}
-                  canRecordResults={permissions.canRecordAnyResult}
-                />
-              </div>
             ) : (
-              arenaState.status !== "completed" && (
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-center text-muted-foreground">No matches yet. Start a tournament to begin.</p>
-                  </CardContent>
-                </Card>
-              )
+              <>
+                {!effectivePlayerView && arenaState.isActive && showSimulator && (
+                  <div className="mb-4">
+                    <TournamentSimulatorPanel />
+                  </div>
+                )}
+                {(() => {
+                  const normalizedSession =
+                    playerSession?.playerId && playerSession?.role
+                      ? { playerId: playerSession.playerId, role: playerSession.role as "player" | "organizer" }
+                      : undefined
+                  const isPlayer = normalizedSession?.role === "player"
+                  return isPlayer ? (
+                    // Players always see CurrentRound — it shows WaitingRoom when no match is pending
+                    <CurrentRound
+                      matches={arenaState.pairedMatches}
+                      onRecordResult={(id, winner, isDraw) => recordResult(id, winner, isDraw ?? false)}
+                      playerSession={normalizedSession}
+                      onPlayerSubmit={handlePlayerSubmit}
+                      onPlayerConfirm={handlePlayerConfirm}
+                      onPlayerCancel={handlePlayerCancel}
+                      canRecordResults={permissions.canRecordAnyResult}
+                      allPlayers={arenaState.players}
+                    />
+                  ) : arenaState.pairedMatches.length > 0 ? (
+                    <div className="space-y-4">
+                      <CurrentRound
+                        matches={arenaState.pairedMatches}
+                        onRecordResult={(id, winner, isDraw) => recordResult(id, winner, isDraw ?? false)}
+                        playerSession={normalizedSession}
+                        onPlayerSubmit={handlePlayerSubmit}
+                        onPlayerConfirm={handlePlayerConfirm}
+                        onPlayerCancel={handlePlayerCancel}
+                        canRecordResults={permissions.canRecordAnyResult}
+                        allPlayers={arenaState.players}
+                      />
+                    </div>
+                  ) : (
+                    <Card>
+                      <CardContent className="pt-6">
+                        <p className="text-center text-muted-foreground">No matches yet. Start a tournament to begin.</p>
+                      </CardContent>
+                    </Card>
+                  )
+                })()}
+              </>
             )}
           </TabsContent>
 
