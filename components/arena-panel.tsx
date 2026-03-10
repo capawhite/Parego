@@ -29,6 +29,7 @@ import {
   Heart,
   Loader2,
   MapPin,
+  AlertCircle,
 } from "lucide-react" // Added SettingsIcon, Home, Grid3x3, ClipboardList, AlertTriangle, UserPlus, Check
 import {
   Dialog,
@@ -1762,13 +1763,30 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       if (updatedMatch) {
         if (DEBUG) console.log("[v0] Match submission saved:", updatedMatch)
 
+        // Immediately reflect the submission in arenaState so the UI
+        // shows it without waiting for Realtime
+        setArenaState((prev) => ({
+          ...prev,
+          pairedMatches: prev.pairedMatches.map((m) => {
+            if (m.id !== matchId) return m
+            return {
+              ...m,
+              player1Submission: updatedMatch.player1_submission
+                ? { result: updatedMatch.player1_submission, confirmed: true, timestamp: Date.now() }
+                : m.player1Submission,
+              player2Submission: updatedMatch.player2_submission
+                ? { result: updatedMatch.player2_submission, confirmed: true, timestamp: Date.now() }
+                : m.player2Submission,
+            }
+          }),
+        }))
+
         // Check if both players submitted matching results
         if (
           updatedMatch.player1_submission &&
           updatedMatch.player2_submission &&
           updatedMatch.player1_submission === updatedMatch.player2_submission
         ) {
-          // Auto-confirm the match with the agreed result
           const isDraw = updatedMatch.player1_submission === "draw"
           const winnerId = isDraw
             ? undefined
@@ -2135,17 +2153,40 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                 <Users className="h-4 w-4 mr-1" />
                 Players
               </TabsTrigger>
-              <TabsTrigger value="pairings" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
+              <TabsTrigger value="pairings" className="relative text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                 <Swords className="h-4 w-4 mr-1" />
                 Pairings
+                {arenaState.pairedMatches.some(
+                  (m) =>
+                    m.player1Submission?.confirmed &&
+                    m.player2Submission?.confirmed &&
+                    m.player1Submission.result !== m.player2Submission.result,
+                ) && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+                )}
               </TabsTrigger>
               {arenaState.status !== "completed" && (
                 <TabsTrigger value="results" className="relative text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                   <Trophy className="h-4 w-4 mr-1" />
                   Results
-                  {hasNewPairing && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                  )}
+                  {(() => {
+                    const hasConflict = arenaState.pairedMatches.some(
+                      (m) =>
+                        m.player1Submission?.confirmed &&
+                        m.player2Submission?.confirmed &&
+                        m.player1Submission.result !== m.player2Submission.result,
+                    )
+                    const hasSubmissions = arenaState.pairedMatches.some(
+                      (m) => m.player1Submission?.confirmed || m.player2Submission?.confirmed,
+                    )
+                    if (hasConflict) {
+                      return <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+                    }
+                    if (hasNewPairing || hasSubmissions) {
+                      return <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    }
+                    return null
+                  })()}
                 </TabsTrigger>
               )}
               <TabsTrigger value="standings" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
@@ -2481,32 +2522,55 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="grid gap-3">
-                      {sortedPendingMatches.map((match) => (
-                        <div
-                          key={match.id}
-                          className="border-2 rounded-lg hover:bg-accent/50 transition-colors overflow-hidden"
-                        >
-                          {/* Table number header */}
-                          {match.tableNumber && (
-                            <div className="bg-amber-700 px-3 py-1 flex items-center gap-2">
-                              <span className="text-white font-bold text-sm">Table {match.tableNumber}</span>
-                            </div>
-                          )}
+                      {sortedPendingMatches.map((match) => {
+                        const p1Sub = match.player1Submission
+                        const p2Sub = match.player2Submission
+                        const bothSubmitted = p1Sub?.confirmed && p2Sub?.confirmed
+                        const hasConflict = bothSubmitted && p1Sub.result !== p2Sub.result
+                        const oneSubmitted = (p1Sub?.confirmed || p2Sub?.confirmed) && !bothSubmitted
 
-                          {/* Players - stacked vertically for full name visibility */}
-                          <div className="p-2 space-y-1">
-                            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded px-2 py-1">
-                              <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded-sm flex-shrink-0" />
-                              <span className="font-semibold text-sm break-words">{match.player1.name}</span>
-                            </div>
-                            <div className="text-center text-xs text-muted-foreground">vs</div>
-                            <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
-                              <div className="w-4 h-4 bg-gray-900 border-2 border-gray-600 rounded-sm flex-shrink-0" />
-                              <span className="font-semibold text-sm break-words">{match.player2.name}</span>
+                        return (
+                          <div
+                            key={match.id}
+                            className={`border-2 rounded-lg hover:bg-accent/50 transition-colors overflow-hidden ${
+                              hasConflict ? "border-red-500 bg-red-50/50 dark:bg-red-950/20" :
+                              oneSubmitted ? "border-amber-400" : ""
+                            }`}
+                          >
+                            {/* Table number header */}
+                            {match.tableNumber && (
+                              <div className="bg-amber-700 px-3 py-1 flex items-center gap-2">
+                                <span className="text-white font-bold text-sm">Table {match.tableNumber}</span>
+                              </div>
+                            )}
+
+                            <div className="p-2 space-y-1">
+                              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded px-2 py-1">
+                                <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded-sm flex-shrink-0" />
+                                <span className="font-semibold text-sm break-words">{match.player1.name}</span>
+                              </div>
+                              <div className="text-center text-xs text-muted-foreground">vs</div>
+                              <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
+                                <div className="w-4 h-4 bg-gray-900 border-2 border-gray-600 rounded-sm flex-shrink-0" />
+                                <span className="font-semibold text-sm break-words">{match.player2.name}</span>
+                              </div>
+
+                              {hasConflict && (
+                                <div className="flex items-center gap-1 px-1 py-0.5 text-red-600 dark:text-red-400 text-xs font-medium">
+                                  <AlertCircle className="h-3.5 w-3.5" />
+                                  Result conflict — check Results tab
+                                </div>
+                              )}
+                              {oneSubmitted && (
+                                <div className="flex items-center gap-1 px-1 py-0.5 text-amber-600 dark:text-amber-400 text-xs">
+                                  <Clock className="h-3 w-3" />
+                                  1 result submitted
+                                </div>
+                              )}
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </CardContent>
                 </Card>

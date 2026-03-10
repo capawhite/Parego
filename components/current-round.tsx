@@ -176,8 +176,26 @@ export function CurrentRound({
                 )
               }
 
+              const p1Sub = match.player1Submission
+              const p2Sub = match.player2Submission
+              const bothSubmitted = p1Sub?.confirmed && p2Sub?.confirmed
+              const hasConflict = bothSubmitted && p1Sub.result !== p2Sub.result
+              const bothAgree = bothSubmitted && p1Sub.result === p2Sub.result
+              const oneSubmitted = (p1Sub?.confirmed || p2Sub?.confirmed) && !bothSubmitted
+
+              const resultLabel = (r: string) =>
+                r === "draw" ? "Draw" : r === "player1-win" ? `${match.player1.name} wins` : `${match.player2.name} wins`
+
               return (
-                <Card key={match.id} className="border-l-4 border-l-primary/30 bg-muted/30">
+                <Card
+                  key={match.id}
+                  className={`border-l-4 bg-muted/30 ${
+                    hasConflict ? "border-l-red-500 bg-red-50/50 dark:bg-red-950/20" :
+                    bothAgree ? "border-l-green-500 bg-green-50/50 dark:bg-green-950/20" :
+                    oneSubmitted ? "border-l-amber-400" :
+                    "border-l-primary/30"
+                  }`}
+                >
                   <CardContent className="p-2">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1 min-w-0 flex-1">
@@ -200,21 +218,38 @@ export function CurrentRound({
                           <span className="font-medium text-sm truncate">{match.player2.name}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        {(match.player1Submission?.confirmed || match.player2Submission?.confirmed) && (
-                          <div className="flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3 text-orange-500" />
-                            <span className="text-[10px] text-muted-foreground">
-                              {match.player1Submission?.confirmed && match.player2Submission?.confirmed
-                                ? match.player1Submission.result === match.player2Submission.result
-                                  ? "✓"
-                                  : "⚠"
-                                : "1"}
-                            </span>
-                          </div>
-                        )}
-                      </div>
                     </div>
+
+                    {/* Submission status banner */}
+                    {hasConflict && (
+                      <div className="mt-1.5 px-2 py-1.5 bg-red-100 dark:bg-red-900/30 rounded text-xs space-y-0.5">
+                        <div className="flex items-center gap-1 font-semibold text-red-700 dark:text-red-400">
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          Result conflict — please resolve
+                        </div>
+                        <div className="text-red-600 dark:text-red-400">
+                          {match.player1.name}: <strong>{resultLabel(p1Sub.result)}</strong>
+                        </div>
+                        <div className="text-red-600 dark:text-red-400">
+                          {match.player2.name}: <strong>{resultLabel(p2Sub.result)}</strong>
+                        </div>
+                      </div>
+                    )}
+                    {bothAgree && (
+                      <div className="mt-1.5 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded text-xs flex items-center gap-1 text-green-700 dark:text-green-400">
+                        <Clock className="h-3 w-3" />
+                        Both agree: <strong>{resultLabel(p1Sub.result)}</strong> — auto-confirming…
+                      </div>
+                    )}
+                    {oneSubmitted && (
+                      <div className="mt-1.5 px-2 py-1 bg-amber-50 dark:bg-amber-900/20 rounded text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {p1Sub?.confirmed
+                          ? `${match.player1.name} submitted: ${resultLabel(p1Sub.result)} — waiting for opponent`
+                          : `${match.player2.name} submitted: ${resultLabel(p2Sub!.result)} — waiting for opponent`}
+                      </div>
+                    )}
+
                     {canRecordResults && (
                       <div className="flex mt-2 justify-start gap-6">
                         <Button

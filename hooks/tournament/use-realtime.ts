@@ -122,11 +122,14 @@ export function useRealtime({
             const allTimeMatches = allMatches.filter((m) => !!m.result?.completed)
 
             setArenaState((prev) => {
-              // Skip no-op updates to avoid re-render / effect cascades
-              const prevPairedIds = prev.pairedMatches.map((m) => m.id).sort().join(",")
-              const newPairedIds = pairedMatches.map((m) => m.id).sort().join(",")
+              // Build fingerprints that include submission state so we
+              // don't skip updates where only submissions changed.
+              const matchFingerprint = (m: Match) =>
+                `${m.id}:${m.player1Submission?.result ?? ""}:${m.player2Submission?.result ?? ""}:${m.result?.completed ?? false}`
+              const prevFp = prev.pairedMatches.map(matchFingerprint).sort().join(",")
+              const newFp = pairedMatches.map(matchFingerprint).sort().join(",")
               const prevAllTimeLen = prev.allTimeMatches.length
-              const noChange = prevPairedIds === newPairedIds && prevAllTimeLen === allTimeMatches.length
+              const noChange = prevFp === newFp && prevAllTimeLen === allTimeMatches.length
               if (noChange) {
                 if (DEBUG) console.log("[realtime] matches unchanged — skipping state update")
                 return prev

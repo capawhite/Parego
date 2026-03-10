@@ -100,7 +100,9 @@ export function MatchResultSubmitter({
               <br />
               Opponent submitted: {getResultText(opponentSubmission!.result)}
               <br />
-              Please discuss and re-enter the correct result.
+              <span className="text-xs mt-1 block">
+                You can re-submit below, or the organizer will resolve this.
+              </span>
             </AlertDescription>
           </Alert>
         )}
