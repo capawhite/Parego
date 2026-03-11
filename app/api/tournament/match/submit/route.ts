@@ -4,6 +4,8 @@ import { submitMatchResultImpl, type SubmitResultResponse } from "@/lib/submit-m
 import { revalidatePath } from "next/cache"
 import type { ResultType } from "@/lib/result-utils"
 
+const DEBUG = process.env.NODE_ENV === "development"
+
 export async function POST(request: Request) {
   try {
     const body = await request.json()
@@ -13,6 +15,7 @@ export async function POST(request: Request) {
       confirmed?: boolean
       playerId?: string
     }
+    if (DEBUG) console.log("[api/submit] POST body:", { matchId, result, confirmed, playerId })
 
     if (!matchId || result == null || confirmed == null) {
       return NextResponse.json(
@@ -36,6 +39,7 @@ export async function POST(request: Request) {
       playerId: playerId ?? undefined,
       userId: user?.id,
     })
+    if (DEBUG) console.log("[api/submit] submitMatchResultImpl result:", res.success, "matchCompleted:", res.matchCompleted, "error:", res.error)
 
     if (res.success && res.match?.tournament_id) {
       revalidatePath(`/tournament/${res.match.tournament_id}`)

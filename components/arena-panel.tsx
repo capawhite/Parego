@@ -1718,12 +1718,19 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     }))
   }
 
-  const handlePlayerConfirm = async (matchId: string) => {
-    if (DEBUG) console.log("[v0] Player confirming result:", matchId)
+  const handlePlayerConfirm = async (
+    matchId: string,
+    result?: "player1-win" | "draw" | "player2-win",
+  ) => {
+    const effectiveResult = result ?? playerSubmissions[matchId]?.result
+    if (DEBUG) console.log("[v0] Player confirming result:", matchId, "result:", effectiveResult, "from arg:", !!result)
     if (!playerSession) return
 
     const match = arenaState.pairedMatches.find((m) => m.id === matchId)
-    if (!match) return
+    if (!match) {
+      if (DEBUG) console.log("[v0] Match not found:", matchId)
+      return
+    }
 
     const isPlayerInMatch = match.player1.id === playerSession.playerId || match.player2.id === playerSession.playerId
     if (!isPlayerInMatch) {
@@ -1731,28 +1738,32 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       return
     }
 
-    const submission = playerSubmissions[matchId]
-    if (!submission) return
+    if (!effectiveResult) {
+      console.warn("[v0] No result to submit (pass result to onConfirm or set via onSubmit first):", matchId)
+      return
+    }
 
     // Mark as confirmed in local state
     setPlayerSubmissions((prev) => ({
       ...prev,
-      [matchId]: { ...prev[matchId], confirmed: true },
+      [matchId]: { result: effectiveResult, confirmed: true },
     }))
 
     try {
+      if (DEBUG) console.log("[v0] Sending POST /api/tournament/match/submit", { matchId, result: effectiveResult, playerId: playerSession.playerId })
       const res = await fetch("/api/tournament/match/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           matchId,
-          result: submission.result,
+          result: effectiveResult,
           confirmed: true,
           playerId: playerSession.playerId,
         }),
       })
 
       const response = await res.json().catch(() => ({ success: false, error: "Invalid response" }))
+      if (DEBUG) console.log("[v0] Submit response:", res.status, response)
 
       if (!res.ok) {
         console.error("[v0] Submit result HTTP error:", res.status, response?.error ?? res.statusText)
@@ -1786,7 +1797,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const updatedMatch = response.match
 
       if (updatedMatch) {
-        if (DEBUG) console.log("[v0] Match submission saved:", updatedMatch)
+        if (DEBUG) console.log("[v0] Match submission saved:", updatedMatch, "matchCompleted:", response.matchCompleted, "updatedPlayers:", response.updatedPlayers?.length)
 
         // Server may have already completed the match and updated player scores
         if (response.matchCompleted && response.updatedPlayers?.length === 2) {

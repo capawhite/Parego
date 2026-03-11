@@ -10,7 +10,7 @@ interface CurrentRoundProps {
   matches: Match[]
   onRecordResult: (matchId: string, winnerId?: string, isDraw?: boolean) => void
   onPlayerSubmit?: (matchId: string, result: "player1-win" | "draw" | "player2-win") => void
-  onPlayerConfirm?: (matchId: string) => void
+  onPlayerConfirm?: (matchId: string, result: "player1-win" | "draw" | "player2-win") => void
   onPlayerCancel?: (matchId: string) => void
   playerSession?: { playerId: string; role: "player" | "organizer" }
   canRecordResults?: boolean
@@ -170,7 +170,7 @@ export function CurrentRound({
                     mySubmission={mySubmission}
                     opponentSubmission={opponentSubmission}
                     onSubmit={(result) => onPlayerSubmit(match.id, result)}
-                    onConfirm={() => onPlayerConfirm(match.id)}
+                    onConfirm={(result) => onPlayerConfirm(match.id, result)}
                     onCancel={() => onPlayerCancel(match.id)}
                   />
                 )

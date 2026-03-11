@@ -17,7 +17,7 @@ interface ResultsTabProps {
   canRecordResults: boolean
   onRecordResult: (matchId: string, winnerId?: string, isDraw?: boolean) => void
   onPlayerSubmit: (matchId: string, result: "player1-win" | "draw" | "player2-win") => void
-  onPlayerConfirm: (matchId: string) => void
+  onPlayerConfirm: (matchId: string, result: "player1-win" | "draw" | "player2-win") => void
   onPlayerCancel: (matchId: string) => void
 }
 

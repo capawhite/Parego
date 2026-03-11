@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+const DEBUG_SUBMIT = true // Set to false to reduce console noise
+
 interface MatchResultSubmitterProps {
   matchId: string
   player1Name: string
@@ -22,7 +24,7 @@ interface MatchResultSubmitterProps {
     timestamp: number
   }
   onSubmit: (result: "player1-win" | "draw" | "player2-win") => void
-  onConfirm: () => void
+  onConfirm: (result: "player1-win" | "draw" | "player2-win") => void
   onCancel: () => void
 }
 
@@ -39,10 +41,16 @@ export function MatchResultSubmitter({
 }: MatchResultSubmitterProps) {
   const [selectedResult, setSelectedResult] = useState<"player1-win" | "draw" | "player2-win" | null>(null)
 
-  const handleSelect = (result: "player1-win" | "draw" | "player2-win") => {
+  const handleSelectResult = (result: "player1-win" | "draw" | "player2-win") => {
+    if (DEBUG_SUBMIT) console.log("[result-submit] Selected result:", result, "matchId:", matchId)
     setSelectedResult(result)
     onSubmit(result)
-    onConfirm()
+  }
+
+  const handleSubmit = () => {
+    if (selectedResult == null) return
+    if (DEBUG_SUBMIT) console.log("[result-submit] Submitting to server:", selectedResult, "matchId:", matchId)
+    onConfirm(selectedResult)
   }
 
   const getResultText = (result: "player1-win" | "draw" | "player2-win") => {
@@ -110,7 +118,7 @@ export function MatchResultSubmitter({
           <Button
             variant={selectedResult === "player1-win" ? "default" : "outline"}
             className="w-full"
-            onClick={() => handleSelect("player1-win")}
+            onClick={() => handleSelectResult("player1-win")}
             disabled={mySubmission?.confirmed && !hasConflict}
           >
             {player1Name} wins (White)
@@ -118,7 +126,7 @@ export function MatchResultSubmitter({
           <Button
             variant={selectedResult === "draw" ? "default" : "outline"}
             className="w-full"
-            onClick={() => handleSelect("draw")}
+            onClick={() => handleSelectResult("draw")}
             disabled={mySubmission?.confirmed && !hasConflict}
           >
             Draw
@@ -126,10 +134,17 @@ export function MatchResultSubmitter({
           <Button
             variant={selectedResult === "player2-win" ? "default" : "outline"}
             className="w-full"
-            onClick={() => handleSelect("player2-win")}
+            onClick={() => handleSelectResult("player2-win")}
             disabled={mySubmission?.confirmed && !hasConflict}
           >
             {player2Name} wins (Black)
+          </Button>
+          <Button
+            className="w-full mt-2"
+            onClick={handleSubmit}
+            disabled={selectedResult == null || (mySubmission?.confirmed && !hasConflict)}
+          >
+            Submit result
           </Button>
         </div>
       </CardContent>
