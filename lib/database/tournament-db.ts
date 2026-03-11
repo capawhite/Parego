@@ -502,15 +502,16 @@ export async function listNearbyTournaments(
     return distance <= radiusKm
   })
 
-  // Sort by start_time (soonest first), then by distance
+  // Sort by most recently created first, then soonest start time, then distance
   return filtered.sort((a, b) => {
-    // Prioritize tournaments with start times
+    const createdA = (a.created_at && new Date(a.created_at).getTime()) || 0
+    const createdB = (b.created_at && new Date(b.created_at).getTime()) || 0
+    if (createdB !== createdA) return createdB - createdA // newest first
     if (a.start_time && !b.start_time) return -1
     if (!a.start_time && b.start_time) return 1
     if (a.start_time && b.start_time) {
       return new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
     }
-    // Fall back to distance
     const distA = haversineDistance(latitude, longitude, a.latitude!, a.longitude!)
     const distB = haversineDistance(latitude, longitude, b.latitude!, b.longitude!)
     return distA - distB

@@ -304,6 +304,18 @@ export default function Home() {
           <p className="text-muted-foreground text-sm">Find one, view it, or join—no signup required to browse.</p>
         </div>
 
+        {/* Create tournament (logged in) — up top */}
+        {user && (
+          <div className="max-w-md mx-auto sm:mx-0">
+            <Button variant="outline" className="w-full border-2 hover:border-primary hover:bg-primary/5 font-semibold" asChild>
+              <Link href="/create">
+                <Plus className="h-4 w-4 mr-2" />
+                Create tournament
+              </Link>
+            </Button>
+          </div>
+        )}
+
         {/* Location pending */}
         {locationStatus === "pending" && (
           <Card className="border-2 border-primary/20">
@@ -502,18 +514,6 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Create tournament (logged in) */}
-        {user && (
-          <div className="pt-4 border-t max-w-md">
-            <Button variant="outline" className="w-full border-2 hover:border-primary hover:bg-primary/5 font-semibold" asChild>
-              <Link href="/create">
-                <Plus className="h-4 w-4 mr-2" />
-                Create tournament
-              </Link>
-            </Button>
-          </div>
-        )}
 
         {/* Soft signup prompt when not logged in */}
         {!loadingAuth && !user && (

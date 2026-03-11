@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, Clock, CheckCircle2 } from "lucide-react"
@@ -39,25 +39,26 @@ export function MatchResultSubmitter({
 }: MatchResultSubmitterProps) {
   const [countdown, setCountdown] = useState<number | null>(null)
   const [selectedResult, setSelectedResult] = useState<"player1-win" | "draw" | "player2-win" | null>(null)
+  const onConfirmRef = useRef(onConfirm)
+  onConfirmRef.current = onConfirm
 
-  // Start countdown when selection is made
+  // Start countdown when selection is made. Don't depend on onConfirm or the effect
+  // would re-run every parent re-render and reset the timer so it never fires.
   useEffect(() => {
-    if (selectedResult && !mySubmission?.confirmed) {
-      setCountdown(10)
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev === null || prev <= 1) {
-            clearInterval(timer)
-            onConfirm()
-            return null
-          }
-          return prev - 1
-        })
-      }, 1000)
-
-      return () => clearInterval(timer)
-    }
-  }, [selectedResult, mySubmission, onConfirm])
+    if (!selectedResult || mySubmission?.confirmed) return
+    setCountdown(10)
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(timer)
+          onConfirmRef.current()
+          return null
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [selectedResult, mySubmission?.confirmed])
 
   const handleSelect = (result: "player1-win" | "draw" | "player2-win") => {
     setSelectedResult(result)
@@ -132,9 +133,14 @@ export function MatchResultSubmitter({
         )}
 
         {countdown !== null && (
-          <div className="flex items-center justify-center gap-2 text-orange-600">
-            <Clock className="h-4 w-4" />
-            <span className="font-semibold">Confirming in {countdown}s</span>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-center gap-2 text-orange-600">
+              <Clock className="h-4 w-4" />
+              <span className="font-semibold">Confirming in {countdown}s</span>
+            </div>
+            <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => { onConfirmRef.current(); setCountdown(null); setSelectedResult(null); }}>
+              Confirm now
+            </Button>
           </div>
         )}
 
