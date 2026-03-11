@@ -4,6 +4,9 @@ import type { PairingAlgorithm } from "./types"
 /**
  * Balanced Strength Arena Algorithm
  *
+ * Goal: Prefer similar strength (table/rank) but not at the expense of never playing;
+ * table range expands with wait time so pairing stays possible.
+ *
  * Strategy:
  * - Players are assigned to table ranges based on their ranking
  * - Pairs immediately when 2 players waiting for same table
@@ -106,7 +109,8 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
       const timeSinceAvailable = now - waitingSince
       const rangeExpansions = Math.floor(timeSinceAvailable / T2)
 
-      // Initial range: [Mo - P, Mo + P], then expand by P each T2 interval
+      // Initial range: [Mo - P, Mo + P], then expand by P each T2 interval.
+      // Range expands over wait time so players are not permanently restricted to one strength band.
       const minTable = Math.max(1, Math.floor(Mo - P - rangeExpansions * P))
       const maxTable = Math.min(M, Math.ceil(Mo + P + rangeExpansions * P))
 

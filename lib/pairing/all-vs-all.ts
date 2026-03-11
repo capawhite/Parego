@@ -13,12 +13,16 @@ interface PairingScore {
 /**
  * All vs All Arena Algorithm
  *
+ * Goal: Strive to get everyone to play at least once with every opponent; prefer
+ * never-played pairs and avoid very recent rematches; allow rematches when saturated.
+ *
  * Strategy:
  * - Waits for a threshold of players to be available before pairing
  * - Pairs all available players at once in rounds
- * - Prioritizes avoiding recent rematches
+ * - Prioritizes avoiding recent rematches (uses opponentIds for history)
  * - Matches similar skill levels when possible
  * - Balances piece colors
+ * - Small fields (<=4 players): only pair when no games in progress to avoid instant rematch
  */
 export const allVsAllAlgorithm: PairingAlgorithm = {
   id: "all-vs-all",
@@ -69,27 +73,19 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
       veryRecentOpponents.set(p.id, new Map<string, number>())
     })
 
-    // Build each player's game history in chronological order
+    // Build opponent history from opponentIds (order played; last index = most recent)
     availablePlayers.forEach((player) => {
-      if (!player.history || player.history.length === 0) return
+      const opponentIds = player.opponentIds ?? []
+      if (opponentIds.length === 0) return
 
-      const playerHistory = player.history
+      for (let i = opponentIds.length - 1; i >= 0; i--) {
+        const opponentId = opponentIds[i]
+        const gamesAgo = opponentIds.length - i // 1 = most recent, 2 = one before, etc.
 
-      // Iterate through player's history from most recent to oldest
-      for (let gameIndex = 0; gameIndex < playerHistory.length; gameIndex++) {
-        const game = playerHistory[playerHistory.length - 1 - gameIndex] // Start from most recent
-        const opponentId = game.opponentId
-        const gamesAgo = gameIndex + 1 // How many games ago this match was for THIS player
-
-        // Track all opponents
         allOpponents.get(player.id)?.add(opponentId)
-
-        // Track very recent opponents (within last 3 games for THIS player)
         if (gamesAgo <= 3) {
           veryRecentOpponents.get(player.id)?.set(opponentId, gamesAgo)
         }
-
-        // Track recent opponents (within last 10 games for THIS player)
         if (gamesAgo <= 10) {
           recentOpponents.get(player.id)?.set(opponentId, gamesAgo)
         }
@@ -127,9 +123,11 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
     totalPlayers: number,
     availableTables: number,
   ): boolean {
-    // Wait for at least 1/3 of players to be available
-    const dynamicThreshold = Math.max(2, Math.floor(totalPlayers / 3))
+    // Small field: only pair when no games in progress so we can avoid immediate rematches
+    const SMALL_FIELD_MAX = 4
+    if (totalPlayers <= SMALL_FIELD_MAX && activeMatches.length > 0) return false
 
+    const dynamicThreshold = Math.max(2, Math.floor(totalPlayers / 3))
     const hasEnoughPlayers = availablePlayers.length >= dynamicThreshold
     const hasAvailableTables = availableTables > 0
 
