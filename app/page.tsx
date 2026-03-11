@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Zap, MapPin, Hash, User, LogOut, Plus, AlertCircle, Compass, Loader2 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { Zap, MapPin, Hash, User, LogOut, Plus, AlertCircle, Compass, Loader2, RefreshCw } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -44,6 +44,7 @@ export default function Home() {
   const [playerPreviews, setPlayerPreviews] = useState<Record<string, string[]>>({})
   const [userInterests, setUserInterests] = useState<Set<string>>(new Set())
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -161,6 +162,39 @@ export default function Home() {
       cancelled = true
     }
   }, [locationStatus])
+
+  // Refetch tournaments (used by periodic refresh, manual button, and tab focus)
+  const refreshTournaments = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      if (locationStatus === "granted" && userLocation) {
+        const data = await listNearbyTournaments(userLocation.lat, userLocation.lon, NEARBY_RADIUS_KM, NEARBY_HOURS, 10)
+        setNearbyTournaments(data)
+      } else if (locationStatus === "denied" || locationStatus === "unsupported") {
+        const data = await listTournaments(FALLBACK_LIST_LIMIT)
+        setFallbackTournaments(data.filter((t) => t.status !== "completed"))
+      }
+    } finally {
+      setRefreshing(false)
+    }
+  }, [locationStatus, userLocation])
+
+  // Periodic refresh so new tournaments appear without reload (e.g. organizer just created one)
+  const REFRESH_INTERVAL_MS = 45_000
+  useEffect(() => {
+    if (locationStatus === "pending") return
+    const id = setInterval(refreshTournaments, REFRESH_INTERVAL_MS)
+    return () => clearInterval(id)
+  }, [refreshTournaments, locationStatus])
+
+  // Refetch when user returns to the tab
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState === "visible" && locationStatus !== "pending") refreshTournaments()
+    }
+    document.addEventListener("visibilitychange", onFocus)
+    return () => document.removeEventListener("visibilitychange", onFocus)
+  }, [refreshTournaments, locationStatus])
 
   const showNearby = locationStatus === "granted" && userLocation
   const showFallback = (locationStatus === "denied" || locationStatus === "unsupported") && !showNearby
@@ -296,9 +330,20 @@ export default function Home() {
               </Card>
             ) : hasNearbyList ? (
               <div className="space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Within {NEARBY_RADIUS_KM} km · next {NEARBY_HOURS} hours
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Within {NEARBY_RADIUS_KM} km · next {NEARBY_HOURS} hours
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => refreshTournaments()}
+                    disabled={refreshing}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                  </Button>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {nearbyTournaments.map((t) => (
                     <LandingTournamentCard
@@ -358,7 +403,18 @@ export default function Home() {
         {/* Fallback list: recent tournaments when no location */}
         {hasFallbackList && (
           <div className="space-y-3">
-            <h2 className="text-sm font-medium text-muted-foreground">Recent tournaments</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-medium text-muted-foreground">Recent tournaments</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => refreshTournaments()}
+                disabled={refreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {fallbackTournaments.map((t) => (
                 <LandingTournamentCard

@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, MapPin, Clock, Navigation, AlertCircle, MapPinOff, ExternalLink } from "lucide-react"
-import { useState, useEffect } from "react"
+import { ArrowLeft, MapPin, Clock, Navigation, AlertCircle, MapPinOff, ExternalLink, RefreshCw } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import {
   listNearbyTournaments,
@@ -33,6 +33,7 @@ export default function NearbyPage() {
   const [timeWindow, setTimeWindow] = useState<TimeOption>(12)
   const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({})
   const [playerPreviews, setPlayerPreviews] = useState<Record<string, string[]>>({})
+  const [refreshing, setRefreshing] = useState(false)
 
   // Get user's registered location and request geolocation
   useEffect(() => {
@@ -93,35 +94,54 @@ export default function NearbyPage() {
     initLocation()
   }, [supabase])
 
+  const refreshNearby = useCallback(async (isInitialLoad = false) => {
+    if (!userLocation) return
+    if (isInitialLoad) setLoading(true)
+    else setRefreshing(true)
+    setError(null)
+    try {
+      const results = await listNearbyTournaments(userLocation.lat, userLocation.lon, radius, timeWindow, 10)
+      setTournaments(results)
+      const ids = results.map((t) => t.id)
+      if (ids.length > 0) {
+        const [counts, previews] = await Promise.all([
+          getPlayerCounts(ids),
+          getPlayerPreviews(ids, 5),
+        ])
+        setPlayerCounts(counts)
+        setPlayerPreviews(previews)
+      }
+    } catch (err) {
+      console.error("[v0] Error fetching nearby tournaments:", err)
+      setError("Failed to load tournaments. Please try again.")
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [userLocation, radius, timeWindow])
+
   // Fetch nearby tournaments when location or filters change
   useEffect(() => {
     if (!userLocation) return
+    refreshNearby(true)
+  }, [userLocation, radius, timeWindow, refreshNearby])
 
-    async function fetchNearby() {
-      setLoading(true)
-      setError(null)
-      try {
-        const results = await listNearbyTournaments(userLocation.lat, userLocation.lon, radius, timeWindow, 10)
-        setTournaments(results)
-        const ids = results.map((t) => t.id)
-        if (ids.length > 0) {
-          const [counts, previews] = await Promise.all([
-            getPlayerCounts(ids),
-            getPlayerPreviews(ids, 5),
-          ])
-          setPlayerCounts(counts)
-          setPlayerPreviews(previews)
-        }
-      } catch (err) {
-        console.error("[v0] Error fetching nearby tournaments:", err)
-        setError("Failed to load tournaments. Please try again.")
-      } finally {
-        setLoading(false)
-      }
+  // Periodic refresh so new tournaments appear without reload
+  const REFRESH_INTERVAL_MS = 45_000
+  useEffect(() => {
+    if (!userLocation) return
+    const id = setInterval(refreshNearby, REFRESH_INTERVAL_MS)
+    return () => clearInterval(id)
+  }, [refreshNearby, userLocation])
+
+  // Refetch when user returns to the tab
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState === "visible" && userLocation) refreshNearby()
     }
-
-    fetchNearby()
-  }, [userLocation, radius, timeWindow])
+    document.addEventListener("visibilitychange", onFocus)
+    return () => document.removeEventListener("visibilitychange", onFocus)
+  }, [refreshNearby, userLocation])
 
   const formatStartTime = (startTime?: string) => {
     if (!startTime) return "Start time TBD"
@@ -163,7 +183,7 @@ export default function NearbyPage() {
           <Button variant="ghost" size="icon" className="min-h-10 min-w-10 touch-manipulation shrink-0" onClick={() => router.push("/")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold">Find Nearby</h1>
             <p className="text-sm text-muted-foreground">
               Tournaments within {radius} km
@@ -171,6 +191,17 @@ export default function NearbyPage() {
               {locationSource === "gps" && " (using GPS)"}
             </p>
           </div>
+          {userLocation && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="min-h-10 min-w-10 shrink-0"
+              onClick={() => refreshNearby()}
+              disabled={refreshing || loading}
+            >
+              <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
+            </Button>
+          )}
         </div>
 
         {/* Filters */}

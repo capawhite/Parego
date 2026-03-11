@@ -1741,13 +1741,32 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     }))
 
     try {
-      const { submitMatchResult } = await import("@/app/actions/submit-result")
-      const response = await submitMatchResult(matchId, submission.result, true, playerSession.playerId)
+      const res = await fetch("/api/tournament/match/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          matchId,
+          result: submission.result,
+          confirmed: true,
+          playerId: playerSession.playerId,
+        }),
+      })
+
+      const response = await res.json().catch(() => ({ success: false, error: "Invalid response" }))
+
+      if (!res.ok) {
+        console.error("[v0] Submit result HTTP error:", res.status, response?.error ?? res.statusText)
+        alert(response?.error || `Request failed (${res.status}). Try again.`)
+        setPlayerSubmissions((prev) => ({
+          ...prev,
+          [matchId]: { ...prev[matchId], confirmed: false },
+        }))
+        return
+      }
 
       if (!response.success) {
         console.error("[v0] Server rejected submission:", response.error)
         alert(response.error || "Failed to submit result")
-        // Revert local state
         setPlayerSubmissions((prev) => ({
           ...prev,
           [matchId]: { ...prev[matchId], confirmed: false },
@@ -1769,6 +1788,37 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       if (updatedMatch) {
         if (DEBUG) console.log("[v0] Match submission saved:", updatedMatch)
 
+        // Server may have already completed the match and updated player scores
+        if (response.matchCompleted && response.updatedPlayers?.length === 2) {
+          const isDraw = updatedMatch.player1_submission === "draw"
+          const winnerId = isDraw
+            ? undefined
+            : updatedMatch.player1_submission === "player1-win"
+              ? updatedMatch.player1_id
+              : updatedMatch.player2_id
+          const completedAt = Date.now()
+          const playerUpdates = new Map(response.updatedPlayers.map((u) => [u.id, u]))
+
+          setArenaState((prev) => {
+            const updatedPlayers = prev.players.map((p) => {
+              const u = playerUpdates.get(p.id)
+              if (!u) return p
+              return { ...p, score: u.points, gamesPlayed: u.games_played, streak: u.streak }
+            })
+            const match = prev.pairedMatches.find((m) => m.id === matchId)
+            const completedMatch =
+              match &&
+              ({ ...match, result: { winnerId, isDraw, completed: true, completedAt } } as typeof match)
+            return {
+              ...prev,
+              players: updatedPlayers,
+              pairedMatches: prev.pairedMatches.filter((m) => m.id !== matchId),
+              allTimeMatches: completedMatch ? [...prev.allTimeMatches, completedMatch] : prev.allTimeMatches,
+            }
+          })
+          return
+        }
+
         // Immediately reflect the submission in arenaState so the UI
         // shows it without waiting for Realtime
         setArenaState((prev) => ({
@@ -1787,11 +1837,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           }),
         }))
 
-        // Check if both players submitted matching results
+        // If both agreed but server didn't complete (e.g. old deployment), organizer path can still run
         if (
           updatedMatch.player1_submission &&
           updatedMatch.player2_submission &&
-          updatedMatch.player1_submission === updatedMatch.player2_submission
+          updatedMatch.player1_submission === updatedMatch.player2_submission &&
+          !response.matchCompleted
         ) {
           const isDraw = updatedMatch.player1_submission === "draw"
           const winnerId = isDraw
@@ -1799,14 +1850,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             : updatedMatch.player1_submission === "player1-win"
               ? updatedMatch.player1_id
               : updatedMatch.player2_id
-
           recordResult(matchId, winnerId, isDraw)
         }
       }
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
       console.error("[v0] Error saving player submission:", error)
-      alert("Failed to submit result. Please try again.")
-      // Revert local state
+      alert(`Failed to submit result. ${msg.includes("fetch") || msg.includes("Network") ? "Check your connection." : "Please try again."}`)
       setPlayerSubmissions((prev) => ({
         ...prev,
         [matchId]: { ...prev[matchId], confirmed: false },
