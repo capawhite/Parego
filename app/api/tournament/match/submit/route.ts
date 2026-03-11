@@ -24,6 +24,15 @@ export async function POST(request: Request) {
       )
     }
 
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user && !playerId) {
+      return NextResponse.json(
+        { success: false, error: "Guest players must send playerId. Rejoin the tournament from the join link if you don't see your session." },
+        { status: 400 },
+      )
+    }
+
     const validResults: ResultType[] = ["player1-win", "draw", "player2-win"]
     if (!validResults.includes(result)) {
       return NextResponse.json(
@@ -31,9 +40,6 @@ export async function POST(request: Request) {
         { status: 400 },
       )
     }
-
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
     const res: SubmitResultResponse = await submitMatchResultImpl(matchId, result, !!confirmed, {
       playerId: playerId ?? undefined,

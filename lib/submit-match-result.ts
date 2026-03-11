@@ -83,6 +83,9 @@ export async function submitMatchResultImpl(
     return { success: false, error: "Match is already completed" }
   }
 
+  const DEBUG = process.env.NODE_ENV === "development"
+  if (DEBUG) console.log("[submit-match-result] Resolving side:", { playerId, userId, player1_id: match.player1_id, player2_id: match.player2_id })
+
   let side: "player1" | "player2" | null = null
   if (userId) {
     side = getSubmissionSide(userId, match.player1_data, match.player2_data)
@@ -99,7 +102,11 @@ export async function submitMatchResultImpl(
   }
 
   if (!side) {
-    return { success: false, error: "You are not a player in this match" }
+    if (DEBUG) console.warn("[submit-match-result] Side not resolved — playerId/userId did not match match players")
+    return {
+      success: false,
+      error: "You are not a player in this match. If you joined as a guest, try refreshing and rejoining from the join link.",
+    }
   }
 
   const submissionField = side === "player1" ? "player1_submission" : "player2_submission"
@@ -115,7 +122,11 @@ export async function submitMatchResultImpl(
 
   if (updateError) {
     console.error("[v0] Error updating match submission:", updateError)
-    return { success: false, error: "Failed to save result" }
+    const msg = (updateError as Error)?.message ?? String(updateError)
+    const hint = msg.includes("policy") || msg.includes("RLS") || msg.includes("42501")
+      ? " (Check SUPABASE_SERVICE_ROLE_KEY is set in production.)"
+      : ""
+    return { success: false, error: `Failed to save result.${hint}` }
   }
 
   const { data: updatedMatch } = await adminClient.from("matches").select("*").eq("id", matchId).single()

@@ -1723,8 +1723,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     result?: "player1-win" | "draw" | "player2-win",
   ) => {
     const effectiveResult = result ?? playerSubmissions[matchId]?.result
-    if (DEBUG) console.log("[v0] Player confirming result:", matchId, "result:", effectiveResult, "from arg:", !!result)
-    if (!playerSession) return
+    if (DEBUG) console.log("[v0] Player confirming result:", matchId, "result:", effectiveResult, "from arg:", !!result, "playerId:", playerSession?.playerId)
+    if (!playerSession?.playerId) {
+      alert("Your session is missing (no player ID). Please rejoin the tournament using the join link.")
+      return
+    }
 
     const match = arenaState.pairedMatches.find((m) => m.id === matchId)
     if (!match) {
@@ -1763,6 +1766,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       })
 
       const response = await res.json().catch(() => ({ success: false, error: "Invalid response" }))
+      // Always log so we can see what the server returned (helps debug guest submission)
+      console.log("[result-submit] Response:", res.status, JSON.stringify(response))
       if (DEBUG) console.log("[v0] Submit response:", res.status, response)
 
       if (!res.ok) {
@@ -1866,7 +1871,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
-      console.error("[v0] Error saving player submission:", error)
+      console.error("[result-submit] Request failed:", msg, error)
       alert(`Failed to submit result. ${msg.includes("fetch") || msg.includes("Network") ? "Check your connection." : "Please try again."}`)
       setPlayerSubmissions((prev) => ({
         ...prev,
