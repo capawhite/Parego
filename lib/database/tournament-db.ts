@@ -202,7 +202,6 @@ export async function insertPlayer(tournamentId: string, player: InsertPlayerDat
     sonneborn_berger: 0,
     is_paused: false,
     is_removed: false,
-    country: player.country ?? null,
     checked_in_at: player.checkedInAt != null ? new Date(player.checkedInAt).toISOString() : null,
     presence_source: player.presenceSource ?? null,
   })
@@ -530,21 +529,6 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c
 }
 
-// --- Tournament interest (express interest, non-binding) ---
-
-export async function getInterestCount(tournamentId: string): Promise<number> {
-  const supabase = createClient()
-  const { count, error } = await supabase
-    .from("tournament_interest")
-    .select("*", { count: "exact", head: true })
-    .eq("tournament_id", tournamentId)
-  if (error) {
-    console.error("[tournament-db] getInterestCount error:", error)
-    return 0
-  }
-  return count ?? 0
-}
-
 /** Batch: player count per tournament id */
 export async function getPlayerCounts(tournamentIds: string[]): Promise<Record<string, number>> {
   if (tournamentIds.length === 0) return {}
@@ -589,83 +573,6 @@ export async function getPlayerPreviews(
   return byTournament
 }
 
-/** Batch: count of interested users per tournament id */
-export async function getInterestCounts(tournamentIds: string[]): Promise<Record<string, number>> {
-  if (tournamentIds.length === 0) return {}
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from("tournament_interest")
-    .select("tournament_id")
-    .in("tournament_id", tournamentIds)
-  if (error) {
-    console.error("[tournament-db] getInterestCounts error:", error)
-    return Object.fromEntries(tournamentIds.map((id) => [id, 0]))
-  }
-  const counts: Record<string, number> = {}
-  for (const id of tournamentIds) counts[id] = 0
-  for (const row of data ?? []) {
-    counts[row.tournament_id] = (counts[row.tournament_id] ?? 0) + 1
-  }
-  return counts
-}
-
-/** Whether the given user has expressed interest in the given tournament */
-export async function getUserInterested(tournamentId: string, userId: string): Promise<boolean> {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from("tournament_interest")
-    .select("id")
-    .eq("tournament_id", tournamentId)
-    .eq("user_id", userId)
-    .maybeSingle()
-  if (error) return false
-  return !!data
-}
-
-/** Batch: set of tournament ids the user has expressed interest in */
-export async function getUserInterests(userId: string, tournamentIds: string[]): Promise<Set<string>> {
-  if (tournamentIds.length === 0) return new Set()
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from("tournament_interest")
-    .select("tournament_id")
-    .eq("user_id", userId)
-    .in("tournament_id", tournamentIds)
-  if (error) return new Set()
-  return new Set((data ?? []).map((r) => r.tournament_id))
-}
-
-export async function addInterest(tournamentId: string, userId: string): Promise<{ ok: boolean; error?: string }> {
-  const supabase = createClient()
-  const { error } = await supabase.from("tournament_interest").insert({ tournament_id: tournamentId, user_id: userId })
-  if (error) {
-    if (error.code === "23505") return { ok: true } // already interested
-    console.error("[tournament-db] addInterest error:", error)
-    return { ok: false, error: error.message }
-  }
-  return { ok: true }
-}
-
-export async function removeInterest(tournamentId: string, userId: string): Promise<{ ok: boolean; error?: string }> {
-  const supabase = createClient()
-  const { error } = await supabase
-    .from("tournament_interest")
-    .delete()
-    .eq("tournament_id", tournamentId)
-    .eq("user_id", userId)
-  if (error) {
-    console.error("[tournament-db] removeInterest error:", error)
-    return { ok: false, error: error.message }
-  }
-  return { ok: true }
-}
-
-export interface InterestedUser {
-  user_id: string
-  name: string | null
-  created_at: string
-}
-
 /** Fetch avatar URLs for given user IDs. Returns map of userId -> avatarUrl. */
 export async function getAvatarUrls(userIds: string[]): Promise<Record<string, string>> {
   if (userIds.length === 0) return {}
@@ -680,27 +587,4 @@ export async function getAvatarUrls(userIds: string[]): Promise<Record<string, s
     if (row.avatar_url) map[row.id] = row.avatar_url
   }
   return map
-}
-
-/** List interested users for a tournament (for organizer view). Joins users for display name. */
-export async function getInterestedUsers(tournamentId: string): Promise<InterestedUser[]> {
-  const supabase = createClient()
-  const { data: rows, error } = await supabase
-    .from("tournament_interest")
-    .select("user_id, created_at")
-    .eq("tournament_id", tournamentId)
-    .order("created_at", { ascending: false })
-  if (error) {
-    console.error("[tournament-db] getInterestedUsers error:", error)
-    return []
-  }
-  if (!rows?.length) return []
-  const userIds = [...new Set(rows.map((r) => r.user_id))]
-  const { data: profiles } = await supabase.from("users").select("id, name").in("id", userIds)
-  const nameBy = new Map((profiles ?? []).map((p) => [p.id, p.name ?? null]))
-  return rows.map((r) => ({
-    user_id: r.user_id,
-    name: nameBy.get(r.user_id) ?? null,
-    created_at: r.created_at,
-  }))
 }

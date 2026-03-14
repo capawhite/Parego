@@ -73,7 +73,7 @@ export function useAutoPairing(params: AutoPairingParams) {
 
       if (algorithm.shouldPair(availablePlayers, activePairingMatches, players.length, availableTables)) {
         const maxMatches = Math.min(availableTables, Math.floor(availablePlayers.length / 2))
-        const newMatches = algorithm.createPairings(availablePlayers, allTimeMatches, settings, maxMatches)
+        const newMatches = algorithm.createPairings(availablePlayers, allTimeMatches, settings, maxMatches, players.length)
 
         if (newMatches.length > 0) {
           const matchesWithTables = assignTablesToMatches(newMatches)

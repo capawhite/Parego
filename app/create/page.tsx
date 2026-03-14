@@ -328,10 +328,15 @@ export default function CreateTournamentPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all-vs-all">All vs All (Arena)</SelectItem>
-                  <SelectItem value="balanced-strength">Arena (Balanced Strength)</SelectItem>
+                  <SelectItem value="all-vs-all">{t("create.pairingAllVsAll")}</SelectItem>
+                  <SelectItem value="balanced-strength">{t("create.pairingArenaBalanced")}</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                {pairingAlgorithm === "balanced-strength"
+                  ? t("create.pairingArenaBalancedDescription")
+                  : t("create.pairingAllVsAllDescription")}
+              </p>
             </div>
 
             {/* Time Control */}

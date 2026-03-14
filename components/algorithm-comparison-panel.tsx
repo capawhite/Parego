@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { useI18n } from "@/components/i18n-provider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Player, Match, TournamentSettings } from "@/lib/types"
 import { getPairingAlgorithm } from "@/lib/pairing"
@@ -25,6 +26,7 @@ export function AlgorithmComparisonPanel({
   matches: Match[]
   settings: TournamentSettings
 }) {
+  const { t } = useI18n()
   const [comparing, setComparing] = useState(false)
   const [results, setResults] = useState<ComparisonResult[]>([])
 
@@ -182,8 +184,7 @@ export function AlgorithmComparisonPanel({
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-xs text-muted-foreground">
-          Compare how the "All vs All" and "Balanced Strength" algorithms would have paired players differently using
-          this tournament's actual results.
+          {t("create.pairingComparisonIntro")}
         </p>
 
         <Button
@@ -220,7 +221,7 @@ export function AlgorithmComparisonPanel({
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <h4 className="text-[10px] font-semibold mb-1.5">
-                        All vs All ({result.allVsAllPairings.length})
+                        {t("create.pairingAllVsAll")} ({result.allVsAllPairings.length})
                       </h4>
                       <div className="space-y-0.5">
                         {result.allVsAllPairings.map((pair, idx) => (
@@ -233,7 +234,7 @@ export function AlgorithmComparisonPanel({
 
                     <div>
                       <h4 className="text-[10px] font-semibold mb-1.5">
-                        Balanced Strength ({result.balancedStrengthPairings.length})
+                        {t("create.pairingArenaBalanced")} ({result.balancedStrengthPairings.length})
                       </h4>
                       <div className="space-y-0.5">
                         {result.balancedStrengthPairings.map((pair, idx) => (

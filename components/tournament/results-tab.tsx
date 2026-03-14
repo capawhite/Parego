@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { CurrentRound } from "@/components/current-round"
 import { TournamentSimulatorPanel } from "@/components/tournament-simulator-panel"
+import { useI18n } from "@/components/i18n-provider"
 import type { Match, Player } from "@/lib/types"
 import type { ArenaSessionData } from "@/hooks/tournament/use-player-session"
 
@@ -35,12 +36,13 @@ export function ResultsTab({
   onPlayerConfirm,
   onPlayerCancel,
 }: ResultsTabProps) {
+  const { t } = useI18n()
   if (status === "completed") {
     return (
       <Card>
         <CardContent className="pt-6">
           <p className="text-center text-muted-foreground">
-            Tournament has ended. No more results can be recorded.
+            {t("results.tournamentEndedNoResults")}
           </p>
         </CardContent>
       </Card>
@@ -89,7 +91,9 @@ export function ResultsTab({
       ) : (
         <Card>
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">No matches yet. Start a tournament to begin.</p>
+            <p className="text-center text-muted-foreground">
+              {isActive ? t("results.morePairingsComingSoon") : t("results.noMatchesYet")}
+            </p>
           </CardContent>
         </Card>
       )}

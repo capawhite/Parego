@@ -11,14 +11,11 @@ import { createClient } from "@/lib/supabase/client"
 import {
   listNearbyTournaments,
   listTournaments,
-  getInterestCounts,
   getPlayerCounts,
   getPlayerPreviews,
-  getUserInterests,
   type TournamentData,
 } from "@/lib/database/tournament-db"
 import { LandingTournamentCard } from "@/components/landing-tournament-card"
-import { toggleInterest } from "@/app/actions/express-interest"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
 
@@ -41,11 +38,8 @@ export default function Home() {
   const [fallbackTournaments, setFallbackTournaments] = useState<TournamentData[]>([])
   const [loadingNearby, setLoadingNearby] = useState(false)
   const [loadingFallback, setLoadingFallback] = useState(false)
-  const [interestCounts, setInterestCounts] = useState<Record<string, number>>({})
   const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({})
   const [playerPreviews, setPlayerPreviews] = useState<Record<string, string[]>>({})
-  const [userInterests, setUserInterests] = useState<Set<string>>(new Set())
-  const [togglingId, setTogglingId] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
@@ -203,49 +197,25 @@ export default function Home() {
   const hasNearbyList = showNearby && nearbyTournaments.length > 0
   const hasFallbackList = showFallback && fallbackTournaments.length > 0
 
-  // Load interest counts and user's interests when tournament list or user changes
+  // Load player counts and previews when tournament list changes
   const displayedTournaments = showNearby ? nearbyTournaments : fallbackTournaments
   const tournamentIds = displayedTournaments.map((t) => t.id)
   useEffect(() => {
     if (tournamentIds.length === 0) return
     let cancelled = false
     Promise.all([
-      getInterestCounts(tournamentIds),
       getPlayerCounts(tournamentIds),
       getPlayerPreviews(tournamentIds, 5),
-      user ? getUserInterests(user.id, tournamentIds) : Promise.resolve(new Set<string>()),
-    ]).then(([interestCountsData, counts, previews, interests]) => {
+    ]).then(([counts, previews]) => {
       if (!cancelled) {
-        setInterestCounts(interestCountsData)
         setPlayerCounts(counts)
         setPlayerPreviews(previews)
-        setUserInterests(interests)
       }
     })
     return () => {
       cancelled = true
     }
-  }, [tournamentIds.join(","), user?.id])
-
-  const handleToggleInterest = async (tournamentId: string) => {
-    setTogglingId(tournamentId)
-    try {
-      const result = await toggleInterest(tournamentId)
-      if (!result.ok) {
-        toast.error(result.error ?? t("home.couldNotUpdateInterest"))
-        return
-      }
-      setInterestCounts((prev) => ({ ...prev, [tournamentId]: result.count }))
-      setUserInterests((prev) => {
-        const next = new Set(prev)
-        if (result.interested) next.add(tournamentId)
-        else next.delete(tournamentId)
-        return next
-      })
-    } finally {
-      setTogglingId(null)
-    }
-  }
+  }, [tournamentIds.join(",")])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -302,21 +272,66 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12 space-y-8">
         {/* Hero copy */}
         <div className="text-center space-y-1 pt-2 px-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{t("home.heroTitle")}</h1>
-          <p className="text-muted-foreground text-sm">{t("home.heroSubtitle")}</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{t("home.heroTagline")}</h1>
+          <p className="text-muted-foreground text-sm font-medium">{t("home.heroTitle")}</p>
+          <p className="text-muted-foreground text-xs">{t("home.heroSubtitle")}</p>
+          {!loadingAuth && !user && (
+            <p className="text-primary/90 text-sm font-medium pt-1">{t("home.registerToCreate")}</p>
+          )}
         </div>
 
-        {/* Create tournament (logged in) — up top */}
-        {user && (
-          <div className="max-w-md mx-auto sm:mx-0">
-            <Button variant="outline" className="w-full border-2 hover:border-primary hover:bg-primary/5 font-semibold" asChild>
+        {/* Top CTAs: Create tournament + Join with code */}
+        <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
+          {user && (
+            <Button variant="outline" className="sm:flex-1 border-2 hover:border-primary hover:bg-primary/5 font-semibold h-12" asChild>
               <Link href="/create">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2 shrink-0" />
                 {t("home.ctaCreate")}
               </Link>
             </Button>
+          )}
+          <div className="sm:flex-1 flex flex-col gap-0 rounded-md border-2 border-input bg-background hover:border-primary hover:bg-primary/5 transition-colors overflow-hidden">
+            {showCodeInput ? (
+              <div className="p-4 space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={t("home.enterTournamentCode")}
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleJoinWithCode()
+                      if (e.key === "Escape") {
+                        setShowCodeInput(false)
+                        setJoinCode("")
+                      }
+                    }}
+                    className="text-center font-mono tracking-widest uppercase"
+                    maxLength={8}
+                    autoFocus
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => { setShowCodeInput(false); setJoinCode("") }}>
+                    {t("common.cancel")}
+                  </Button>
+                  <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleJoinWithCode} disabled={!joinCode.trim()}>
+                    {t("home.joinButton")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full h-12 rounded-md border-0 border-transparent bg-transparent hover:bg-primary/5 font-semibold justify-start px-4 sm:px-6 shadow-none"
+                onClick={() => setShowCodeInput(true)}
+              >
+                <Hash className="h-4 w-4 mr-2 shrink-0" strokeWidth={2.5} />
+                <span className="truncate">{t("home.ctaJoin")}</span>
+                <span className="text-muted-foreground font-normal text-sm ml-1.5 hidden sm:inline truncate">— {t("home.enterCodeOrQr")}</span>
+              </Button>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Location pending */}
         {locationStatus === "pending" && (
@@ -373,12 +388,8 @@ export default function Home() {
                       tournament={t}
                       userCoords={userLocation}
                       showDistance={true}
-                      interestCount={interestCounts[t.id] ?? 0}
                       playerCount={playerCounts[t.id] ?? 0}
                       playerNames={playerPreviews[t.id] ?? []}
-                      userInterested={userInterests.has(t.id)}
-                      onToggleInterest={user ? handleToggleInterest : undefined}
-                      togglingInterest={togglingId === t.id}
                     />
                   ))}
                 </div>
@@ -449,67 +460,13 @@ export default function Home() {
                   tournament={t}
                   userCoords={null}
                   showDistance={false}
-                  interestCount={interestCounts[t.id] ?? 0}
                   playerCount={playerCounts[t.id] ?? 0}
                   playerNames={playerPreviews[t.id] ?? []}
-                  userInterested={userInterests.has(t.id)}
-                  onToggleInterest={user ? handleToggleInterest : undefined}
-                  togglingInterest={togglingId === t.id}
                 />
               ))}
             </div>
           </div>
         )}
-
-        {/* Join with code */}
-        <div className="space-y-3 pt-2 max-w-md">
-          <h2 className="text-sm font-medium text-muted-foreground">{t("home.or")}</h2>
-          <Card className="overflow-hidden border-2 hover:border-primary/50 transition-all duration-300">
-            <CardContent className="p-0">
-              {showCodeInput ? (
-                <div className="p-4 space-y-3">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder={t("home.enterTournamentCode")}
-                      value={joinCode}
-                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleJoinWithCode()
-                        if (e.key === "Escape") {
-                          setShowCodeInput(false)
-                          setJoinCode("")
-                        }
-                      }}
-                      className="text-center font-mono tracking-widest uppercase"
-                      maxLength={8}
-                      autoFocus
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1" onClick={() => { setShowCodeInput(false); setJoinCode("") }}>
-                      {t("common.cancel")}
-                    </Button>
-                    <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleJoinWithCode} disabled={!joinCode.trim()}>
-                      {t("home.joinButton")}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button
-                  variant="ghost"
-                  className="w-full h-16 justify-start px-6 hover:bg-primary/5 rounded-none group"
-                  onClick={() => setShowCodeInput(true)}
-                >
-                  <Hash className="h-6 w-6 mr-4 text-primary group-hover:scale-110 transition-transform" strokeWidth={2.5} />
-                  <div className="text-left">
-                    <div className="font-bold">{t("home.ctaJoin")}</div>
-                    <div className="text-sm text-muted-foreground font-normal">{t("home.enterCodeOrQr")}</div>
-                  </div>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Soft signup prompt when not logged in */}
         {!loadingAuth && !user && (

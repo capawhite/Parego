@@ -10,16 +10,12 @@ import { UserSearchAutocomplete } from "@/components/user-search-autocomplete"
 import { generateQRCode } from "@/lib/qr-utils"
 import { cn } from "@/lib/utils"
 import {
-  Heart,
-  Loader2,
   QrCode,
   UserPlus,
   MapPin,
   Check,
 } from "lucide-react"
-import Link from "next/link"
 import type { Player } from "@/lib/types"
-import type { InterestedUser } from "@/lib/database/tournament-db"
 
 interface PlayersTabProps {
   tournamentId: string | null
@@ -38,10 +34,6 @@ interface PlayersTabProps {
   tournamentDurationInput: string
   canStartTournament: boolean
   canAccessQR: boolean
-  interestCount: number
-  interestedUsers: InterestedUser[]
-  userInterested: boolean
-  togglingInterest: boolean
   onTableCountChange: (value: string) => void
   onDurationChange: (value: string) => void
   onStartTournament: () => void
@@ -52,7 +44,6 @@ interface PlayersTabProps {
   onRemovePlayer: (playerId: string) => void
   onMarkPresent: (playerId: string) => Promise<void>
   onRenamePlayer: (playerId: string, newName: string) => Promise<void>
-  onToggleInterest: () => void
 }
 
 export function PlayersTab({
@@ -72,10 +63,6 @@ export function PlayersTab({
   tournamentDurationInput,
   canStartTournament,
   canAccessQR,
-  interestCount,
-  interestedUsers,
-  userInterested,
-  togglingInterest,
   onTableCountChange,
   onDurationChange,
   onStartTournament,
@@ -86,66 +73,12 @@ export function PlayersTab({
   onRemovePlayer,
   onMarkPresent,
   onRenamePlayer,
-  onToggleInterest,
 }: PlayersTabProps) {
   const me = players.find((p) => p.userId === currentUserId && !p.hasLeft)
   const needsCheckIn = me && me.checkedInAt == null
 
   return (
     <div className="space-y-2">
-      {/* Express interest card */}
-      <Card className="mb-4 border-primary/20">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Heart className="h-4 w-4 text-primary" />
-              Interest
-            </span>
-            {interestCount > 0 && (
-              <span className="text-muted-foreground font-normal">
-                {interestCount} {interestCount === 1 ? "person" : "people"} interested
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {currentUserId && (
-            <Button
-              variant={userInterested ? "secondary" : "outline"}
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={onToggleInterest}
-              disabled={togglingInterest}
-            >
-              {togglingInterest ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Heart className={cn("h-4 w-4 mr-2", userInterested && "fill-current")} />
-              )}
-              {userInterested ? "Interested" : "I'm interested"}
-            </Button>
-          )}
-          {!currentUserId && interestCount > 0 && (
-            <p className="text-xs text-muted-foreground">
-              <Link href="/auth/login" className="text-primary hover:underline">
-                Sign in
-              </Link>{" "}
-              to express interest
-            </p>
-          )}
-          {isOrganizer && interestedUsers.length > 0 && (
-            <div className="pt-2 border-t">
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Interested</p>
-              <ul className="text-sm space-y-1">
-                {interestedUsers.map((u) => (
-                  <li key={u.user_id}>{u.name ?? "Unknown"}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Tournament Setup Card - only in setup status */}
       {status === "setup" && (
         <Card className="mb-4">

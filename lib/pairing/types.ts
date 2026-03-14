@@ -20,13 +20,15 @@ export interface PairingAlgorithm {
   description: string
 
   /**
-   * Create pairings for available players
+   * Create pairings for available players.
+   * @param totalPlayers - Optional total players in tournament (used e.g. by Arena for dynamic rematch rules).
    */
   createPairings(
     availablePlayers: Player[],
     allHistoricalMatches: Match[],
     settings: TournamentSettings,
     maxMatches?: number,
+    totalPlayers?: number,
   ): Match[]
 
   /**

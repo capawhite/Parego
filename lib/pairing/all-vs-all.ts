@@ -26,7 +26,7 @@ interface PairingScore {
  */
 export const allVsAllAlgorithm: PairingAlgorithm = {
   id: "all-vs-all",
-  name: "All vs All (Arena)",
+  name: "All vs All",
   description: "Traditional arena pairing that creates rounds when enough players are available",
 
   createPairings(
@@ -34,6 +34,7 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
     allHistoricalMatches: Match[],
     settings: TournamentSettings,
     maxMatches?: number,
+    _totalPlayers?: number,
   ): Match[] {
     if (process.env.NODE_ENV === "development")
       console.log("[v0] All vs All: Creating pairings", {
@@ -73,6 +74,10 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
       veryRecentOpponents.set(p.id, new Map<string, number>())
     })
 
+    const avoidN = settings.avoidRecentRematches ?? 3
+    const veryRecentWindow = avoidN
+    const recentWindow = Math.max(veryRecentWindow * 2, 10)
+
     // Build opponent history from opponentIds (order played; last index = most recent)
     availablePlayers.forEach((player) => {
       const opponentIds = player.opponentIds ?? []
@@ -83,10 +88,10 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
         const gamesAgo = opponentIds.length - i // 1 = most recent, 2 = one before, etc.
 
         allOpponents.get(player.id)?.add(opponentId)
-        if (gamesAgo <= 3) {
+        if (gamesAgo <= veryRecentWindow) {
           veryRecentOpponents.get(player.id)?.set(opponentId, gamesAgo)
         }
-        if (gamesAgo <= 10) {
+        if (gamesAgo <= recentWindow) {
           recentOpponents.get(player.id)?.set(opponentId, gamesAgo)
         }
       }
@@ -106,7 +111,9 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
       }
 
       if (pairingsToUse.length === 0) {
-        pairingsToUse = possiblePairings
+        if (settings.allowRematchToReduceWait) {
+          pairingsToUse = possiblePairings
+        }
       }
     }
 

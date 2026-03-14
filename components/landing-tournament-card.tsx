@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MapPin, Clock, Eye, LogIn, Heart, Loader2, ExternalLink } from "lucide-react"
+import { MapPin, Clock, Eye, LogIn, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import type { TournamentData } from "@/lib/database/tournament-db"
 import { cn } from "@/lib/utils"
@@ -65,18 +65,10 @@ interface LandingTournamentCardProps {
   tournament: TournamentData
   userCoords?: { lat: number; lon: number } | null
   showDistance?: boolean
-  /** Number of users who expressed interest */
-  interestCount?: number
   /** Number of players currently in the tournament */
   playerCount?: number
   /** First few player names for preview (e.g. first 5) */
   playerNames?: string[]
-  /** Whether current user has expressed interest */
-  userInterested?: boolean
-  /** Callback when user toggles interest (requires sign-in). Omit or not provided when not logged in. */
-  onToggleInterest?: (tournamentId: string) => Promise<void>
-  /** Whether a toggle request is in progress */
-  togglingInterest?: boolean
   className?: string
 }
 
@@ -84,17 +76,12 @@ export function LandingTournamentCard({
   tournament,
   userCoords,
   showDistance = true,
-  interestCount = 0,
   playerCount = 0,
   playerNames = [],
-  userInterested = false,
-  onToggleInterest,
-  togglingInterest = false,
   className,
 }: LandingTournamentCardProps) {
   const { t } = useI18n()
 
-  const canToggle = typeof onToggleInterest === "function"
   const displayStatus = getDisplayStatus(tournament)
   const distance =
     showDistance && userCoords && tournament.latitude != null && tournament.longitude != null
@@ -177,13 +164,6 @@ export function LandingTournamentCard({
                   )}
                 </span>
               )}
-              {interestCount > 0 && (
-                <span>
-                  {interestCount === 1
-                    ? t("landing.interestSingle", { count: interestCount })
-                    : t("landing.interestMultiple", { count: interestCount })}
-                </span>
-              )}
             </div>
           </Link>
           {tournament.latitude != null && tournament.longitude != null && (
@@ -199,27 +179,6 @@ export function LandingTournamentCard({
           )}
         </div>
         <div className="flex border-t bg-muted/30 min-h-[44px]">
-          {canToggle ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn("flex-1 rounded-none min-h-[44px] touch-manipulation", userInterested && "text-primary")}
-              onClick={(e) => {
-                e.preventDefault()
-                onToggleInterest?.(tournament.id)
-              }}
-              disabled={togglingInterest}
-            >
-              {togglingInterest ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Heart
-                  className={cn("h-4 w-4 mr-2", userInterested && "fill-current")}
-                />
-              )}
-              {userInterested ? t("landing.interestButtonOn") : t("landing.interestButtonOff")}
-            </Button>
-          ) : null}
           <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation" asChild>
             <Link href={`/tournament/${tournament.id}`}>
               <Eye className="h-4 w-4 mr-2 shrink-0" />

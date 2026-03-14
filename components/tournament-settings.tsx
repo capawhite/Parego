@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { X } from "lucide-react"
+import { useI18n } from "@/components/i18n-provider"
 import type { TournamentSettings } from "@/lib/types"
 
 interface TournamentSettingsProps {
@@ -26,6 +26,7 @@ export function TournamentSettingsPanel({
   onToggleSimulator,
   isOrganizer = true,
 }: TournamentSettingsProps) {
+  const { t } = useI18n()
   const updateSetting = <K extends keyof TournamentSettings>(key: K, value: TournamentSettings[K]) => {
     onUpdateSettings({ ...settings, [key]: value })
   }
@@ -42,15 +43,13 @@ export function TournamentSettingsPanel({
             size="icon"
             className="absolute right-4 top-4 h-8 w-8"
             onClick={onClose}
-            aria-label="Close settings"
+            aria-label={t("settings.closeAriaLabel")}
           >
             <X className="h-4 w-4" />
           </Button>
-          <CardTitle>Tournament Settings</CardTitle>
+          <CardTitle>{t("settings.title")}</CardTitle>
           <CardDescription>
-            {isOrganizer
-              ? "Customize scoring, pairing rules, and player management"
-              : "View tournament configuration (organizer only can edit)"}
+            {isOrganizer ? t("settings.descriptionOrganizer") : t("settings.descriptionViewer")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -75,7 +74,7 @@ export function TournamentSettingsPanel({
 
                 <div className="space-y-1.5">
                   <Label htmlFor="drawPoints" className="text-xs">
-                    Draw
+                    {t("settings.drawLabel")}
                   </Label>
                   <Input
                     id="drawPoints"
@@ -103,9 +102,9 @@ export function TournamentSettingsPanel({
               <div className="flex items-center justify-between py-2">
                 <div className="space-y-0.5">
                   <Label htmlFor="streakEnabled" className="text-sm">
-                    Enable Streak Bonuses
+                    {t("settings.streakEnabledLabel")}
                   </Label>
-                  <p className="text-xs text-muted-foreground">After 2 consecutive wins, multiply all points</p>
+                  <p className="text-xs text-muted-foreground">{t("settings.streakEnabledHelp")}</p>
                 </div>
                 <Switch
                   id="streakEnabled"
@@ -138,14 +137,14 @@ export function TournamentSettingsPanel({
 
             {/* Player Management */}
             <div className="space-y-3">
-              <h3 className="text-base font-semibold">Player Management</h3>
+              <h3 className="text-base font-semibold">{t("settings.playerManagementSection")}</h3>
 
               <div className="flex items-center justify-between py-2">
                 <div className="space-y-0.5">
                   <Label htmlFor="allowSelfPause" className="text-sm">
-                    Allow Player Self-Pause
+                    {t("settings.allowSelfPauseLabel")}
                   </Label>
-                  <p className="text-xs text-muted-foreground">Players can pause themselves during tournament</p>
+                  <p className="text-xs text-muted-foreground">{t("settings.allowSelfPauseHelp")}</p>
                 </div>
                 <Switch
                   id="allowSelfPause"
@@ -157,9 +156,9 @@ export function TournamentSettingsPanel({
               <div className="flex items-center justify-between py-2">
                 <div className="space-y-0.5">
                   <Label htmlFor="allowLateJoin" className="text-sm">
-                    Allow Late Joins
+                    {t("settings.allowLateJoinLabel")}
                   </Label>
-                  <p className="text-xs text-muted-foreground">New players can join after tournament starts</p>
+                  <p className="text-xs text-muted-foreground">{t("settings.allowLateJoinHelp")}</p>
                 </div>
                 <Switch
                   id="allowLateJoin"
@@ -170,7 +169,7 @@ export function TournamentSettingsPanel({
 
               <div className="space-y-1.5 max-w-[140px]">
                 <Label htmlFor="minGamesBeforePause" className="text-sm">
-                  Min Games Before Pause
+                  {t("settings.minGamesBeforePauseLabel")}
                 </Label>
                 <Input
                   id="minGamesBeforePause"
@@ -189,7 +188,7 @@ export function TournamentSettingsPanel({
 
               <div className="space-y-1.5 max-w-[140px]">
                 <Label htmlFor="avoidRecentRematches" className="text-sm">
-                  Avoid Recent Rematches
+                  {t("settings.avoidRecentRematchesLabel")}
                 </Label>
                 <Input
                   id="avoidRecentRematches"
@@ -199,59 +198,47 @@ export function TournamentSettingsPanel({
                   onChange={(e) => updateSetting("avoidRecentRematches", Number(e.target.value))}
                   className="h-8 text-sm"
                 />
-                <p className="text-xs text-muted-foreground">Games since last match (0 = allow immediate)</p>
+                <p className="text-xs text-muted-foreground">{t("settings.avoidRecentRematchesHelp")}</p>
               </div>
 
-              <div className="space-y-1.5 max-w-xs">
-                <Label htmlFor="colorBalancePriority" className="text-sm">
-                  Color Balance
-                </Label>
-                <Select
-                  value={settings.colorBalancePriority}
-                  onValueChange={(value: any) => updateSetting("colorBalancePriority", value)}
-                >
-                  <SelectTrigger id="colorBalancePriority" className="h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
+              {settings.pairingAlgorithm === "all-vs-all" && (
+                <div className="flex items-center justify-between py-2">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="allowRematchToReduceWait" className="text-sm">
+                      {t("settings.allowRematchToReduceWaitLabel")}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">{t("settings.allowRematchToReduceWaitHelp")}</p>
+                  </div>
+                  <Switch
+                    id="allowRematchToReduceWait"
+                    checked={settings.allowRematchToReduceWait ?? false}
+                    onCheckedChange={(checked) => updateSetting("allowRematchToReduceWait", checked)}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1 max-w-xs">
+                <p className="text-sm font-medium">{t("settings.colorBalanceLabel")}</p>
+                <p className="text-xs text-muted-foreground">{t("settings.colorBalanceHelp")}</p>
               </div>
 
-              <div className="space-y-1.5 max-w-xs">
-                <Label htmlFor="scoreMatchingStrictness" className="text-sm">
-                  Score Matching
-                </Label>
-                <Select
-                  value={settings.scoreMatchingStrictness}
-                  onValueChange={(value: any) => updateSetting("scoreMatchingStrictness", value)}
-                >
-                  <SelectTrigger id="scoreMatchingStrictness" className="h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="loose">Loose</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="strict">Strict</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1 max-w-xs">
+                <p className="text-sm font-medium">{t("settings.scoreMatchingLabel")}</p>
+                <p className="text-xs text-muted-foreground">{t("settings.scoreMatchingComingSoon")}</p>
               </div>
             </div>
 
             {/* Tournament Settings */}
             <div className="space-y-3">
-              <h3 className="text-base font-semibold">Tournament Settings</h3>
+              <h3 className="text-base font-semibold">{t("settings.tournamentSection")}</h3>
 
               {onToggleSimulator && (
                 <div className="flex items-center justify-between py-2">
                   <div className="space-y-0.5">
                     <Label htmlFor="showSimulator" className="text-sm">
-                      Enable Tournament Simulator
+                      {t("settings.showSimulatorLabel")}
                     </Label>
-                    <p className="text-xs text-muted-foreground">Show auto-simulator in Results tab for testing</p>
+                    <p className="text-xs text-muted-foreground">{t("settings.showSimulatorHelp")}</p>
                   </div>
                   <Switch id="showSimulator" checked={showSimulator} onCheckedChange={onToggleSimulator} />
                 </div>
@@ -260,9 +247,9 @@ export function TournamentSettingsPanel({
               <div className="flex items-center justify-between py-2">
                 <div className="space-y-0.5">
                   <Label htmlFor="autoEndAtCompletion" className="text-sm">
-                    Auto-End at Completion
+                    {t("settings.autoEndAtCompletionLabel")}
                   </Label>
-                  <p className="text-xs text-muted-foreground">Automatically end when most unique pairings played</p>
+                  <p className="text-xs text-muted-foreground">{t("settings.autoEndAtCompletionHelp")}</p>
                 </div>
                 <Switch
                   id="autoEndAtCompletion"
@@ -274,7 +261,7 @@ export function TournamentSettingsPanel({
               {settings.autoEndAtCompletion && (
                 <div className="space-y-1.5 max-w-[140px]">
                   <Label htmlFor="completionThreshold" className="text-sm">
-                    Threshold (%)
+                    {t("settings.completionThresholdLabel")}
                   </Label>
                   <Input
                     id="completionThreshold"
@@ -285,7 +272,9 @@ export function TournamentSettingsPanel({
                     onChange={(e) => updateSetting("completionThreshold", Number(e.target.value))}
                     className="h-8 text-sm"
                   />
-                  <p className="text-xs text-muted-foreground">End at {settings.completionThreshold}% completion</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.completionThresholdHelp", { percent: settings.completionThreshold })}
+                  </p>
                 </div>
               )}
             </div>
@@ -293,14 +282,14 @@ export function TournamentSettingsPanel({
 
           <div className="flex gap-2 pt-2">
             <Button onClick={onClose} className="flex-1" size="sm" disabled={!isOrganizer}>
-              {isOrganizer ? "Save & Close" : "Close"}
+              {isOrganizer ? t("settings.saveAndClose") : t("settings.close")}
             </Button>
             {isOrganizer && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (confirm("Reset all settings to default values?")) {
+                  if (confirm(t("settings.resetConfirm"))) {
                     onUpdateSettings({
                       winPoints: 2,
                       drawPoints: 1,
@@ -319,12 +308,13 @@ export function TournamentSettingsPanel({
                       pairingAlgorithm: settings.pairingAlgorithm,
                       baseTimeMinutes: settings.baseTimeMinutes,
                       incrementSeconds: settings.incrementSeconds,
+                      allowRematchToReduceWait: false,
                     })
                     onClose()
                   }
                 }}
               >
-                Reset
+                {t("settings.reset")}
               </Button>
             )}
           </div>

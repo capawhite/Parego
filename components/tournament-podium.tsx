@@ -3,7 +3,8 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { Player } from "@/lib/types"
-import { Zap, Target, TrendingUp, Users, Percent, Minus, LogOut } from "lucide-react"
+import { Zap, Target, TrendingUp, Users, Percent, Minus, LogOut, X } from "lucide-react"
+import { useI18n } from "@/components/i18n-provider"
 
 interface TournamentPodiumProps {
   players: Player[]
@@ -12,6 +13,7 @@ interface TournamentPodiumProps {
 }
 
 export function TournamentPodium({ players, totalMatches, onClose }: TournamentPodiumProps) {
+  const { t } = useI18n()
   const activePlayers = players.filter((p) => !p.hasLeft)
   const sortedPlayers = [...activePlayers].sort((a, b) => b.score - a.score)
   const topThree = sortedPlayers.slice(0, 3)
@@ -64,13 +66,22 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in">
-      <Card className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <Card className="max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-2 top-2 z-10 h-9 w-9 shrink-0 rounded-full"
+          onClick={onClose}
+          aria-label={t("podium.closeAriaLabel")}
+        >
+          <X className="h-5 w-5" />
+        </Button>
         <CardContent className="pt-8 space-y-8">
           {/* Celebration Header */}
           <div className="text-center space-y-2">
             <div className="text-6xl animate-bounce">🎉</div>
-            <h2 className="text-4xl font-bold">Tournament Complete!</h2>
-            <p className="text-muted-foreground">Congratulations to all participants</p>
+            <h2 className="text-4xl font-bold">{t("podium.title")}</h2>
+            <p className="text-muted-foreground">{t("podium.congratulations")}</p>
           </div>
 
           {/* Podium */}
@@ -83,7 +94,7 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
                   <div className="text-5xl font-bold text-muted-foreground mb-2">2</div>
                   <p className="font-bold text-center text-lg text-foreground">{topThree[1].name}</p>
                   <p className="text-2xl font-bold text-foreground mt-2">{topThree[1].score}</p>
-                  <p className="text-xs text-muted-foreground">points</p>
+                  <p className="text-xs text-muted-foreground">{t("podium.points")}</p>
                 </div>
               </div>
             )}
@@ -109,7 +120,7 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
                   <div className="text-5xl font-bold text-accent-foreground mb-2">3</div>
                   <p className="font-bold text-center text-lg text-foreground">{topThree[2].name}</p>
                   <p className="text-2xl font-bold text-accent-foreground mt-2">{topThree[2].score}</p>
-                  <p className="text-xs text-accent-foreground">points</p>
+                  <p className="text-xs text-accent-foreground">{t("podium.points")}</p>
                 </div>
               </div>
             )}
@@ -117,13 +128,13 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
 
           {/* Fun Statistics */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-center">Tournament Statistics</h3>
+            <h3 className="text-2xl font-bold text-center">{t("podium.tournamentStatistics")}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <Card className="bg-chart-1/10 border-chart-1/30">
                 <CardContent className="pt-6 text-center">
                   <Target className="w-8 h-8 mx-auto mb-2 text-chart-1" />
                   <p className="text-3xl font-bold text-foreground">{Math.floor(totalGames)}</p>
-                  <p className="text-sm text-muted-foreground">Total Games</p>
+                  <p className="text-sm text-muted-foreground">{t("podium.totalGames")}</p>
                 </CardContent>
               </Card>
 
@@ -131,7 +142,7 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
                 <CardContent className="pt-6 text-center">
                   <Zap className="w-8 h-8 mx-auto mb-2 text-chart-2" />
                   <p className="text-3xl font-bold text-foreground">{bestStreak}</p>
-                  <p className="text-sm text-muted-foreground">Best Streak</p>
+                  <p className="text-sm text-muted-foreground">{t("podium.bestStreak")}</p>
                   {bestStreakPlayer && (
                     <p className="text-base font-semibold text-chart-2 mt-1">{bestStreakPlayer.name}</p>
                   )}
@@ -142,7 +153,7 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
                 <CardContent className="pt-6 text-center">
                   <Users className="w-8 h-8 mx-auto mb-2 text-chart-3" />
                   <p className="text-3xl font-bold text-foreground">{players.length}</p>
-                  <p className="text-sm text-muted-foreground">Participants</p>
+                  <p className="text-sm text-muted-foreground">{t("podium.participants")}</p>
                 </CardContent>
               </Card>
 
@@ -150,7 +161,7 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
                 <CardContent className="pt-6 text-center">
                   <TrendingUp className="w-8 h-8 mx-auto mb-2 text-chart-4" />
                   <p className="text-3xl font-bold text-foreground">{mostGamesPlayed}</p>
-                  <p className="text-sm text-muted-foreground">Most Games</p>
+                  <p className="text-sm text-muted-foreground">{t("podium.mostGames")}</p>
                   {mostActivePlayer && (
                     <p className="text-base font-semibold text-chart-4 mt-1">{mostActivePlayer.name}</p>
                   )}
@@ -161,7 +172,7 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
                 <CardContent className="pt-6 text-center">
                   <Percent className="w-8 h-8 mx-auto mb-2 text-chart-5" />
                   <p className="text-3xl font-bold text-foreground">{bestWinRatio.toFixed(0)}%</p>
-                  <p className="text-sm text-muted-foreground">Best Win Ratio</p>
+                  <p className="text-sm text-muted-foreground">{t("podium.bestWinRatio")}</p>
                   {bestWinRatioPlayer && (
                     <p className="text-base font-semibold text-chart-5 mt-1">{bestWinRatioPlayer.name}</p>
                   )}
@@ -172,7 +183,7 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
                 <CardContent className="pt-6 text-center">
                   <Minus className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-3xl font-bold text-foreground">{mostDraws}</p>
-                  <p className="text-sm text-muted-foreground">Most Draws</p>
+                  <p className="text-sm text-muted-foreground">{t("podium.mostDraws")}</p>
                   {mostDrawsPlayer && (
                     <p className="text-base font-semibold text-muted-foreground mt-1">{mostDrawsPlayer.name}</p>
                   )}
@@ -183,7 +194,7 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
 
           {/* Final Standings */}
           <div className="space-y-2">
-            <h3 className="text-xl font-bold text-center">Final Standings</h3>
+            <h3 className="text-xl font-bold text-center">{t("podium.finalStandings")}</h3>
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {sortedPlayers.map((player, index) => {
                 const winRatio = calculateWinRatio(player)
@@ -207,12 +218,12 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
                       {player.hasLeft && (
                         <div className="flex items-center gap-1 text-destructive text-sm">
                           <LogOut className="w-4 h-4" />
-                          <span>left</span>
+                          <span>{t("podium.left")}</span>
                         </div>
                       )}
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm text-muted-foreground">{player.gamesPlayed} games</span>
+                      <span className="text-sm text-muted-foreground">{player.gamesPlayed} {t("podium.games")}</span>
                       <span className="text-sm font-medium text-chart-4">
                         {wins}W ({winRatio.toFixed(0)}%)
                       </span>
@@ -226,7 +237,7 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
 
           {/* Close Button */}
           <Button onClick={onClose} className="w-full" size="lg">
-            Close
+            {t("podium.close")}
           </Button>
         </CardContent>
       </Card>

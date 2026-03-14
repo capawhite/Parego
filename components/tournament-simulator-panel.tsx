@@ -23,9 +23,10 @@ export function TournamentSimulatorPanel() {
     }
 
     const allButtons = Array.from(document.querySelectorAll("button"))
-    const resultButtons = allButtons.filter(
-      (btn) => btn.textContent === "White Wins" || btn.textContent === "Draw" || btn.textContent === "Black Wins",
-    )
+    const resultButtons = allButtons.filter((btn) => {
+      const t = btn.textContent?.trim()
+      return t === "White Wins" || t === "Draw" || t === "Black Wins"
+    })
 
     if (process.env.NODE_ENV === "development")
       console.log(`[v0] Simulator found ${resultButtons.length} result buttons`)

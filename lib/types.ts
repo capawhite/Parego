@@ -90,6 +90,9 @@ export interface TournamentSettings {
   incrementSeconds?: number // Ta - Time increment per move (max 180 seconds)
 
   pairingAlgorithm?: string // Algorithm ID (e.g., "all-vs-all", "balanced-strength")
+
+  // All vs All: allow rematches when needed to avoid long waits (organizer toggle)
+  allowRematchToReduceWait?: boolean
 }
 
 export const DEFAULT_SETTINGS: TournamentSettings = {
@@ -108,6 +111,7 @@ export const DEFAULT_SETTINGS: TournamentSettings = {
   autoEndAtCompletion: false,
   completionThreshold: 95,
   pairingAlgorithm: "all-vs-all", // Default to All vs All
+  allowRematchToReduceWait: false,
 }
 
 export interface ArenaState {

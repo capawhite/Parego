@@ -24,7 +24,7 @@ interface PlayerWithWaitData extends Player {
 
 export const balancedStrengthAlgorithm: PairingAlgorithm = {
   id: "balanced-strength",
-  name: "Arena (Balanced Strength)",
+  name: "Arena",
   description: "Dynamic table-based pairing that matches players by strength with progressive range expansion",
 
   createPairings(
@@ -32,7 +32,11 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
     allHistoricalMatches: Match[],
     settings: TournamentSettings,
     maxMatches?: number,
+    totalPlayers?: number,
   ): Match[] {
+    const totalActive = totalPlayers ?? availablePlayers.length
+    const rematchAvoidCount = getRematchAvoidCount(totalActive)
+
     const J = availablePlayers.length + allHistoricalMatches.filter((m) => !m.result?.completed).length // Total players
     const M = settings.tableCount || 1 // Number of tables
 
@@ -178,8 +182,10 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
         })
 
       if (waitingList.length >= 2) {
-        const player1 = waitingList[0]
-        const player2 = waitingList[1]
+        const pair = selectPairWithRematchRule(waitingList, rematchAvoidCount)
+        if (!pair) continue
+
+        const [player1, player2] = pair
 
         // Determine colors based on balance
         const { whitePlayer, blackPlayer } = assignColors(player1, player2, allHistoricalMatches)
@@ -220,6 +226,67 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
   getPollingInterval(): number {
     return 2000 // Check every 2 seconds for continuous pairing
   },
+}
+
+/**
+ * Rematch avoidance by active player count:
+ * 16+ → avoid last 3 opponents; 10–15 → 2; 6–9 → 1; 2–5 → allow rematches but prefer avoiding immediate.
+ */
+function getRematchAvoidCount(totalActive: number): number {
+  if (totalActive >= 16) return 3
+  if (totalActive >= 10) return 2
+  if (totalActive >= 6) return 1
+  return 0
+}
+
+/** Set of opponent IDs from the last n games (order: most recent last). */
+function getLastNOpponents(player: Player, n: number): Set<string> {
+  const ids = player.opponentIds ?? []
+  if (n <= 0) return new Set()
+  return new Set(ids.slice(-n))
+}
+
+/**
+ * Pick the best pair from waitingList that satisfies rematch rules.
+ * avoidCount >= 1: only allow pairs that are not in each other's last N opponents; skip if none.
+ * avoidCount === 0 (2–5 players): prefer non–immediate rematch; allow rematch if no alternative.
+ */
+function selectPairWithRematchRule(
+  waitingList: PlayerWithWaitData[],
+  avoidCount: number,
+): [PlayerWithWaitData, PlayerWithWaitData] | null {
+  if (waitingList.length < 2) return null
+
+  const avoidSets = new Map<string, Set<string>>()
+  for (const p of waitingList) {
+    avoidSets.set(p.id, getLastNOpponents(p, avoidCount >= 1 ? avoidCount : 1))
+  }
+
+  const isDisallowed = (a: PlayerWithWaitData, b: PlayerWithWaitData) =>
+    avoidSets.get(a.id)?.has(b.id) || avoidSets.get(b.id)?.has(a.id)
+
+  // Valid pairs: not in each other's avoid set (for avoidCount >= 1) or any pair (for avoidCount === 0)
+  const validPairs: [PlayerWithWaitData, PlayerWithWaitData][] = []
+  for (let i = 0; i < waitingList.length; i++) {
+    for (let j = i + 1; j < waitingList.length; j++) {
+      const a = waitingList[i]
+      const b = waitingList[j]
+      if (avoidCount >= 1) {
+        if (!isDisallowed(a, b)) validPairs.push([a, b])
+      } else {
+        validPairs.push([a, b])
+      }
+    }
+  }
+
+  if (avoidCount >= 1) {
+    if (validPairs.length === 0) return null
+    return validPairs[0]
+  }
+
+  // 2–5 players: prefer pair that is not an immediate rematch
+  const nonRematch = validPairs.find(([a, b]) => !isDisallowed(a, b))
+  return nonRematch ?? validPairs[0]
 }
 
 /**

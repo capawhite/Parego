@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" // Added CardDescription
 import { Input } from "@/components/ui/input"
@@ -26,10 +26,11 @@ import {
   Home,
   UserPlus,
   Check,
-  Heart,
   Loader2,
   MapPin,
   AlertCircle,
+  LogIn,
+  Trash2,
 } from "lucide-react" // Added SettingsIcon, Home, Grid3x3, ClipboardList, AlertTriangle, UserPlus, Check
 import {
   Dialog,
@@ -48,11 +49,7 @@ import {
   saveMatches,
   loadMatches,
   playerNameExistsInTournament,
-  getInterestCount,
-  getInterestedUsers,
-  getUserInterested,
   getAvatarUrls,
-  type InterestedUser,
 } from "@/lib/database/tournament-db"
 import { generateQRCode } from "@/lib/qr-utils" // Fixed import to use correct path for generateQRCode
 import { TournamentSimulatorPanel } from "@/components/tournament-simulator-panel"
@@ -71,11 +68,12 @@ import {
 } from "@/lib/guest-session-history"
 import { ConversionPrompt, type ConversionTrigger } from "@/components/conversion-prompt"
 import { cn } from "@/lib/utils"
-import { toggleInterest } from "@/app/actions/express-interest"
 import { verifyAndCheckIn, markPresentOverride, checkVenueProximity } from "@/app/actions/check-in"
 import { renamePlayer } from "@/app/actions/rename-player"
+import { deleteTournament } from "@/app/actions/delete-tournament"
 import { resolveRating } from "@/lib/rating-bands"
 import { toast } from "sonner"
+import { useI18n } from "@/components/i18n-provider"
 import { useRealtime } from "@/hooks/tournament/use-realtime"
 import { getDeviceId } from "@/lib/device-id"
 
@@ -111,6 +109,7 @@ function mergeMatchesForSave(paired: Match[], allTime: Match[]): Match[] {
 
 export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, isPlayerView }: ArenaPanelProps) {
   const router = useRouter()
+  const { t } = useI18n()
   const [arenaState, setArenaState] = useState<ArenaState>({
     players: [],
     rounds: [],
@@ -131,8 +130,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [tournamentDurationInput, setTournamentDurationInput] = useState("60") // Default 60 minutes
   const [timeRemaining, setTimeRemaining] = useState(TOURNAMENT_DURATION)
   const [completionRatio, setCompletionRatio] = useState(0)
+  const hasShownAllPairingsCompleteToast = useRef(false)
   const [showPodium, setShowPodium] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deletingTournament, setDeletingTournament] = useState(false)
   const [isFullScreenPairings, setIsFullScreenPairings] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("players")
@@ -164,10 +166,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [userRatingBand, setUserRatingBand] = useState<string | null>(null) // rating_band from profile
   const [userCountry, setUserCountry] = useState<string | null>(null)
 
-  const [interestCount, setInterestCount] = useState(0)
-  const [interestedUsers, setInterestedUsers] = useState<InterestedUser[]>([])
-  const [userInterested, setUserInterested] = useState(false)
-  const [togglingInterest, setTogglingInterest] = useState(false)
   const [checkingIn, setCheckingIn] = useState(false)
   const [markingPresentPlayerId, setMarkingPresentPlayerId] = useState<string | null>(null)
   const [renamingPlayerId, setRenamingPlayerId] = useState<string | null>(null)
@@ -176,6 +174,41 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [showConversionPrompt, setShowConversionPrompt] = useState<ConversionTrigger | null>(null)
 
   const isOrganizer = currentUserId !== null && currentUserId === organizerId
+
+  // All vs All: compute unique pairings completion ratio for organizer display
+  // Use allTimeMatches (completed from DB/load) + completed in pairedMatches so ratio survives reload/realtime
+  useEffect(() => {
+    if (
+      arenaState.settings.pairingAlgorithm !== "all-vs-all" ||
+      !arenaState.isActive ||
+      arenaState.players.length < 2
+    ) {
+      setCompletionRatio(0)
+      return
+    }
+    const completedFromPaired = arenaState.pairedMatches.filter((m) => m.result?.completed)
+    const allCompleted = [...arenaState.allTimeMatches, ...completedFromPaired]
+    const uniquePairings = new Set(
+      allCompleted.map((m) => {
+        const sorted = [m.player1.id, m.player2.id].sort()
+        return `${sorted[0]}-${sorted[1]}`
+      }),
+    )
+    const n = arenaState.players.filter((p) => !p.hasLeft).length
+    const maxPossible = (n * (n - 1)) / 2
+    const ratio = maxPossible > 0 ? uniquePairings.size / maxPossible : 0
+    setCompletionRatio(ratio)
+    if (ratio >= 1 && isOrganizer && !hasShownAllPairingsCompleteToast.current) {
+      hasShownAllPairingsCompleteToast.current = true
+      toast.success(t("arena.allUniquePairingsCompleteMessage"))
+    }
+  }, [
+    arenaState.settings.pairingAlgorithm,
+    arenaState.isActive,
+    arenaState.players,
+    arenaState.pairedMatches,
+    arenaState.allTimeMatches,
+  ])
 
   const isCurrentUserInTournament = currentUserId
     ? arenaState.players.some((p) => p.userId === currentUserId && !p.hasLeft)
@@ -411,26 +444,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     loadFromDatabase()
   }, [tournamentId])
 
-  // Load express-interest count, list (for organizer), and current user's interest
-  useEffect(() => {
-    if (!tournamentId) return
-    let cancelled = false
-    Promise.all([
-      getInterestCount(tournamentId),
-      isOrganizer ? getInterestedUsers(tournamentId) : Promise.resolve([]),
-      currentUserId ? getUserInterested(tournamentId, currentUserId) : Promise.resolve(false),
-    ]).then(([count, users, interested]) => {
-      if (!cancelled) {
-        setInterestCount(count)
-        setInterestedUsers(users)
-        setUserInterested(interested)
-      }
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [tournamentId, isOrganizer, currentUserId])
-
   useEffect(() => {
     if (!tournamentId || isLoading || !isOrganizer) return
 
@@ -553,6 +566,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           arenaState.allTimeMatches,
           arenaState.settings,
           maxMatches,
+          arenaState.players.length,
         )
 
         if (newMatches.length > 0) {
@@ -795,11 +809,15 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           sonneborn_berger: 0,
           is_paused: false,
           is_removed: false,
-          country: newPlayer.country,
           device_id: deviceId,
         })
         if (insertErr) {
-          if (insertErr.code === "23505") {
+          const err = insertErr as Record<string, unknown>
+          const msg = (err.message as string) ?? (insertErr instanceof Error ? insertErr.message : String(insertErr))
+          const code = (err.code as string) ?? ""
+          const details = (err.details as string) ?? ""
+          const hint = (err.hint as string) ?? ""
+          if (code === "23505") {
             toast.error("You've already joined this tournament from this device.")
             setArenaState((prev) => ({
               ...prev,
@@ -807,10 +825,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             }))
             return
           }
-          console.error("[v0] Error saving player to database:", insertErr)
+          console.error("[v0] Error saving player to database:", msg, code ? `(${code})` : "", details || hint || "")
+          toast.error(msg || "Failed to add player")
         }
       } catch (error) {
-        console.error("[v0] Error saving player to database:", error)
+        const err = error as Record<string, unknown>
+        const msg = (err?.message as string) ?? (error instanceof Error ? error.message : String(error))
+        console.error("[v0] Error saving player to database:", msg, error)
+        toast.error(msg || "Failed to add player")
       }
       if (isGuest && tournamentId && addToGuestHistory) {
         addGuestSession({
@@ -832,26 +854,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     const guestUsername = generateGuestUsername(existingNames)
     // Only add to guest history when the visitor adds themselves (!currentUserId), not when organizer adds a guest
     await addPlayer(guestUsername, undefined, true, !currentUserId)
-  }
-
-  const handleToggleInterest = async () => {
-    if (!tournamentId) return
-    setTogglingInterest(true)
-    try {
-      const result = await toggleInterest(tournamentId)
-      if (!result.ok) {
-        toast.error(result.error ?? "Could not update interest")
-        return
-      }
-      setInterestCount(result.count)
-      setUserInterested(result.interested)
-      if (isOrganizer) {
-        const users = await getInterestedUsers(tournamentId)
-        setInterestedUsers(users)
-      }
-    } finally {
-      setTogglingInterest(false)
-    }
   }
 
   const handleCheckIn = async () => {
@@ -1082,7 +1084,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           rating: newPlayer.rating,
           buchholz: newPlayer.buchholz ?? 0,
           sonneborn_berger: newPlayer.sonnebornBerger ?? 0,
-          country: newPlayer.country,
           checked_in_at: checkedInAt != null ? new Date(checkedInAt).toISOString() : null,
           presence_source: presenceSource,
         })
@@ -2162,6 +2163,48 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           />
         )}
 
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t("tournamentHeader.deleteTournamentTitle")}</DialogTitle>
+              <DialogDescription>{t("tournamentHeader.deleteTournamentDescription")}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={deletingTournament}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  if (!tournamentId || deletingTournament) return
+                  setDeletingTournament(true)
+                  const result = await deleteTournament(tournamentId)
+                  setDeletingTournament(false)
+                  setShowDeleteDialog(false)
+                  if (result.success) {
+                    toast.success(t("tournamentHeader.deleteTournamentSuccess"))
+                    router.push("/")
+                  } else {
+                    toast.error(result.error ?? t("common.errorGeneric"))
+                  }
+                }}
+                disabled={deletingTournament}
+              >
+                {deletingTournament ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                {t("tournamentHeader.deleteTournamentConfirm")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {showConversionPrompt && (
           <ConversionPrompt
             open
@@ -2205,6 +2248,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 sm:gap-3 mb-1">
                 <h1 className="text-xl sm:text-2xl font-bold truncate">{displayName}</h1>
+                {tournamentId && !isCurrentUserInTournament && (
+                  <Button variant="default" size="sm" className="shrink-0 h-9 gap-1.5" asChild>
+                    <Link href={`/join/${tournamentId}`}>
+                      <LogIn className="h-4 w-4" />
+                      {t("tournamentHeader.joinButton")}
+                    </Link>
+                  </Button>
+                )}
                 <Link href="/">
                   <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8 shrink-0">
                     <Home className="h-4 w-4" />
@@ -2294,11 +2345,29 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             </TabsList>
 
             {arenaState.isActive && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-md">
                   <Clock className="h-4 w-4 text-primary" />
                   <span className="text-sm font-semibold text-primary">{formatTime(timeRemaining)}</span>
                 </div>
+                {isOrganizer &&
+                  arenaState.settings.pairingAlgorithm === "all-vs-all" && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md">
+                      <span className="text-xs text-muted-foreground">
+                        {t("arena.allVsAllCompletionLabel")}:{" "}
+                        <span className="font-semibold text-foreground">
+                          {Math.round(completionRatio * 100)}%
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                {isOrganizer &&
+                  arenaState.settings.pairingAlgorithm === "all-vs-all" &&
+                  completionRatio >= 1 && (
+                    <p className="text-xs text-muted-foreground w-full sm:w-auto sm:max-w-[220px]">
+                      {t("arena.allUniquePairingsCompleteMessage")}
+                    </p>
+                  )}
                 {arenaState.status === "active" && permissions.canEndTournament && (
                   <Button variant="destructive" size="sm" onClick={endTournament}>
                     End Tournament
@@ -2308,73 +2377,30 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             )}
 
             {permissions.canAccessSettings && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0 bg-transparent"
-                onClick={() => setShowSettings(true)}
-                title="Tournament Settings"
-              >
-                <SettingsIcon className="h-4 w-4" />
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0 bg-transparent text-muted-foreground hover:text-destructive hover:border-destructive/50"
+                  onClick={() => setShowDeleteDialog(true)}
+                  title={t("tournamentHeader.deleteTournamentButton")}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0 bg-transparent"
+                  onClick={() => setShowSettings(true)}
+                  title={t("tournamentHeader.settingsTooltip")}
+                >
+                  <SettingsIcon className="h-4 w-4" />
+                </Button>
+              </>
             )}
           </div>
 
           <TabsContent value="players" className="space-y-2">
-              {/* Express interest card — only for visitors who haven't joined yet */}
-              {!isCurrentUserInTournament && !playerSession?.playerId && <Card className="mb-4 border-primary/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-primary" />
-                      Interest
-                    </span>
-                    {interestCount > 0 && (
-                      <span className="text-muted-foreground font-normal">
-                        {interestCount} {interestCount === 1 ? "person" : "people"} interested
-                      </span>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {currentUserId && (
-                    <Button
-                      variant={userInterested ? "secondary" : "outline"}
-                      size="sm"
-                      className="w-full sm:w-auto"
-                      onClick={handleToggleInterest}
-                      disabled={togglingInterest}
-                    >
-                      {togglingInterest ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Heart
-                          className={cn("h-4 w-4 mr-2", userInterested && "fill-current")}
-                        />
-                      )}
-                      {userInterested ? "Interested" : "I'm interested"}
-                    </Button>
-                  )}
-                  {!currentUserId && interestCount > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      <Link href="/auth/login" className="text-primary hover:underline">Sign in</Link> to express interest
-                    </p>
-                  )}
-                  {isOrganizer && interestedUsers.length > 0 && (
-                    <div className="pt-2 border-t">
-                      <p className="text-xs font-medium text-muted-foreground mb-1.5">Interested</p>
-                      <ul className="text-sm space-y-1">
-                        {interestedUsers.map((u) => (
-                          <li key={u.user_id}>
-                            {u.name ?? "Unknown"}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>}
-
               {/* Tournament Setup Card - only show in setup status */}
               {arenaState.status === "setup" && (
                 isOrganizer ? (
@@ -2734,7 +2760,9 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   ) : (
                     <Card>
                       <CardContent className="pt-6">
-                        <p className="text-center text-muted-foreground">No matches yet. Start a tournament to begin.</p>
+                        <p className="text-center text-muted-foreground">
+                          {arenaState.isActive ? t("results.morePairingsComingSoon") : t("results.noMatchesYet")}
+                        </p>
                       </CardContent>
                     </Card>
                   )
