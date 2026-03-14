@@ -124,7 +124,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     status: "setup", // Added status field
   })
   const [tournamentId, setTournamentId] = useState<string | null>(initialTournamentId || null)
-  const [displayName, setDisplayName] = useState(tournamentName || "Arena Tournament")
+  const [displayName, setDisplayName] = useState(tournamentName || t("arena.defaultTournamentName"))
   const [playerNameInput, setPlayerNameInput] = useState("") // Renamed to playerNameInput
   const [tableCountInput, setTableCountInput] = useState("")
   const [tournamentDurationInput, setTournamentDurationInput] = useState("60") // Default 60 minutes
@@ -252,13 +252,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const opponentName = match.player1.id === pid ? match.player2.name : match.player1.name
       const tableLabel = match.tableNumber ? ` · Table ${match.tableNumber}` : ""
 
-      toast.success("You've been paired!", {
+      toast.success(t("arena.toastYouHaveBeenPaired"), {
         description: `vs ${opponentName}${tableLabel}`,
         duration: 8000,
       })
 
       if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-        new Notification("You've been paired!", {
+        new Notification(t("arena.toastYouHaveBeenPaired"), {
           body: `vs ${opponentName}${tableLabel} — tap to open`,
           icon: "/icon-192.png",
         })
@@ -730,12 +730,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     })
 
     if (isDuplicate) {
-      alert("This player is already in the tournament.")
+      alert(t("arena.alertPlayerAlreadyInTournament"))
       return
     }
 
     if (arenaState.isActive && !arenaState.settings.allowLateJoin) {
-      alert("Late joins are not allowed in this tournament. Please wait for the next tournament.")
+      alert(t("arena.alertLateJoinsNotAllowed"))
       return
     }
 
@@ -744,9 +744,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const maxSimultaneousPairings = Math.floor(newTotalPlayers / 2)
 
       if (maxSimultaneousPairings > arenaState.tableCount) {
-        alert(
-          `Cannot add player: Maximum simultaneous pairings (${maxSimultaneousPairings}) would exceed available tables (${arenaState.tableCount})`,
-        )
+        alert(t("arena.alertCannotAddPlayerTables", { max: maxSimultaneousPairings, tables: arenaState.tableCount }))
         return
       }
     }
@@ -818,7 +816,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           const details = (err.details as string) ?? ""
           const hint = (err.hint as string) ?? ""
           if (code === "23505") {
-            toast.error("You've already joined this tournament from this device.")
+            toast.error(t("arena.toastAlreadyJoinedFromDevice"))
             setArenaState((prev) => ({
               ...prev,
               players: prev.players.filter((p) => p.id !== newPlayer.id),
@@ -826,13 +824,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             return
           }
           console.error("[v0] Error saving player to database:", msg, code ? `(${code})` : "", details || hint || "")
-          toast.error(msg || "Failed to add player")
+          toast.error(msg || t("arena.toastFailedToAddPlayer"))
         }
       } catch (error) {
         const err = error as Record<string, unknown>
         const msg = (err?.message as string) ?? (error instanceof Error ? error.message : String(error))
         console.error("[v0] Error saving player to database:", msg, error)
-        toast.error(msg || "Failed to add player")
+        toast.error(msg || t("arena.toastFailedToAddPlayer"))
       }
       if (isGuest && tournamentId && addToGuestHistory) {
         addGuestSession({
@@ -862,7 +860,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     const tryCheckIn = (): Promise<boolean> =>
       new Promise((resolve) => {
         if (!navigator.geolocation) {
-          toast.error("Location is not available")
+          toast.error(t("arena.toastLocationNotAvailable"))
           resolve(false)
           return
         }
@@ -874,7 +872,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               resolve(false)
               return
             }
-            toast.success("You're checked in!")
+            toast.success(t("arena.toastYouAreCheckedIn"))
             setArenaState((prev) => ({
               ...prev,
               players: prev.players.map((p) =>
@@ -894,7 +892,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       })
     const ok = await tryCheckIn()
     if (!ok) {
-      toast.info("Retrying in 2 seconds...")
+      toast.info(t("arena.toastRetryingInSeconds"))
       await new Promise((r) => setTimeout(r, 2000))
       await tryCheckIn()
     }
@@ -910,7 +908,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         toast.error(result.error)
         return
       }
-      toast.success("Player marked present")
+      toast.success(t("arena.toastPlayerMarkedPresent"))
       const now = Date.now()
       setArenaState((prev) => ({
         ...prev,
@@ -929,7 +927,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     try {
       const result = await renamePlayer(tournamentId, playerId, newName)
       if (!result.success) throw new Error(result.error)
-      toast.success("Player renamed")
+      toast.success(t("arena.toastPlayerRenamed"))
       setArenaState((prev) => ({
         ...prev,
         players: prev.players.map((p) => (p.id === playerId ? { ...p, name: newName } : p)),
@@ -948,12 +946,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     if (!currentUserId || !userName) return
 
     if (arenaState.status === "completed") {
-      toast.error("This tournament has ended. You can no longer join.")
+      toast.error(t("arena.toastTournamentEndedNoJoin"))
       return
     }
 
     if (arenaState.isActive && !arenaState.settings.allowLateJoin) {
-      toast.error("Late joins are not allowed in this tournament.")
+      toast.error(t("arena.alertLateJoinsNotAllowed"))
       return
     }
 
@@ -961,13 +959,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const newTotalPlayers = arenaState.players.filter((p) => !p.hasLeft).length + 1
       const maxPairings = Math.floor(newTotalPlayers / 2)
       if (maxPairings > arenaState.tableCount) {
-        toast.error(`Cannot join: all ${arenaState.tableCount} tables are full.`)
+        toast.error(t("arena.toastTablesFull", { count: arenaState.tableCount }))
         return
       }
     }
 
     if (isCurrentUserInTournament) {
-      toast.error("You are already in this tournament")
+      toast.error(t("arena.toastAlreadyInTournament"))
       return
     }
 
@@ -975,15 +973,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       (p) => p.name.toLowerCase() === userName.toLowerCase() && !p.hasLeft,
     )
     if (existingPlayer) {
-      toast.error("A player with this name is already in the tournament")
+      toast.error(t("arena.toastPlayerNameAlreadyInTournament"))
       return
     }
 
     const nameTaken = tournamentId ? await playerNameExistsInTournament(tournamentId, userName) : false
     if (nameTaken) {
-      toast.error(
-        `${userName} already exists in this tournament. Try a different name, e.g. ${userName} R. or ${userName} (Madrid).`,
-      )
+      toast.error(t("arena.toastNameExistsTryDifferent", { name: userName }))
       return
     }
 
@@ -997,7 +993,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const runProximity = (): Promise<{ checkedInAt: number | null; presenceSource: "gps" | null }> =>
         new Promise((resolve) => {
           if (!navigator.geolocation) {
-            toast.info("Location unavailable. You can still join; the organizer will confirm you at the venue.")
+            toast.info(t("arena.toastLocationUnavailableStillJoin"))
             resolve({ checkedInAt: null, presenceSource: null })
             return
           }
@@ -1009,14 +1005,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                 position.coords.longitude,
               )
               if (!result.ok) {
-                toast.info("You're not at the venue yet. You can still join; the organizer will confirm you when you arrive.")
+                toast.info(t("arena.toastNotAtVenueYet"))
                 resolve({ checkedInAt: null, presenceSource: null })
                 return
               }
               resolve({ checkedInAt: Date.now(), presenceSource: "gps" })
             },
             () => {
-              toast.info("Location unavailable. You can still join; the organizer will confirm you at the venue.")
+              toast.info(t("arena.toastLocationUnavailableStillJoin"))
               resolve({ checkedInAt: null, presenceSource: null })
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
@@ -1176,26 +1172,24 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
   const handleStartTournament = async () => {
     if (arenaState.status === "completed") {
-      alert("This tournament has already been completed and cannot be restarted.")
+      alert(t("arena.alertTournamentAlreadyCompleted"))
       return
     }
 
     if (arenaState.players.length < 2) {
-      alert("Need at least 2 players to start")
+      alert(t("arena.alertNeedAtLeastTwoPlayers"))
       return
     }
 
     const tableCount = Number.parseInt(tableCountInput)
     if (!tableCount || tableCount < 1) {
-      alert("Please enter a valid number of tables (at least 1)")
+      alert(t("arena.alertInvalidTableCount"))
       return
     }
 
     const maxSimultaneousPairings = Math.floor(arenaState.players.length / 2)
     if (tableCount < maxSimultaneousPairings) {
-      alert(
-        `Not enough tables! With ${arenaState.players.length} players, you need at least ${maxSimultaneousPairings} tables for all possible simultaneous pairings.`,
-      )
+      alert(t("arena.alertNotEnoughTables", { players: arenaState.players.length, tables: maxSimultaneousPairings }))
       return
     }
 
@@ -1217,12 +1211,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const result = await startTournamentAction(tournamentId)
 
       if (!result.success) {
-        alert(result.error || "Failed to start tournament")
+        alert(result.error || t("arena.alertStartTournamentFailed"))
         return
       }
     } catch (error) {
       console.error("[v0] Error calling startTournament action:", error)
-      alert("Failed to start tournament. Please try again.")
+      alert(t("arena.alertStartTournamentFailed"))
       return
     }
 
@@ -1605,12 +1599,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     const isSelfPause = !isOrganizer && (playerId === currentPlayerInTournament?.id || playerId === playerSession?.playerId)
 
     if (!player.paused && isSelfPause && !arenaState.settings.allowSelfPause) {
-      alert("Self-pause is not allowed in this tournament.")
+      alert(t("arena.alertSelfPauseNotAllowed"))
       return
     }
 
     if (!player.paused && isSelfPause && player.gamesPlayed < arenaState.settings.minGamesBeforePause) {
-      alert(`Players must complete at least ${arenaState.settings.minGamesBeforePause} games before pausing.`)
+      alert(t("arena.alertMinGamesBeforePause", { count: arenaState.settings.minGamesBeforePause }))
       return
     }
 
@@ -1734,7 +1728,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     const isPlayerInMatch = match.player1.id === playerSession.playerId || match.player2.id === playerSession.playerId
     if (!isPlayerInMatch) {
       if (DEBUG) console.log("[v0] Player not in match, rejecting submission")
-      alert("You can only submit results for your own matches.")
+      alert(t("arena.alertOnlyOwnMatches"))
       return
     }
 
@@ -1752,7 +1746,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     const effectiveResult = result ?? playerSubmissions[matchId]?.result
     if (DEBUG) console.log("[v0] Player confirming result:", matchId, "result:", effectiveResult, "from arg:", !!result, "playerId:", playerSession?.playerId)
     if (!playerSession?.playerId) {
-      alert("Your session is missing (no player ID). Please rejoin the tournament using the join link.")
+      alert(t("arena.alertMissingPlayerSession"))
       return
     }
 
@@ -1799,7 +1793,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
       if (!res.ok) {
         console.error("[v0] Submit result HTTP error:", res.status, response?.error ?? res.statusText)
-        alert(response?.error || `Request failed (${res.status}). Try again.`)
+        alert(response?.error || t("arena.alertRequestFailed", { status: res.status }))
         setPlayerSubmissions((prev) => ({
           ...prev,
           [matchId]: { ...prev[matchId], confirmed: false },
@@ -1809,7 +1803,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
       if (!response.success) {
         console.error("[v0] Server rejected submission:", response.error)
-        alert(response.error || "Failed to submit result")
+        alert(response.error || t("arena.toastResultSubmitFailed"))
         setPlayerSubmissions((prev) => ({
           ...prev,
           [matchId]: { ...prev[matchId], confirmed: false },
@@ -1899,7 +1893,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
       console.error("[result-submit] Request failed:", msg, error)
-      alert(`Failed to submit result. ${msg.includes("fetch") || msg.includes("Network") ? "Check your connection." : "Please try again."}`)
+      alert(msg.includes("fetch") || msg.includes("Network") ? t("arena.toastResultSubmitFailedNetwork") : t("arena.toastResultSubmitFailed"))
       setPlayerSubmissions((prev) => ({
         ...prev,
         [matchId]: { ...prev[matchId], confirmed: false },
@@ -2265,15 +2259,15 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               <div className="flex flex-wrap items-center gap-2 mt-1">
                 <Badge variant="secondary" className="font-normal">
                   {userRole === "organizer"
-                    ? "Organizer"
+                    ? t("tournamentHeader.roleOrganizer")
                     : userRole === "registered-player" || userRole === "guest-player"
-                      ? "Player"
-                      : "Visitor"}
+                      ? t("tournamentHeader.rolePlayer")
+                      : t("tournamentHeader.roleVisitor")}
                 </Badge>
                 {organizerName && (
                   <p className="text-sm text-muted-foreground">
-                    Organized by <span className="font-semibold">{organizerName}</span>
-                    {isOrganizer && <span className="text-primary ml-1">(You)</span>}
+                    {t("tournamentHeader.organizedBy", { name: organizerName })}
+                    {isOrganizer && <span className="text-primary ml-1">{t("tournamentHeader.organizedByYou")}</span>}
                   </p>
                 )}
               </div>
@@ -2285,11 +2279,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-1"
                 >
                   <MapPin className="h-4 w-4" />
-                  Get directions
+                  {t("tournamentHeader.getDirections")}
                 </a>
               )}
               {arenaState.status === "completed" && (
-                <p className="text-sm text-muted-foreground mt-1">Tournament Completed</p>
+                <p className="text-sm text-muted-foreground mt-1">{t("tournamentHeader.statusCompleted")}</p>
               )}
             </div>
 
@@ -2300,11 +2294,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             >
               <TabsTrigger value="players" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                 <Users className="h-4 w-4 mr-1" />
-                Players
+                {t("tournamentHeader.playersTab")}
               </TabsTrigger>
               <TabsTrigger value="pairings" className="relative text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                 <Swords className="h-4 w-4 mr-1" />
-                Pairings
+                {t("tournamentHeader.pairingsTab")}
                 {arenaState.pairedMatches.some(
                   (m) =>
                     m.player1Submission?.confirmed &&
@@ -2317,7 +2311,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               {arenaState.status !== "completed" && (
                 <TabsTrigger value="results" className="relative text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                   <Trophy className="h-4 w-4 mr-1" />
-                  Results
+                  {t("tournamentHeader.resultsTab")}
                   {(() => {
                     const hasConflict = arenaState.pairedMatches.some(
                       (m) =>
@@ -2340,7 +2334,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               )}
               <TabsTrigger value="standings" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
                 <Award className="h-4 w-4 mr-1" />
-                Standings
+                {t("tournamentHeader.standingsTab")}
               </TabsTrigger>
             </TabsList>
 
@@ -2370,7 +2364,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   )}
                 {arenaState.status === "active" && permissions.canEndTournament && (
                   <Button variant="destructive" size="sm" onClick={endTournament}>
-                    End Tournament
+                    {t("arena.endTournamentButton")}
                   </Button>
                 )}
               </div>
@@ -2406,18 +2400,18 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                 isOrganizer ? (
                   <Card className="mb-4">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Tournament Setup</CardTitle>
+                      <CardTitle className="text-base">{t("arena.setupTitle")}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="flex flex-wrap gap-3 items-end">
                         <div className="flex-1 min-w-[120px] space-y-1.5">
                           <Label htmlFor="tables" className="text-sm">
-                            Tables
+                            {t("arena.setupTables")}
                           </Label>
                           <Input
                             id="tables"
                             type="number"
-                            placeholder="# of tables"
+                            placeholder={t("arena.setupTablesPlaceholder")}
                             value={tableCountInput}
                             onChange={(e) => setTableCountInput(e.target.value)}
                             className="w-20 h-8 text-sm"
@@ -2425,12 +2419,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                         </div>
                         <div className="flex-1 min-w-[120px] space-y-1.5">
                           <Label htmlFor="duration" className="text-sm">
-                            Duration (min)
+                            {t("arena.setupDuration")}
                           </Label>
                           <Input
                             id="duration"
                             type="number"
-                            placeholder="Min"
+                            placeholder={t("arena.setupDurationPlaceholder")}
                             value={tournamentDurationInput}
                             onChange={(e) => setTournamentDurationInput(e.target.value)}
                             className="w-20 h-8 text-sm"
@@ -2438,13 +2432,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                         </div>
                         {permissions.canStartTournament && (
                           <Button onClick={handleStartTournament} className="w-full h-8 text-sm" size="sm">
-                            Start Tournament
+                            {t("arena.setupStartTournament")}
                           </Button>
                         )}
                       </div>
                       <div className="space-y-0.5">
                         <p className="text-xs text-muted-foreground">
-                          {arenaState.players.length} players • Need {maxSimultaneousPairings} tables for full pairings
+                          {t("arena.setupPlayersNeedTables", { players: arenaState.players.length, tables: maxSimultaneousPairings })}
                         </p>
                       </div>
                     </CardContent>
@@ -2455,10 +2449,9 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                       <div className="flex items-center gap-3">
                         <Loader2 className="h-5 w-5 animate-spin text-amber-500 flex-shrink-0" />
                         <div>
-                          <p className="font-semibold text-sm">Waiting for the organizer to start</p>
+                          <p className="font-semibold text-sm">{t("arena.waitingForOrganizer")}</p>
                           <p className="text-xs text-muted-foreground">
-                            {arenaState.players.filter((p) => !p.hasLeft).length} player
-                            {arenaState.players.filter((p) => !p.hasLeft).length !== 1 ? "s" : ""} registered so far
+                            {t("arena.playersRegisteredSoFar", { count: arenaState.players.filter((p) => !p.hasLeft).length })}
                           </p>
                         </div>
                       </div>
@@ -2483,7 +2476,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-1.5">
                         <QrCode className="h-3.5 w-3.5 flex-shrink-0" />
-                        <h3 className="font-semibold text-xs">Player Join Link</h3>
+                        <h3 className="font-semibold text-xs">{t("arena.playerJoinLink")}</h3>
                       </div>
                       <div className="flex gap-1">
                         <Input
@@ -2497,14 +2490,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                           className="h-7 px-2 bg-transparent text-xs flex-shrink-0"
                           onClick={() => {
                             navigator.clipboard.writeText(`${window.location.origin}/join/${tournamentId}`)
-                            alert("Link copied!")
+                            toast.success(t("common.linkCopied"))
                           }}
                         >
-                          Copy
+                          {t("arena.copy")}
                         </Button>
                       </div>
                       <p className="text-[10px] text-muted-foreground">
-                        ID: <span className="font-mono font-semibold">{tournamentId}</span>
+                        {t("arena.tournamentIdLabel")} <span className="font-mono font-semibold">{tournamentId}</span>
                       </p>
                     </div>
                   </div>
@@ -2514,7 +2507,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">
-                    Players ({arenaState.players.filter((p) => !p.hasLeft).length})
+                    {t("tournamentHeader.playersTab")} ({arenaState.players.filter((p) => !p.hasLeft).length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -2526,12 +2519,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                             {joiningSelf ? (
                               <>
                                 <MapPin className="mr-2 h-4 w-4" />
-                                Verifying location...
+                                {t("arena.verifyingLocation")}
                               </>
                             ) : (
                               <>
                                 <UserPlus className="mr-2 h-4 w-4" />
-                                Join Tournament
+                                {t("arena.joinTournament")}
                               </>
                             )}
                           </Button>
@@ -2554,12 +2547,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                                   ) : (
                                     <MapPin className="h-4 w-4 mr-2" />
                                   )}
-                                  Check in at venue
+                                  {t("arena.checkInAtVenue")}
                                 </Button>
                               ) : (
                                 <div className="text-center text-sm text-muted-foreground p-3 border rounded-lg bg-primary/5">
                                   <Check className="inline-block mr-1 h-4 w-4 text-green-500" />
-                                  You have joined this tournament
+                                  {t("arena.youHaveJoined")}
                                 </div>
                               )}
                             </div>
@@ -2570,7 +2563,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                           <>
                             <div className="space-y-1.5">
                               <label className="text-xs font-medium text-muted-foreground">
-                                Search Registered Players
+                                {t("arena.searchRegisteredPlayers")}
                               </label>
                               <UserSearchAutocomplete onSelectUser={handleSelectUser} />
                             </div>
@@ -2580,7 +2573,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                                 <span className="w-full border-t" />
                               </div>
                               <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-background px-2 text-muted-foreground">Or add guest</span>
+                                <span className="bg-background px-2 text-muted-foreground">{t("arena.orAddGuest")}</span>
                               </div>
                             </div>
 
@@ -2589,7 +2582,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                               variant="outline"
                               className="w-full h-8 text-sm bg-transparent"
                             >
-                              Add Guest Player
+                              {t("arena.addGuestPlayer")}
                             </Button>
                           </>
                         )}
@@ -2598,17 +2591,17 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                           <div className="space-y-3">
                             <Button onClick={handleAddGuestPlayer} variant="outline" className="w-full bg-transparent">
                               <UserPlus className="mr-2 h-4 w-4" />
-                              Join as Guest
+                              {t("arena.joinAsGuest")}
                             </Button>
                             <p className="text-xs text-center text-muted-foreground">
                               <Link href="/auth/login" className="text-primary hover:underline">
-                                Login
+                                {t("home.loginButton")}
                               </Link>{" "}
                               or{" "}
                               <Link href="/auth/signup" className="text-primary hover:underline">
-                                register
+                                {t("home.signUp")}
                               </Link>{" "}
-                              to track your progress
+                              {t("arena.loginOrRegisterToTrack")}
                             </p>
                           </div>
                         )}
@@ -2637,10 +2630,10 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                 <Card>
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">Current Pairings</CardTitle>
+                      <CardTitle className="text-base">{t("arena.currentPairings")}</CardTitle>
                       <Button variant="outline" size="sm" onClick={() => setIsFullScreenPairings(true)}>
                         <Maximize2 className="h-4 w-4 mr-2" />
-                        Full Screen
+                        {t("arena.fullScreen")}
                       </Button>
                     </div>
                   </CardHeader>
@@ -2664,7 +2657,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                             {/* Table number header */}
                             {match.tableNumber && (
                               <div className="bg-amber-700 px-3 py-1 flex items-center gap-2">
-                                <span className="text-white font-bold text-sm">Table {match.tableNumber}</span>
+                                <span className="text-white font-bold text-sm">{t("arena.tableNumber", { number: match.tableNumber })}</span>
                               </div>
                             )}
 
@@ -2682,13 +2675,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                               {hasConflict && (
                                 <div className="flex items-center gap-1 px-1 py-0.5 text-red-600 dark:text-red-400 text-xs font-medium">
                                   <AlertCircle className="h-3.5 w-3.5" />
-                                  Result conflict — check Results tab
+                                  {t("arena.resultConflictCheckResults")}
                                 </div>
                               )}
                               {oneSubmitted && (
                                 <div className="flex items-center gap-1 px-1 py-0.5 text-amber-600 dark:text-amber-400 text-xs">
                                   <Clock className="h-3 w-3" />
-                                  1 result submitted
+                                  {t("arena.oneResultSubmitted")}
                                 </div>
                               )}
                             </div>
@@ -2703,7 +2696,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               <Card>
                 <CardContent className="pt-6">
                   <p className="text-center text-muted-foreground">
-                    No active pairings. Waiting for more players to be available.
+                    {t("arena.noActivePairings")}
                   </p>
                 </CardContent>
               </Card>
@@ -2715,7 +2708,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               <Card>
                 <CardContent className="pt-6">
                   <p className="text-center text-muted-foreground">
-                    Tournament has ended. No more results can be recorded.
+                    {t("results.tournamentEndedNoResults")}
                   </p>
                 </CardContent>
               </Card>
@@ -2808,24 +2801,24 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>End Tournament</DialogTitle>
+              <DialogTitle>{t("arena.endTournamentTitle")}</DialogTitle>
               <DialogDescription>
                 {arenaState.pairedMatches.filter((m) => !m.result?.completed).length > 0
-                  ? `There are ${arenaState.pairedMatches.filter((m) => !m.result?.completed).length} active matches. How would you like to proceed?`
-                  : "Are you sure you want to end the tournament?"}
+                  ? t("arena.endTournamentWithPending", { count: arenaState.pairedMatches.filter((m) => !m.result?.completed).length })
+                  : t("arena.endTournamentConfirm")}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="flex-col sm:flex-col gap-2">
               <Button variant="destructive" onClick={handleEndImmediately} className="w-full">
-                End Immediately (Ignore Active Matches)
+                {t("arena.endImmediately")}
               </Button>
               {arenaState.pairedMatches.filter((m) => !m.result?.completed).length > 0 && (
                 <Button variant="default" onClick={handleWaitForFinalResults} className="w-full">
-                  Wait for Final Results
+                  {t("arena.waitForResults")}
                 </Button>
               )}
               <Button variant="outline" onClick={() => setShowEndDialog(false)} className="w-full">
-                Cancel
+                {t("common.cancel")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2833,7 +2826,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
         {waitingForFinalResults && (
           <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-yellow-500 text-black px-4 py-2 rounded-lg shadow-lg">
-            Waiting for final results... No new pairings will be created.
+            {t("arena.waitingForResultsBanner")}
           </div>
         )}
       </div>

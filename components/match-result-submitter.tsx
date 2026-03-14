@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useI18n } from "@/components/i18n-provider"
 
 const DEBUG_SUBMIT = true // Set to false to reduce console noise
 
@@ -39,6 +40,7 @@ export function MatchResultSubmitter({
   onConfirm,
   onCancel: _onCancel,
 }: MatchResultSubmitterProps) {
+  const { t } = useI18n()
   const [selectedResult, setSelectedResult] = useState<"player1-win" | "draw" | "player2-win" | null>(null)
 
   const handleSelectResult = (result: "player1-win" | "draw" | "player2-win") => {
@@ -54,9 +56,9 @@ export function MatchResultSubmitter({
   }
 
   const getResultText = (result: "player1-win" | "draw" | "player2-win") => {
-    if (result === "draw") return "Draw"
-    if (result === "player1-win") return `${player1Name} wins`
-    return `${player2Name} wins`
+    if (result === "draw") return t("currentRound.draw")
+    if (result === "player1-win") return t("arena.playerWins", { name: player1Name })
+    return t("arena.playerWins", { name: player2Name })
   }
 
   // Check for conflict
@@ -67,9 +69,9 @@ export function MatchResultSubmitter({
     <Card>
       <CardContent className="pt-6 space-y-4">
         <div className="text-center">
-          <h4 className="font-semibold text-lg mb-2">Submit Match Result</h4>
+          <h4 className="font-semibold text-lg mb-2">{t("arena.submitMatchResult")}</h4>
           <p className="text-sm text-muted-foreground">
-            {player1Name} (White) vs {player2Name} (Black)
+            {t("arena.whiteVsBlack", { player1: player1Name, player2: player2Name })}
           </p>
         </div>
 
@@ -77,14 +79,14 @@ export function MatchResultSubmitter({
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Result Conflict!</strong>
+              <strong>{t("arena.resultConflict")}</strong>
               <br />
-              You submitted: {getResultText(mySubmission.result)}
+              {t("arena.youSubmitted")} {getResultText(mySubmission.result)}
               <br />
-              Opponent submitted: {getResultText(opponentSubmission!.result)}
+              {t("arena.opponentSubmitted")} {getResultText(opponentSubmission!.result)}
               <br />
               <span className="text-xs mt-1 block">
-                You can re-submit below, or the organizer will resolve this.
+                {t("arena.resubmitOrOrganizerResolve")}
               </span>
             </AlertDescription>
           </Alert>
@@ -94,11 +96,11 @@ export function MatchResultSubmitter({
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
-              You submitted: <strong>{getResultText(mySubmission.result)}</strong>
+              {t("arena.youSubmitted")} <strong>{getResultText(mySubmission.result)}</strong>
               {!opponentSubmission?.confirmed && (
                 <>
                   <br />
-                  Waiting for opponent to submit result. If they don&apos;t, you can report your score to the tournament organizer.
+                  {t("arena.waitingForOpponentSubmit")}
                 </>
               )}
             </AlertDescription>
@@ -109,7 +111,7 @@ export function MatchResultSubmitter({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Your opponent has submitted a result. Please confirm or enter your result.
+              {t("arena.opponentSubmittedConfirmYours")}
             </AlertDescription>
           </Alert>
         )}
@@ -121,7 +123,7 @@ export function MatchResultSubmitter({
             onClick={() => handleSelectResult("player1-win")}
             disabled={mySubmission?.confirmed && !hasConflict}
           >
-            {player1Name} wins (White)
+            {t("arena.playerWinsWhite", { name: player1Name })}
           </Button>
           <Button
             variant={selectedResult === "draw" ? "default" : "outline"}
@@ -129,7 +131,7 @@ export function MatchResultSubmitter({
             onClick={() => handleSelectResult("draw")}
             disabled={mySubmission?.confirmed && !hasConflict}
           >
-            Draw
+            {t("currentRound.draw")}
           </Button>
           <Button
             variant={selectedResult === "player2-win" ? "default" : "outline"}
@@ -137,14 +139,14 @@ export function MatchResultSubmitter({
             onClick={() => handleSelectResult("player2-win")}
             disabled={mySubmission?.confirmed && !hasConflict}
           >
-            {player2Name} wins (Black)
+            {t("arena.playerWinsBlack", { name: player2Name })}
           </Button>
           <Button
             className="w-full mt-2"
             onClick={handleSubmit}
             disabled={selectedResult == null || (mySubmission?.confirmed && !hasConflict)}
           >
-            Submit result
+            {t("arena.submitResultButton")}
           </Button>
         </div>
       </CardContent>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { AlertCircle, Clock } from "lucide-react"
 import type { Match, Player } from "@/lib/types"
 import { MatchResultSubmitter } from "@/components/match-result-submitter"
+import { useI18n } from "@/components/i18n-provider"
 
 interface CurrentRoundProps {
   matches: Match[]
@@ -20,9 +21,11 @@ interface CurrentRoundProps {
 function WaitingRoom({
   playerId,
   allPlayers,
+  t,
 }: {
   playerId: string
   allPlayers: Player[]
+  t: (key: string, params?: Record<string, string | number>) => string
 }) {
   const sorted = [...allPlayers]
     .filter((p) => !p.hasLeft)
@@ -45,13 +48,13 @@ function WaitingRoom({
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
             </div>
             <div className="min-w-0">
-              <p className="font-semibold text-sm">Waiting to be paired</p>
-              <p className="text-xs text-muted-foreground">You'll be notified when your next match is ready</p>
+              <p className="font-semibold text-sm">{t("currentRound.waitingToBePaired")}</p>
+              <p className="text-xs text-muted-foreground">{t("currentRound.notifiedWhenReady")}</p>
             </div>
             {me && (
               <div className="ml-auto text-right flex-shrink-0">
                 <p className="text-lg font-bold leading-none">{me.score}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">pts</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("currentRound.pts")}</p>
               </div>
             )}
           </div>
@@ -62,7 +65,7 @@ function WaitingRoom({
       {topTen.length > 0 && (
         <div>
           <h3 className="font-semibold text-xs mb-2 text-muted-foreground uppercase tracking-wide">
-            Standings
+            {t("currentRound.standings")}
           </h3>
           <div className="space-y-0.5">
             {topTen.map((p, i) => {
@@ -117,6 +120,7 @@ export function CurrentRound({
   canRecordResults = false,
   allPlayers = [],
 }: CurrentRoundProps) {
+  const { t } = useI18n()
   const visibleMatches =
     playerSession?.role === "player"
       ? matches.filter((m) => m.player1.id === playerSession.playerId || m.player2.id === playerSession.playerId)
@@ -140,13 +144,13 @@ export function CurrentRound({
     <div className="space-y-2">
       {/* Waiting Room — shown when player has no pending match */}
       {playerSession?.role === "player" && sortedPendingMatches.length === 0 && (
-        <WaitingRoom playerId={playerSession.playerId} allPlayers={allPlayers} />
+        <WaitingRoom playerId={playerSession.playerId} allPlayers={allPlayers} t={t} />
       )}
 
       {sortedPendingMatches.length > 0 && (
         <div>
           <h3 className="font-semibold text-xs mb-1 text-muted-foreground uppercase tracking-wide">
-            {playerSession?.role === "player" ? "Your Match" : "Active Matches"}
+            {playerSession?.role === "player" ? t("currentRound.yourMatch") : t("currentRound.activeMatches")}
           </h3>
           <div className="space-y-1">
             {sortedPendingMatches.map((match) => {
@@ -184,7 +188,7 @@ export function CurrentRound({
               const oneSubmitted = (p1Sub?.confirmed || p2Sub?.confirmed) && !bothSubmitted
 
               const resultLabel = (r: string) =>
-                r === "draw" ? "Draw" : r === "player1-win" ? `${match.player1.name} wins` : `${match.player2.name} wins`
+                r === "draw" ? t("currentRound.draw") : r === "player1-win" ? t("arena.playerWins", { name: match.player1.name }) : t("arena.playerWins", { name: match.player2.name })
 
               return (
                 <Card
@@ -238,15 +242,15 @@ export function CurrentRound({
                     {bothAgree && (
                       <div className="mt-1.5 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded text-xs flex items-center gap-1 text-green-700 dark:text-green-400">
                         <Clock className="h-3 w-3" />
-                        Both agree: <strong>{resultLabel(p1Sub.result)}</strong> — auto-confirming…
+                        {t("currentRound.bothAgreeAutoConfirm", { result: resultLabel(p1Sub.result) })}
                       </div>
                     )}
                     {oneSubmitted && (
                       <div className="mt-1.5 px-2 py-1 bg-amber-50 dark:bg-amber-900/20 rounded text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {p1Sub?.confirmed
-                          ? `${match.player1.name} submitted: ${resultLabel(p1Sub.result)} — waiting for opponent`
-                          : `${match.player2.name} submitted: ${resultLabel(p2Sub!.result)} — waiting for opponent`}
+                          ? t("currentRound.submittedWaitingOpponent", { player: match.player1.name, result: resultLabel(p1Sub.result) })
+                          : t("currentRound.submittedWaitingOpponent", { player: match.player2.name, result: resultLabel(p2Sub!.result) })}
                       </div>
                     )}
 
@@ -257,24 +261,27 @@ export function CurrentRound({
                           size="sm"
                           className="h-7 text-xs px-3 hover:bg-primary hover:text-primary-foreground bg-transparent"
                           onClick={() => recordMatchResult(match.id, match.player1.id, false)}
+                          data-simulator-result="white"
                         >
-                          White Wins
+                          {t("currentRound.whiteWins")}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-7 text-xs px-3 hover:bg-primary hover:text-primary-foreground bg-transparent"
                           onClick={() => recordMatchResult(match.id, undefined, true)}
+                          data-simulator-result="draw"
                         >
-                          Draw
+                          {t("currentRound.draw")}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-7 text-xs px-3 hover:bg-primary hover:text-primary-foreground bg-transparent"
                           onClick={() => recordMatchResult(match.id, match.player2.id, false)}
+                          data-simulator-result="black"
                         >
-                          Black Wins
+                          {t("currentRound.blackWins")}
                         </Button>
                       </div>
                     )}
@@ -289,7 +296,7 @@ export function CurrentRound({
       {completedMatches.length > 0 && (
         <div>
           <h3 className="font-semibold text-xs mb-1 text-muted-foreground uppercase tracking-wide">
-            Completed ({completedMatches.length})
+            {t("currentRound.completedCount", { count: completedMatches.length })}
           </h3>
           <div className="space-y-1">
             {completedMatches.map((match) => (
@@ -301,19 +308,19 @@ export function CurrentRound({
                         <span className="text-xs font-bold text-primary flex-shrink-0">{match.tableNumber}</span>
                       )}
                       <div
-                        className="w-3 h-3 bg-white border-2 border-gray-400 rounded-sm flex-shrink-0"
-                        title="White"
-                      />
-                      <span
-                        className={`text-sm truncate ${match.result?.winnerId === match.player1.id ? "font-bold" : ""}`}
-                      >
-                        {match.player1.name}
-                      </span>
-                      <span className="text-muted-foreground text-xs flex-shrink-0">vs</span>
-                      <div
-                        className="w-3 h-3 bg-gray-900 border-2 border-gray-600 rounded-sm flex-shrink-0"
-                        title="Black"
-                      />
+                            className="w-3 h-3 bg-white border-2 border-gray-400 rounded-sm flex-shrink-0"
+                            title={t("currentRound.white")}
+                          />
+                          <span
+                            className={`text-sm truncate ${match.result?.winnerId === match.player1.id ? "font-bold" : ""}`}
+                          >
+                            {match.player1.name}
+                          </span>
+                          <span className="text-muted-foreground text-xs flex-shrink-0">vs</span>
+                          <div
+                            className="w-3 h-3 bg-gray-900 border-2 border-gray-600 rounded-sm flex-shrink-0"
+                            title={t("currentRound.black")}
+                          />
                       <span
                         className={`text-sm truncate ${match.result?.winnerId === match.player2.id ? "font-bold" : ""}`}
                       >

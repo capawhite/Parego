@@ -6,8 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Play, Square } from "lucide-react"
+import { useI18n } from "@/components/i18n-provider"
 
 export function TournamentSimulatorPanel() {
+  const { t } = useI18n()
   const [isRunning, setIsRunning] = useState(false)
   const [resultsEntered, setResultsEntered] = useState(0)
   const [intervalMs, setIntervalMs] = useState(3000)
@@ -24,8 +26,10 @@ export function TournamentSimulatorPanel() {
 
     const allButtons = Array.from(document.querySelectorAll("button"))
     const resultButtons = allButtons.filter((btn) => {
-      const t = btn.textContent?.trim()
-      return t === "White Wins" || t === "Draw" || t === "Black Wins"
+      const dataResult = btn.getAttribute("data-simulator-result")
+      if (dataResult === "white" || dataResult === "draw" || dataResult === "black") return true
+      const text = btn.textContent?.trim()
+      return text === "White Wins" || text === "Draw" || text === "Black Wins"
     })
 
     if (process.env.NODE_ENV === "development")
@@ -109,13 +113,13 @@ export function TournamentSimulatorPanel() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Play className="h-5 w-5" />
-          Tournament Simulator
+          {t("arena.simulatorTitle")}
         </CardTitle>
-        <CardDescription>Automatically enter random results for testing</CardDescription>
+        <CardDescription>{t("arena.simulatorDescription")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="interval">Interval (ms)</Label>
+          <Label htmlFor="interval">{t("arena.simulatorIntervalLabel")}</Label>
           <Input
             id="interval"
             type="number"
@@ -128,11 +132,11 @@ export function TournamentSimulatorPanel() {
             min={500}
             max={10000}
           />
-          <p className="text-xs text-muted-foreground">Time between result batches</p>
+          <p className="text-xs text-muted-foreground">{t("arena.simulatorIntervalHelp")}</p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="batchSize">Results per interval</Label>
+          <Label htmlFor="batchSize">{t("arena.simulatorResultsPerInterval")}</Label>
           <Input
             id="batchSize"
             type="number"
@@ -145,11 +149,11 @@ export function TournamentSimulatorPanel() {
             min={1}
             max={10}
           />
-          <p className="text-xs text-muted-foreground">How many results to enter at once</p>
+          <p className="text-xs text-muted-foreground">{t("arena.simulatorBatchHelp")}</p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="maxResults">Max results (0 = unlimited)</Label>
+          <Label htmlFor="maxResults">{t("arena.simulatorMaxResults")}</Label>
           <Input
             id="maxResults"
             type="number"
@@ -165,19 +169,19 @@ export function TournamentSimulatorPanel() {
 
         <div className="flex items-center justify-between pt-4 border-t">
           <div>
-            <p className="text-sm font-medium">Results entered:</p>
+            <p className="text-sm font-medium">{t("arena.simulatorResultsEnteredLabel")}</p>
             <p className="text-2xl font-bold">{resultsEntered}</p>
           </div>
 
           {!isRunning ? (
             <Button onClick={startSimulation} size="lg">
               <Play className="h-4 w-4 mr-2" />
-              Start
+              {t("arena.simulatorStart")}
             </Button>
           ) : (
             <Button onClick={stopSimulation} variant="destructive" size="lg">
               <Square className="h-4 w-4 mr-2" />
-              Stop
+              {t("arena.simulatorStop")}
             </Button>
           )}
         </div>

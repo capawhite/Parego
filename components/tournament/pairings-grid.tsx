@@ -2,18 +2,21 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import type { Match } from "@/lib/types"
+import { useI18n } from "@/components/i18n-provider"
 
 interface PairingsGridProps {
   matches: Match[]
 }
 
 export function PairingsGrid({ matches }: PairingsGridProps) {
+  const { t } = useI18n()
+
   if (matches.length === 0) {
     return (
       <Card>
         <CardContent className="pt-6">
           <p className="text-center text-muted-foreground">
-            No active pairings. Waiting for more players to be available.
+            {t("arena.noActivePairings")}
           </p>
         </CardContent>
       </Card>
@@ -29,7 +32,7 @@ export function PairingsGrid({ matches }: PairingsGridProps) {
         >
           {match.tableNumber && (
             <div className="bg-amber-700 px-3 py-1 flex items-center gap-2">
-              <span className="text-white font-bold text-sm">Table {match.tableNumber}</span>
+              <span className="text-white font-bold text-sm">{t("arena.tableNumber", { number: match.tableNumber })}</span>
             </div>
           )}
           <div className="p-2 space-y-1">

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
 import type { Player } from "@/lib/types"
 import { calculatePerformance, sortPlayersByStandings } from "@/lib/standings"
+import { useI18n } from "@/components/i18n-provider"
 
 interface LeaderboardProps {
   players: Player[]
@@ -14,6 +15,7 @@ interface LeaderboardProps {
 }
 
 export function Leaderboard({ players, isPlayerView = false, onOverrideResult }: LeaderboardProps) {
+  const { t } = useI18n()
   const [viewMode, setViewMode] = useState<"points" | "performance">("points")
   const sorted = sortPlayersByStandings(players, viewMode)
 
@@ -69,7 +71,7 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult }:
                 <ContextMenuTrigger asChild>
                   <div
                     className="text-xs flex items-center gap-1"
-                    title={`vs ${opponentName}${hasDoublePointStreak ? " (Double-point streak 🔥)" : ""} - Right-click to override`}
+                    title={t("arena.vsOpponentRightClickOverride", { opponent: opponentName, streak: hasDoublePointStreak ? t("arena.doublePointStreak") : "" })}
                   >
                     {tableNumber && <span className="font-medium text-muted-foreground">T{tableNumber}</span>}
                     {resultBadge}
@@ -77,13 +79,13 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult }:
                 </ContextMenuTrigger>
                 <ContextMenuContent className="w-48">
                   <ContextMenuItem onClick={() => onOverrideResult(player.id, i, "W")} disabled={result === "W"}>
-                    Change to Win
+                    {t("arena.changeToWin")}
                   </ContextMenuItem>
                   <ContextMenuItem onClick={() => onOverrideResult(player.id, i, "D")} disabled={result === "D"}>
-                    Change to Draw
+                    {t("arena.changeToDraw")}
                   </ContextMenuItem>
                   <ContextMenuItem onClick={() => onOverrideResult(player.id, i, "L")} disabled={result === "L"}>
-                    Change to Loss
+                    {t("arena.changeToLoss")}
                   </ContextMenuItem>
                 </ContextMenuContent>
               </ContextMenu>
@@ -94,7 +96,7 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult }:
             <div
               key={i}
               className="text-xs flex items-center gap-1"
-              title={`vs ${opponentName}${hasDoublePointStreak ? " (Double-point streak 🔥)" : ""}`}
+              title={`vs ${opponentName}${hasDoublePointStreak ? ` ${t("arena.doublePointStreak")}` : ""}`}
             >
               {tableNumber && <span className="font-medium text-muted-foreground">T{tableNumber}</span>}
               {resultBadge}
@@ -109,7 +111,7 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult }:
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg md:text-xl">Tournament Standings</CardTitle>
+          <CardTitle className="text-lg md:text-xl">{t("arena.standingsTitle")}</CardTitle>
           <div className="flex gap-1 border rounded-lg p-1">
             <Button
               variant={viewMode === "points" ? "default" : "ghost"}
@@ -117,7 +119,7 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult }:
               onClick={() => setViewMode("points")}
               className="h-8 text-xs"
             >
-              Points
+              {t("arena.viewPoints")}
             </Button>
             <Button
               variant={viewMode === "performance" ? "default" : "ghost"}
@@ -125,14 +127,14 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult }:
               onClick={() => setViewMode("performance")}
               className="h-8 text-xs"
             >
-              Performance
+              {t("arena.viewPerformance")}
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-3 md:p-6">
         {sorted.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4 text-sm md:text-base">No players yet</p>
+          <p className="text-muted-foreground text-center py-4 text-sm md:text-base">{t("arena.noPlayersYet")}</p>
         ) : (
           <div className="space-y-2">
             {sorted.map((player, idx) => {
