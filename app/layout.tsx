@@ -5,6 +5,8 @@ import { Toaster } from "sonner"
 import "./globals.css"
 
 import { Russo_One, Chakra_Petch, Geist_Mono } from "next/font/google"
+import { I18nProvider } from "@/components/i18n-provider"
+import { LanguageSwitcher } from "@/components/language-switcher"
 
 const russo = Russo_One({
   subsets: ["latin"],
@@ -44,9 +46,13 @@ export default function RootLayout({
         className={`${russo.variable} ${chakra.variable} ${geistMono.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        <I18nProvider>
+          {children}
+          <LanguageSwitcher />
+        </I18nProvider>
         <Toaster richColors position="top-center" />
       </body>
     </html>
   )
 }
+

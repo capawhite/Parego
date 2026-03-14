@@ -20,6 +20,7 @@ import {
 import { LandingTournamentCard } from "@/components/landing-tournament-card"
 import { toggleInterest } from "@/app/actions/express-interest"
 import { toast } from "sonner"
+import { useI18n } from "@/components/i18n-provider"
 
 const NEARBY_RADIUS_KM = 15
 const NEARBY_HOURS = 24
@@ -27,6 +28,7 @@ const FALLBACK_LIST_LIMIT = 8
 
 export default function Home() {
   const router = useRouter()
+  const { t } = useI18n()
   const [joinCode, setJoinCode] = useState("")
   const [showCodeInput, setShowCodeInput] = useState(false)
 
@@ -230,7 +232,7 @@ export default function Home() {
     try {
       const result = await toggleInterest(tournamentId)
       if (!result.ok) {
-        toast.error(result.error ?? "Could not update interest")
+        toast.error(result.error ?? t("home.couldNotUpdateInterest"))
         return
       }
       setInterestCounts((prev) => ({ ...prev, [tournamentId]: result.count }))
@@ -270,7 +272,7 @@ export default function Home() {
         </Link>
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {loadingAuth ? (
-            <span className="text-sm text-muted-foreground">Loading...</span>
+            <span className="text-sm text-muted-foreground">{t("common.loading")}</span>
           ) : user ? (
             <>
               <Button variant="ghost" size="sm" className="min-h-10 min-w-10" asChild>
@@ -281,16 +283,16 @@ export default function Home() {
               </Button>
               <Button variant="ghost" size="sm" className="min-h-10 min-w-10" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 shrink-0 sm:mr-2" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">{t("home.logout")}</span>
               </Button>
             </>
           ) : (
             <>
               <Button variant="ghost" size="sm" className="min-h-10" asChild>
-                <Link href="/auth/login">Login</Link>
+                <Link href="/auth/login">{t("home.loginButton")}</Link>
               </Button>
               <Button variant="default" size="sm" className="min-h-10 bg-primary hover:bg-primary/90" asChild>
-                <Link href="/auth/signup">Sign Up</Link>
+                <Link href="/auth/signup">{t("home.signUp")}</Link>
               </Button>
             </>
           )}
@@ -300,8 +302,8 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12 space-y-8">
         {/* Hero copy */}
         <div className="text-center space-y-1 pt-2 px-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Tournaments near you</h1>
-          <p className="text-muted-foreground text-sm">Find one, view it, or join—no signup required to browse.</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{t("home.heroTitle")}</h1>
+          <p className="text-muted-foreground text-sm">{t("home.heroSubtitle")}</p>
         </div>
 
         {/* Create tournament (logged in) — up top */}
@@ -310,7 +312,7 @@ export default function Home() {
             <Button variant="outline" className="w-full border-2 hover:border-primary hover:bg-primary/5 font-semibold" asChild>
               <Link href="/create">
                 <Plus className="h-4 w-4 mr-2" />
-                Create tournament
+                {t("home.ctaCreate")}
               </Link>
             </Button>
           </div>
@@ -337,24 +339,32 @@ export default function Home() {
               <Card>
                 <CardContent className="p-8 flex flex-col items-center gap-2">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">Searching nearby...</p>
+                  <p className="text-sm text-muted-foreground">{t("home.searchingNearby")}</p>
                 </CardContent>
               </Card>
             ) : hasNearbyList ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-medium text-muted-foreground">
-                    Within {NEARBY_RADIUS_KM} km · next {NEARBY_HOURS} hours
+                    {t("home.withinKmHours", { km: NEARBY_RADIUS_KM, hours: NEARBY_HOURS })}
                   </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => refreshTournaments()}
-                    disabled={refreshing}
-                  >
-                    <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href="/nearby"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {t("home.adjustDistanceTime")}
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => refreshTournaments()}
+                      disabled={refreshing}
+                    >
+                      <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {nearbyTournaments.map((t) => (
@@ -378,11 +388,11 @@ export default function Home() {
                 <CardContent className="p-8 text-center space-y-3">
                   <MapPin className="h-10 w-10 mx-auto text-muted-foreground" />
                   <div>
-                    <p className="font-medium">No tournaments nearby right now</p>
-                    <p className="text-sm text-muted-foreground">Try a different radius or join with a code below.</p>
+                    <p className="font-medium">{t("home.noTournamentsNearby")}</p>
+                    <p className="text-sm text-muted-foreground">{t("home.noTournamentsHint")}</p>
                   </div>
                   <Button variant="outline" size="sm" asChild>
-                    <Link href="/nearby">Adjust distance & time</Link>
+                    <Link href="/nearby">{t("home.adjustDistanceTime")}</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -397,15 +407,15 @@ export default function Home() {
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium">Location is off</p>
+                  <p className="font-medium">{t("home.locationOff")}</p>
                   <p className="text-sm text-muted-foreground">
-                    We need location to show tournaments near you. You can still browse recent tournaments or join with a code. To actually join and play, you’ll need to be at the venue.
+                    {t("home.locationOffHint")}
                   </p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/nearby">Try “Find nearby”</Link>
+                  <Link href="/nearby">{t("home.tryFindNearby")}</Link>
                 </Button>
               </div>
             </CardContent>
@@ -415,17 +425,22 @@ export default function Home() {
         {/* Fallback list: recent tournaments when no location */}
         {hasFallbackList && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-medium text-muted-foreground">Recent tournaments</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="shrink-0"
-                onClick={() => refreshTournaments()}
-                disabled={refreshing}
-              >
-                <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-              </Button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-medium text-muted-foreground">{t("home.recentTournaments")}</h2>
+              <div className="flex items-center gap-2 shrink-0">
+                <Link href="/nearby" className="text-sm text-primary hover:underline">
+                  {t("home.findNearby")}
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => refreshTournaments()}
+                  disabled={refreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {fallbackTournaments.map((t) => (
@@ -446,16 +461,16 @@ export default function Home() {
           </div>
         )}
 
-        {/* Join with code & Find nearby */}
+        {/* Join with code */}
         <div className="space-y-3 pt-2 max-w-md">
-          <h2 className="text-sm font-medium text-muted-foreground">Or</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">{t("home.or")}</h2>
           <Card className="overflow-hidden border-2 hover:border-primary/50 transition-all duration-300">
             <CardContent className="p-0">
               {showCodeInput ? (
                 <div className="p-4 space-y-3">
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Enter tournament code"
+                      placeholder={t("home.enterTournamentCode")}
                       value={joinCode}
                       onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                       onKeyDown={(e) => {
@@ -472,10 +487,10 @@ export default function Home() {
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" className="flex-1" onClick={() => { setShowCodeInput(false); setJoinCode("") }}>
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                     <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleJoinWithCode} disabled={!joinCode.trim()}>
-                      Join
+                      {t("home.joinButton")}
                     </Button>
                   </div>
                 </div>
@@ -487,30 +502,11 @@ export default function Home() {
                 >
                   <Hash className="h-6 w-6 mr-4 text-primary group-hover:scale-110 transition-transform" strokeWidth={2.5} />
                   <div className="text-left">
-                    <div className="font-bold">Join with code</div>
-                    <div className="text-sm text-muted-foreground font-normal">Enter code or scan QR</div>
+                    <div className="font-bold">{t("home.ctaJoin")}</div>
+                    <div className="text-sm text-muted-foreground font-normal">{t("home.enterCodeOrQr")}</div>
                   </div>
                 </Button>
               )}
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden border-2 hover:border-primary/50 transition-all duration-300">
-            <CardContent className="p-0">
-              <Button
-                variant="ghost"
-                className="w-full h-16 justify-start px-6 hover:bg-primary/5 rounded-none group"
-                onClick={() => router.push("/nearby")}
-                asChild
-              >
-                <Link href="/nearby">
-                  <MapPin className="h-6 w-6 mr-4 text-primary group-hover:scale-110 transition-transform" strokeWidth={2.5} />
-                  <div className="text-left">
-                    <div className="font-bold">Find nearby</div>
-                    <div className="text-sm text-muted-foreground font-normal">Distance & time filters</div>
-                  </div>
-                </Link>
-              </Button>
             </CardContent>
           </Card>
         </div>
@@ -518,9 +514,9 @@ export default function Home() {
         {/* Soft signup prompt when not logged in */}
         {!loadingAuth && !user && (
           <div className="text-center pt-4 border-t max-w-md mx-auto">
-            <p className="text-sm text-muted-foreground mb-3">Create and run tournaments, track your progress</p>
+            <p className="text-sm text-muted-foreground mb-3">{t("home.signupPrompt")}</p>
             <Button variant="outline" size="sm" asChild className="border-2 hover:border-primary hover:bg-primary/5 bg-transparent">
-              <Link href="/auth/signup">Sign up</Link>
+              <Link href="/auth/signup">{t("home.signUp")}</Link>
             </Button>
           </div>
         )}

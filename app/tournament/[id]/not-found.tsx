@@ -2,8 +2,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Trophy, Home } from "lucide-react"
 import Link from "next/link"
+import { useI18n } from "@/components/i18n-provider"
 
 export default function TournamentNotFound() {
+  const { t } = useI18n()
+
   return (
     <main className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -12,21 +15,19 @@ export default function TournamentNotFound() {
             <Trophy className="h-8 w-8 text-muted-foreground" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Tournament Not Found</h1>
-            <p className="text-muted-foreground mt-2">
-              The tournament you're looking for doesn't exist or has been removed.
-            </p>
+            <h1 className="text-2xl font-bold">{t("notFound.title")}</h1>
+            <p className="text-muted-foreground mt-2">{t("notFound.description")}</p>
           </div>
           <div className="flex flex-col gap-2 pt-2">
             <Link href="/">
               <Button className="w-full">
                 <Home className="h-4 w-4 mr-2" />
-                Go to Homepage
+                {t("notFound.goHome")}
               </Button>
             </Link>
             <Link href="/nearby">
               <Button variant="outline" className="w-full">
-                Find Nearby Tournaments
+                {t("notFound.findNearby")}
               </Button>
             </Link>
           </div>

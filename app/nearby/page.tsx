@@ -12,6 +12,7 @@ import {
   type TournamentData,
 } from "@/lib/database/tournament-db"
 import { createClient } from "@/lib/supabase/client"
+import { useI18n } from "@/components/i18n-provider"
 
 type RadiusOption = 5 | 10 | 25 | 50
 type TimeOption = 12 | 24
@@ -19,6 +20,7 @@ type TimeOption = 12 | 24
 export default function NearbyPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { t } = useI18n()
 
   const [tournaments, setTournaments] = useState<TournamentData[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,10 +74,10 @@ export default function NearbyPage() {
                 setLocationSource("registered")
                 setLocationError(null)
               } else {
-                setLocationError("Please set your location in your profile or enable browser location services.")
+                setLocationError(t("nearby.errorSetLocationOrEnableGps"))
               }
             } else {
-              setLocationError("Please log in to use this feature.")
+              setLocationError(t("nearby.errorLoginRequired"))
             }
             setRequestingLocation(false)
           },
@@ -86,7 +88,7 @@ export default function NearbyPage() {
           },
         )
       } else {
-        setLocationError("Geolocation is not supported by your browser")
+        setLocationError(t("nearby.errorNoGeolocation"))
         setRequestingLocation(false)
       }
     }
@@ -113,7 +115,7 @@ export default function NearbyPage() {
       }
     } catch (err) {
       console.error("[v0] Error fetching nearby tournaments:", err)
-      setError("Failed to load tournaments. Please try again.")
+      setError(t("nearby.errorLoadTournaments"))
     } finally {
       setLoading(false)
       setRefreshing(false)

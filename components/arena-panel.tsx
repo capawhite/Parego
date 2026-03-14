@@ -496,7 +496,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
       // Timer update - too chatty for normal logging
 
-      if (remaining === 0 && !waitingForFinalResults) {
+      // Only organizer can open the end-tournament dialog; players get status via Realtime when organizer concludes
+      if (remaining === 0 && !waitingForFinalResults && isOrganizer) {
         endTournament()
       }
     }, 1000)
@@ -507,7 +508,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     setTimeRemaining(remaining)
 
     return () => clearInterval(interval)
-  }, [arenaState.isActive, arenaState.tournamentStartTime, arenaState.tournamentDuration, waitingForFinalResults])
+  }, [arenaState.isActive, arenaState.tournamentStartTime, arenaState.tournamentDuration, waitingForFinalResults, isOrganizer])
 
   useEffect(() => {
     if (!arenaState.isActive || waitingForFinalResults) return
@@ -581,6 +582,30 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     tournamentMetadata?.latitude,
     tournamentMetadata?.longitude,
     waitingForFinalResults,
+  ])
+
+  // When organizer is in "wait for final results" and all matches are complete (e.g. via Realtime),
+  // persist tournament as completed so players see the correct status.
+  useEffect(() => {
+    if (
+      !tournamentId ||
+      !isOrganizer ||
+      !waitingForFinalResults ||
+      arenaState.status === "completed" ||
+      arenaState.pairedMatches.length === 0
+    )
+      return
+    const allComplete = arenaState.pairedMatches.every((m) => m.result?.completed)
+    if (!allComplete) return
+    const t = setTimeout(() => finalizeEndTournament(), 600)
+    return () => clearTimeout(t)
+  }, [
+    tournamentId,
+    isOrganizer,
+    waitingForFinalResults,
+    arenaState.status,
+    arenaState.pairedMatches,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   ])
 
   useEffect(() => {
@@ -1245,6 +1270,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
     if (tournamentId) {
       try {
+        suppressRealtime?.() // avoid Realtime echo overwriting local state on organizer's client
         const startTimeIso =
           arenaState.tournamentStartTime != null
             ? typeof arenaState.tournamentStartTime === "number"
@@ -1362,8 +1388,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       if (waitingForFinalResults) {
         const remainingMatches = newPairedMatches.filter((m) => m.id !== matchId && !m.result?.completed)
 
-        // If no more active matches, end tournament
-        if (remainingMatches.length === 0) {
+        // Only organizer persists completion; players will see status via Realtime once organizer finalizes
+        if (remainingMatches.length === 0 && isOrganizer) {
           if (DEBUG) console.log("[v0] All final results entered, ending tournament")
           setTimeout(() => finalizeEndTournament(), 500) // Small delay for state to settle
         }
@@ -1488,8 +1514,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       if (waitingForFinalResults) {
         const remainingMatches = newPairedMatches.filter((m) => m.id !== matchId && !m.result?.completed)
 
-        // If no more active matches, end tournament
-        if (remainingMatches.length === 0) {
+        // Only organizer persists completion; players will see status via Realtime once organizer finalizes
+        if (remainingMatches.length === 0 && isOrganizer) {
           if (DEBUG) console.log("[v0] All final results entered, ending tournament")
           setTimeout(() => finalizeEndTournament(), 500) // Small delay for state to settle
         }
@@ -2748,7 +2774,10 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           )}
         </Tabs>
 
-        <Dialog open={showEndDialog} onOpenChange={setShowEndDialog}>
+        <Dialog
+          open={showEndDialog && isOrganizer}
+          onOpenChange={(open) => isOrganizer && setShowEndDialog(open)}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>End Tournament</DialogTitle>

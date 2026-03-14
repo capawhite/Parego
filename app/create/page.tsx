@@ -12,9 +12,11 @@ import { saveTournament } from "@/lib/database/tournament-db"
 import { DEFAULT_SETTINGS } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import { useI18n } from "@/components/i18n-provider"
 
 export default function CreateTournamentPage() {
   const router = useRouter()
+  const { t } = useI18n()
 
   const [tournamentName, setTournamentName] = useState("")
   const [visibility, setVisibility] = useState<"public" | "private">("public")
@@ -141,17 +143,17 @@ export default function CreateTournamentPage() {
   const handleCreate = async () => {
     if (!user) return
     if (!tournamentName.trim()) {
-      toast.error("Please enter a tournament name")
+      toast.error(t("create.errorNameRequired"))
       return
     }
 
     if (pairingAlgorithm === "balanced-strength") {
       if (baseTimeMinutes < 1 || baseTimeMinutes > 300) {
-        toast.error("Base time must be between 1 and 300 minutes")
+        toast.error(t("create.errorBaseTimeRange"))
         return
       }
       if (incrementSeconds < 0 || incrementSeconds > 180) {
-        toast.error("Increment must be between 0 and 180 seconds")
+        toast.error(t("create.errorIncrementRange"))
         return
       }
     }
@@ -193,7 +195,7 @@ export default function CreateTournamentPage() {
       router.push(`/tournament/${tournamentId}`)
     } catch (error) {
       console.error("[v0] Error creating tournament:", error)
-      toast.error("Failed to create tournament. Please try again.")
+      toast.error(t("create.errorCreate"))
     } finally {
       setIsCreating(false)
     }
@@ -202,7 +204,7 @@ export default function CreateTournamentPage() {
   if (loadingAuth) {
     return (
       <main className="min-h-svh bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("common.loading")}</p>
       </main>
     )
   }
@@ -220,8 +222,8 @@ export default function CreateTournamentPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold">Create Tournament</h1>
-            <p className="text-sm text-muted-foreground">Set up a new chess event</p>
+            <h1 className="text-xl font-bold">{t("create.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("create.subtitle")}</p>
           </div>
         </div>
 
@@ -229,16 +231,16 @@ export default function CreateTournamentPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="h-5 w-5" />
-              Tournament Details
+              {t("create.detailsTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="name">Tournament Name</Label>
+              <Label htmlFor="name">{t("create.nameLabel")}</Label>
               <Input
                 id="name"
-                placeholder="Friday Night Blitz"
+                placeholder={t("create.namePlaceholder")}
                 value={tournamentName}
                 onChange={(e) => setTournamentName(e.target.value)}
                 disabled={isCreating}
@@ -247,7 +249,7 @@ export default function CreateTournamentPage() {
 
             {/* Visibility */}
             <div className="space-y-2">
-              <Label>Visibility</Label>
+              <Label>{t("create.visibilityLabel")}</Label>
               <div className="flex gap-2 flex-wrap">
                 <Button
                   type="button"
@@ -256,7 +258,7 @@ export default function CreateTournamentPage() {
                   onClick={() => setVisibility("public")}
                 >
                   <Globe className="h-4 w-4 mr-2 shrink-0" />
-                  Public
+                  {t("create.visibilityPublic")}
                 </Button>
                 <Button
                   type="button"
@@ -265,13 +267,13 @@ export default function CreateTournamentPage() {
                   onClick={() => setVisibility("private")}
                 >
                   <Lock className="h-4 w-4 mr-2 shrink-0" />
-                  Private
+                  {t("create.visibilityPrivate")}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
                 {visibility === "public"
-                  ? "Anyone can find this tournament in nearby search"
-                  : "Only accessible via direct link or QR code"}
+                  ? t("create.visibilityPublicHelp")
+                  : t("create.visibilityPrivateHelp")}
               </p>
             </div>
 
@@ -279,8 +281,8 @@ export default function CreateTournamentPage() {
             <div className="space-y-2">
               <Label htmlFor="start-time" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Start Time
-                <span className="text-xs text-muted-foreground">(optional)</span>
+                {t("create.startTimeLabel")}
+                <span className="text-xs text-muted-foreground">{t("create.startTimeOptional")}</span>
               </Label>
               <Input
                 id="start-time"
@@ -290,7 +292,7 @@ export default function CreateTournamentPage() {
                 disabled={isCreating}
               />
               <p className="text-xs text-muted-foreground">
-                Helps players find your tournament. You can start anytime regardless of this setting.
+                {t("create.startTimeHelp")}
               </p>
             </div>
 
@@ -298,29 +300,29 @@ export default function CreateTournamentPage() {
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                Location
+                {t("create.locationLabel")}
               </Label>
               {detectingLocation ? (
-                <p className="text-sm text-muted-foreground">Detecting location...</p>
+                <p className="text-sm text-muted-foreground">{t("create.locationDetecting")}</p>
               ) : location ? (
                 <div className="p-3 bg-muted/50 rounded-md">
                   <p className="text-sm">
                     {location.city && location.country
                       ? `${location.city}, ${location.country}`
-                      : location.country || "Location detected"}
+                      : location.country || t("create.locationDetectedFallback")}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {location.lat.toFixed(4)}, {location.lon.toFixed(4)}
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Location not available</p>
+                <p className="text-sm text-muted-foreground">{t("create.locationNotAvailable")}</p>
               )}
             </div>
 
             {/* Pairing Algorithm */}
             <div className="space-y-2">
-              <Label htmlFor="pairing-algorithm">Pairing Algorithm</Label>
+              <Label htmlFor="pairing-algorithm">{t("create.pairingAlgorithmLabel")}</Label>
               <Select value={pairingAlgorithm} onValueChange={setPairingAlgorithm} disabled={isCreating}>
                 <SelectTrigger id="pairing-algorithm">
                   <SelectValue />
@@ -336,12 +338,12 @@ export default function CreateTournamentPage() {
             <div className="space-y-2">
               <Label className="text-sm flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Time Control
+                {t("create.timeControlLabel")}
               </Label>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="base-time" className="text-xs text-muted-foreground">
-                    Base Time (min)
+                    {t("create.baseTimeLabel")}
                   </Label>
                   <Input
                     id="base-time"
@@ -357,7 +359,7 @@ export default function CreateTournamentPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="increment" className="text-xs text-muted-foreground">
-                    Increment (sec)
+                    {t("create.incrementLabel")}
                   </Label>
                   <Input
                     id="increment"
@@ -372,11 +374,11 @@ export default function CreateTournamentPage() {
                   />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">Default: 5 min + 3 sec increment per move</p>
+              <p className="text-xs text-muted-foreground">{t("create.timeControlDefault")}</p>
             </div>
 
             <Button onClick={handleCreate} className="w-full" disabled={isCreating || !tournamentName.trim()}>
-              {isCreating ? "Creating..." : "Create Tournament"}
+              {isCreating ? t("create.creating") : t("create.createButton")}
             </Button>
           </CardContent>
         </Card>

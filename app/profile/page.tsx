@@ -11,12 +11,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { geocodeLocation } from "@/lib/geocode"
-import { RATING_BANDS, type RatingBandValue } from "@/lib/rating-bands"
+import { SIMPLE_LEVELS, type RatingBandValue } from "@/lib/rating-bands"
 import { AvatarPicker } from "@/components/avatar-picker"
 import { uploadAvatar, updateProfileAvatarUrl, removeAvatar } from "@/lib/avatar-upload"
 import { toast } from "sonner"
 import Link from "next/link"
 import { Home } from "lucide-react"
+import { useI18n } from "@/components/i18n-provider"
 
 export default function ProfilePage() {
   const [name, setName] = useState("")
@@ -34,6 +35,7 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
+  const { t } = useI18n()
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -51,7 +53,18 @@ export default function ProfilePage() {
       if (profile) {
         setName(profile.name || "")
         setEmail(profile.email || "")
-        setRatingBand((profile.rating_band as RatingBandValue) || "")
+        const band = profile.rating_band as string | null
+        if (band === "beginner" || band === "intermediate" || band === "advanced") {
+          setRatingBand(band as RatingBandValue)
+        } else if (band === "around_1500") {
+          setRatingBand("intermediate" as RatingBandValue)
+        } else if (band === "around_2000" || band === "over_2000") {
+          setRatingBand("advanced" as RatingBandValue)
+        } else if (band) {
+          setRatingBand("beginner" as RatingBandValue)
+        } else {
+          setRatingBand("")
+        }
         setRating(profile.rating?.toString() || "")
         setCountry(profile.country || "")
         setCity(profile.city || "")
@@ -100,7 +113,7 @@ export default function ProfilePage() {
       if (updateError) throw updateError
       setSuccess(true)
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setError(error instanceof Error ? error.message : t("profile.errorGeneric"))
     } finally {
       setIsLoading(false)
     }
@@ -123,7 +136,7 @@ export default function ProfilePage() {
     setAvatarUrl(result.url)
     const updateResult = await updateProfileAvatarUrl(userId, result.url)
     if (updateResult.error) toast.error(updateResult.error)
-    else toast.success("Photo updated")
+    else toast.success(t("profile.photoUpdated"))
   }
 
   const handleAvatarClear = async () => {
@@ -134,7 +147,7 @@ export default function ProfilePage() {
     if (result.error) toast.error(result.error)
     else {
       setAvatarUrl(null)
-      toast.success("Photo removed")
+      toast.success(t("profile.photoRemoved"))
     }
   }
 
@@ -146,20 +159,20 @@ export default function ProfilePage() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <Home className="h-4 w-4" />
-          Home
+          {t("profile.home")}
         </Link>
       </div>
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Profile</CardTitle>
-            <CardDescription>Update your account information</CardDescription>
+            <CardTitle className="text-2xl">{t("profile.title")}</CardTitle>
+            <CardDescription>{t("profile.saveProfile")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdateProfile}>
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col items-center gap-2">
-                  <Label>Photo</Label>
+                  <Label>{t("profile.photoLabel")}</Label>
                   <AvatarPicker
                     value={avatarUrl}
                     onSelect={handleAvatarSelect}
@@ -169,42 +182,44 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Name</Label>
+                  <Label htmlFor="name">{t("profile.nameLabel")}</Label>
                   <Input id="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t("profile.emailLabel")}</Label>
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Strength</Label>
+                  <Label>{t("profile.strengthLabel")}</Label>
                   <RadioGroup
                     value={ratingBand}
                     onValueChange={(v) => setRatingBand(v as RatingBandValue)}
                     className="flex flex-col gap-2"
                   >
-                    {RATING_BANDS.map((band) => (
+                    {SIMPLE_LEVELS.map((level) => (
                       <label
-                        key={band.value}
+                        key={level.value}
                         className="flex items-center gap-3 rounded-lg border p-2 cursor-pointer hover:bg-muted/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
                       >
-                        <RadioGroupItem value={band.value} id={`profile-band-${band.value}`} />
-                        <span className="text-sm">{band.label}</span>
+                        <RadioGroupItem value={level.value} id={`profile-band-${level.value}`} />
+                        <span className="text-sm">{t(level.labelKey)}</span>
                       </label>
                     ))}
                   </RadioGroup>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="rating">
-                    Optional: exact rating (number)
+                    {t("profile.ratingLabel")}
                     {isInActiveTournament && (
-                      <span className="ml-2 text-xs text-amber-500">(Cannot edit during active tournament)</span>
+                      <span className="ml-2 text-xs text-amber-500">
+                        {t("profile.ratingActiveNote")}
+                      </span>
                     )}
                   </Label>
                   <Input
                     id="rating"
                     type="number"
-                    placeholder="e.g. 1847"
+                    placeholder={t("profile.ratingPlaceholder")}
                     min={100}
                     max={3000}
                     value={rating}
@@ -213,32 +228,32 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="country">Country</Label>
+                  <Label htmlFor="country">{t("profile.countryLabel")}</Label>
                   <Input
                     id="country"
                     type="text"
-                    placeholder="e.g., USA"
+                    placeholder={t("profile.countryPlaceholder")}
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="city">City</Label>
+                  <Label htmlFor="city">{t("profile.cityLabel")}</Label>
                   <Input
                     id="city"
                     type="text"
-                    placeholder="e.g., New York"
+                    placeholder={t("profile.cityPlaceholder")}
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                   />
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
-                {success && <p className="text-sm text-green-500">Profile updated successfully!</p>}
+                {success && <p className="text-sm text-green-500">{t("profile.success")}</p>}
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Updating..." : "Update Profile"}
+                  {isLoading ? t("profile.updating") : t("profile.updateButton")}
                 </Button>
                 <Button type="button" variant="outline" className="w-full bg-transparent" onClick={handleLogout}>
-                  Logout
+                  {t("profile.logoutButton")}
                 </Button>
               </div>
             </form>

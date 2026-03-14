@@ -12,14 +12,16 @@ import Link from "next/link"
 import { checkVenueProximity } from "@/app/actions/check-in"
 import { addGuestSession } from "@/lib/guest-session-history"
 import { toast } from "sonner"
-import { RATING_BANDS, resolveRating, type RatingBandValue } from "@/lib/rating-bands"
+import { SIMPLE_LEVELS, resolveRating, type RatingBandValue } from "@/lib/rating-bands"
 import { getDeviceId } from "@/lib/device-id"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { useI18n } from "@/components/i18n-provider"
 
 export default function JoinTournamentPage() {
   const params = useParams()
   const router = useRouter()
   const code = params.code as string
+  const { t } = useI18n()
 
   const [tournament, setTournament] = useState<TournamentData | null>(null)
   const [playerCount, setPlayerCount] = useState(0)
@@ -55,7 +57,18 @@ export default function JoinTournamentPage() {
           .maybeSingle()
 
         if (profile?.name) setPlayerName(profile.name)
-        if (profile?.rating_band) setRatingBand(profile.rating_band as RatingBandValue)
+        if (profile?.rating_band) {
+          const band = profile.rating_band as string
+          if (band === "beginner" || band === "intermediate" || band === "advanced") {
+            setRatingBand(band as RatingBandValue)
+          } else if (band === "around_1500") {
+            setRatingBand("intermediate" as RatingBandValue)
+          } else if (band === "around_2000" || band === "over_2000") {
+            setRatingBand("advanced" as RatingBandValue)
+          } else {
+            setRatingBand("beginner" as RatingBandValue)
+          }
+        }
         if (profile?.rating != null) setRatingPrecise(String(profile.rating))
       }
     }
@@ -72,11 +85,11 @@ export default function JoinTournamentPage() {
           const players = await loadPlayers(code)
           setPlayerCount(players.length)
         } else {
-          setError("Tournament not found")
+          setError(t("join.tournamentNotFound"))
         }
       } catch (err) {
         console.error("[v0] Error loading tournament:", err)
-        setError("Failed to load tournament")
+        setError(t("join.failedToLoad"))
       } finally {
         setLoading(false)
       }
@@ -127,7 +140,7 @@ export default function JoinTournamentPage() {
           return
         }
         if (!navigator.geolocation) {
-          toast.info("Location unavailable. You can still join; the organizer will confirm you at the venue.")
+          toast.info(t("join.locationCheckInfo"))
           resolve({ ok: true, checkedInAt: null, presenceSource: null })
           return
         }
@@ -135,7 +148,7 @@ export default function JoinTournamentPage() {
           async (position) => {
             const result = await checkVenueProximity(code, position.coords.latitude, position.coords.longitude)
             if (!result.ok) {
-              toast.info("You're not at the venue yet. You can still join; the organizer will confirm you when you arrive.")
+              toast.info(t("join.notAtVenueInfo"))
               resolve({ ok: true, checkedInAt: null, presenceSource: null })
               return
             }
@@ -148,7 +161,7 @@ export default function JoinTournamentPage() {
             })
           },
           () => {
-            toast.info("Location unavailable. You can still join; the organizer will confirm you at the venue.")
+            toast.info(t("join.locationCheckInfo"))
             resolve({ ok: true, checkedInAt: null, presenceSource: null })
           },
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
@@ -158,7 +171,7 @@ export default function JoinTournamentPage() {
 
     const handleJoin = async () => {
       if (isRegistered && !playerName.trim()) {
-        setError("Please enter your name")
+        setError(t("join.errorRegisteredNameRequired"))
         return
       }
 
@@ -168,7 +181,7 @@ export default function JoinTournamentPage() {
       try {
         // Block joining completed tournaments
         if (tournament?.status === "completed") {
-          setError("This tournament has ended. You can no longer join.")
+          setError(t("join.errorTournamentEnded"))
           setJoining(false)
           return
         }
@@ -177,7 +190,7 @@ export default function JoinTournamentPage() {
         if (tournament?.status === "active") {
           const allowLateJoin = tournament.settings?.allowLateJoin ?? true
           if (!allowLateJoin) {
-            setError("This tournament is already in progress and late joins are not allowed.")
+            setError(t("join.errorLateJoinNotAllowed"))
             setJoining(false)
             return
           }
@@ -190,12 +203,12 @@ export default function JoinTournamentPage() {
         // Guests must provide name and strength
         if (!isRegistered) {
           if (!guestName.trim()) {
-            setError("Please enter your name for the pairings board.")
+            setError(t("join.errorGuestNameRequired"))
             setJoining(false)
             return
           }
           if (!ratingBand) {
-            setError("Please choose how you'd describe your strength.")
+            setError(t("join.errorRatingBandRequired"))
             setJoining(false)
             return
           }
@@ -211,7 +224,7 @@ export default function JoinTournamentPage() {
             .eq("user_id", userId)
             .maybeSingle()
           if (existingByUser) {
-            setError("You have already joined this tournament.")
+            setError(t("join.errorAlreadyJoined"))
             setAlreadyJoined(true)
             setJoining(false)
             return
@@ -230,7 +243,9 @@ export default function JoinTournamentPage() {
         const nameTaken = await playerNameExistsInTournament(code, finalName)
         if (nameTaken) {
           setError(
-            `${finalName} already exists in this tournament. Try a different name, e.g. ${finalName} R. or ${finalName} (Madrid).`,
+            t("join.errorNameTaken", {
+              name: finalName,
+            }),
           )
           setJoining(false)
           return
@@ -243,7 +258,7 @@ export default function JoinTournamentPage() {
             if (stored) {
               const parsed = JSON.parse(stored)
               if (parsed?.tournamentId === code) {
-                setError("You have already joined this tournament.")
+                setError(t("join.errorAlreadyJoined"))
                 setAlreadyJoined(true)
                 setJoining(false)
                 return
@@ -445,12 +460,12 @@ export default function JoinTournamentPage() {
             <>
               <div>
                 <label htmlFor="guestName" className="text-sm font-medium mb-2 block">
-                  Your name (for pairings and announcements)
+                  {t("join.guestNameLabelFull")}
                 </label>
                 <Input
                   id="guestName"
                   type="text"
-                  placeholder="e.g. Alex or nickname"
+                  placeholder={t("join.guestNamePlaceholder")}
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
                   disabled={joining}
@@ -458,31 +473,31 @@ export default function JoinTournamentPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">How would you describe your strength?</label>
+                <label className="text-sm font-medium mb-2 block">{t("join.strengthLabel")}</label>
                 <RadioGroup
                   value={ratingBand}
                   onValueChange={(v) => setRatingBand(v as RatingBandValue)}
                   className="flex flex-col gap-2"
                 >
-                  {RATING_BANDS.map((band) => (
+                  {SIMPLE_LEVELS.map((level) => (
                     <label
-                      key={band.value}
+                      key={level.value}
                       className="flex items-center gap-3 rounded-lg border p-3 min-h-[48px] cursor-pointer hover:bg-muted/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 touch-manipulation"
                     >
-                      <RadioGroupItem value={band.value} id={`band-${band.value}`} />
-                      <span className="text-sm">{band.label}</span>
+                      <RadioGroupItem value={level.value} id={`band-${level.value}`} />
+                      <span className="text-sm">{t(level.labelKey)}</span>
                     </label>
                   ))}
                 </RadioGroup>
               </div>
               <div>
                 <label htmlFor="ratingPrecise" className="text-sm font-medium mb-2 block">
-                  Optional: exact rating (number)
+                  {t("join.ratingPreciseLabel")}
                 </label>
                 <Input
                   id="ratingPrecise"
                   type="number"
-                  placeholder="e.g. 1847"
+                  placeholder={t("auth.ratingOptionalPlaceholder")}
                   min={100}
                   max={3000}
                   value={ratingPrecise}
@@ -510,20 +525,20 @@ export default function JoinTournamentPage() {
             {verifyingLocation ? (
               <>
                 <MapPin className="mr-2 h-4 w-4" />
-                Verifying location...
+                {t("join.verifyingLocation")}
               </>
             ) : joining ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Joining...
+                {t("join.joining")}
               </>
             ) : (
-              "Join Tournament"
+              t("join.joinButton")
             )}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Tournament Code: <span className="font-mono font-semibold">{code}</span>
+            {t("join.tournamentCode")} <span className="font-mono font-semibold">{code}</span>
           </p>
         </div>
       </Card>

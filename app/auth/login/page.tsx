@@ -14,6 +14,7 @@ import { Home } from "lucide-react"
 import { toast } from "sonner"
 import { claimGuestHistory } from "@/app/actions/claim-guest-history"
 import { getGuestSessionHistory, clearGuestSessionHistory } from "@/lib/guest-session-history"
+import { useI18n } from "@/components/i18n-provider"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -21,6 +22,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { t } = useI18n()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,9 +47,8 @@ export default function LoginPage() {
         const claim = await claimGuestHistory(playerIds)
         clearGuestSessionHistory()
         if (claim.success && claim.claimedCount && claim.claimedCount > 0) {
-          toast.success(
-            `${claim.claimedCount} past ${claim.claimedCount === 1 ? "game" : "games"} linked to your account.`,
-          )
+          const key = claim.claimedCount === 1 ? "auth.loginClaimSingle" : "auth.loginClaimMultiple"
+          toast.success(t(key, { count: claim.claimedCount }))
         }
       }
 
@@ -55,7 +56,7 @@ export default function LoginPage() {
       window.location.href = "/"
     } catch (error: unknown) {
       console.error("[v0] Login error:", error)
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setError(error instanceof Error ? error.message : t("auth.loginErrorGeneric"))
     } finally {
       setIsLoading(false)
     }
@@ -69,20 +70,20 @@ export default function LoginPage() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <Home className="h-4 w-4" />
-          Home
+          {t("home.homeLink")}
         </Link>
       </div>
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Login</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
+            <CardTitle className="text-2xl">{t("auth.loginTitle")}</CardTitle>
+            <CardDescription>{t("auth.loginDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin}>
               <div className="flex flex-col gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t("auth.loginEmailLabel")}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -93,7 +94,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">{t("auth.loginPasswordLabel")}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -104,13 +105,13 @@ export default function LoginPage() {
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
+                  {isLoading ? t("common.loading") : t("auth.loginSubmit")}
                 </Button>
               </div>
               <div className="mt-4 text-center text-sm">
-                Don&apos;t have an account?{" "}
+                {t("auth.noAccount")}{" "}
                 <Link href="/auth/signup" className="underline underline-offset-4">
-                  Get started
+                  {t("auth.goToSignup")}
                 </Link>
               </div>
             </form>

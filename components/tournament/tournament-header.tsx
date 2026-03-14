@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import type { TournamentMetadata } from "@/hooks/tournament/use-tournament-load"
+import { useI18n } from "@/components/i18n-provider"
 
 type UserRole = "organizer" | "registered-player" | "guest-player" | "visitor"
 
@@ -53,12 +54,14 @@ export function TournamentHeader({
   onEndTournament,
   onOpenSettings,
 }: TournamentHeaderProps) {
+  const { t } = useI18n()
+
   const roleLabel =
     userRole === "organizer"
-      ? "Organizer"
+      ? t("tournamentHeader.roleOrganizer")
       : userRole === "registered-player" || userRole === "guest-player"
-        ? "Player"
-        : "Visitor"
+        ? t("tournamentHeader.rolePlayer")
+        : t("tournamentHeader.roleVisitor")
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -77,8 +80,8 @@ export function TournamentHeader({
           </Badge>
           {organizerName && (
             <p className="text-sm text-muted-foreground">
-              Organized by <span className="font-semibold">{organizerName}</span>
-              {isOrganizer && <span className="text-primary ml-1">(You)</span>}
+              {t("tournamentHeader.organizedBy", { name: organizerName })}
+              {isOrganizer && <span className="text-primary ml-1">{t("tournamentHeader.organizedByYou")}</span>}
             </p>
           )}
         </div>
@@ -90,11 +93,11 @@ export function TournamentHeader({
             className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-1"
           >
             <MapPin className="h-4 w-4" />
-            Get directions
+            {t("tournamentHeader.getDirections")}
           </a>
         )}
         {status === "completed" && (
-          <p className="text-sm text-muted-foreground mt-1">Tournament Completed</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("tournamentHeader.statusCompleted")}</p>
         )}
       </div>
 
@@ -108,17 +111,17 @@ export function TournamentHeader({
         {!effectivePlayerView && (
           <TabsTrigger value="players" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
             <Users className="h-4 w-4 mr-1" />
-            Players
+            {t("tournamentHeader.playersTab")}
           </TabsTrigger>
         )}
         <TabsTrigger value="pairings" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
           <Swords className="h-4 w-4 mr-1" />
-          Pairings
+          {t("tournamentHeader.pairingsTab")}
         </TabsTrigger>
         {status !== "completed" && (
           <TabsTrigger value="results" className="relative text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
             <Trophy className="h-4 w-4 mr-1" />
-            Results
+            {t("tournamentHeader.resultsTab")}
             {hasNewPairing && (
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
             )}
@@ -126,7 +129,7 @@ export function TournamentHeader({
         )}
         <TabsTrigger value="standings" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
           <Award className="h-4 w-4 mr-1" />
-          Standings
+          {t("tournamentHeader.standingsTab")}
         </TabsTrigger>
       </TabsList>
 
@@ -138,7 +141,7 @@ export function TournamentHeader({
           </div>
           {status === "active" && canEndTournament && (
             <Button variant="destructive" size="sm" onClick={onEndTournament}>
-              End Tournament
+              {t("tournamentHeader.endTournamentButton")}
             </Button>
           )}
         </div>
@@ -150,7 +153,7 @@ export function TournamentHeader({
           size="sm"
           className="h-8 w-8 p-0 bg-transparent"
           onClick={onOpenSettings}
-          title="Tournament Settings"
+          title={t("tournamentHeader.settingsTooltip")}
         >
           <SettingsIcon className="h-4 w-4" />
         </Button>

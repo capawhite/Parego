@@ -6,34 +6,37 @@ import { MapPin, Clock, Eye, LogIn, Heart, Loader2, ExternalLink } from "lucide-
 import Link from "next/link"
 import type { TournamentData } from "@/lib/database/tournament-db"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/components/i18n-provider"
 
-type DisplayStatus = "live" | "starting_soon" | "upcoming"
+type DisplayStatus = "live" | "starting_soon" | "upcoming" | "completed" | "ended"
 
 function getDisplayStatus(t: TournamentData): DisplayStatus {
+  if (t.status === "completed") return "completed"
   if (t.status === "active") return "live"
   if (!t.start_time) return "upcoming"
   const start = new Date(t.start_time).getTime()
   const now = Date.now()
   const inOneHour = 60 * 60 * 1000
-  if (start <= now + inOneHour) return "starting_soon"
+  if (start <= now) return "ended"
+  if (start > now && start <= now + inOneHour) return "starting_soon"
   return "upcoming"
 }
 
-function formatStartTime(startTime?: string): string {
-  if (!startTime) return "Start time TBD"
+function formatStartTime(startTime: string | undefined, t: (path: string, params?: Record<string, string | number>) => string): string {
+  if (!startTime) return t("landing.startTimeTbd")
   const date = new Date(startTime)
   const now = new Date()
   const diffMs = date.getTime() - now.getTime()
   const diffMins = Math.floor(diffMs / 60000)
-  if (diffMins < 0) return "Started"
-  if (diffMins < 60) return `starts in ${diffMins} min`
-  if (diffMins < 1440) return `starts in ${Math.floor(diffMins / 60)} hr`
+  if (diffMins < 0) return t("landing.startTimeStarted")
+  if (diffMins < 60) return t("landing.startTimeInMinutes", { minutes: diffMins })
+  if (diffMins < 1440) return t("landing.startTimeInHours", { hours: Math.floor(diffMins / 60) })
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
 }
 
-function formatDistance(km: number): string {
-  if (km < 1) return `${Math.round(km * 1000)} m`
-  return `${km.toFixed(1)} km`
+function formatDistance(km: number, t: (path: string, params?: Record<string, string | number>) => string): string {
+  if (km < 1) return t("landing.distanceMeters", { meters: Math.round(km * 1000) })
+  return t("landing.distanceKilometers", { kilometers: Number(km.toFixed(1)) })
 }
 
 /** Google Maps URL for venue (view or directions). */
@@ -89,6 +92,8 @@ export function LandingTournamentCard({
   togglingInterest = false,
   className,
 }: LandingTournamentCardProps) {
+  const { t } = useI18n()
+
   const canToggle = typeof onToggleInterest === "function"
   const displayStatus = getDisplayStatus(tournament)
   const distance =
@@ -96,16 +101,23 @@ export function LandingTournamentCard({
       ? haversineKm(userCoords.lat, userCoords.lon, tournament.latitude, tournament.longitude)
       : null
 
-  const statusLabel = {
-    live: "Live",
-    starting_soon: "Starting soon",
-    upcoming: "Upcoming",
-  }[displayStatus]
+  const statusLabel =
+    displayStatus === "live"
+      ? t("landing.statusLive")
+      : displayStatus === "starting_soon"
+        ? t("landing.statusStartingSoon")
+        : displayStatus === "completed"
+          ? t("landing.statusCompleted")
+          : displayStatus === "ended"
+            ? t("landing.statusEnded")
+            : t("landing.statusUpcoming")
 
   const statusClass = {
     live: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
     starting_soon: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
     upcoming: "bg-primary/15 text-primary border-primary/30",
+    completed: "bg-muted text-muted-foreground border-border",
+    ended: "bg-muted text-muted-foreground border-border",
   }[displayStatus]
 
   return (
@@ -141,29 +153,35 @@ export function LandingTournamentCard({
               )}
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {formatStartTime(tournament.start_time)}
+                {formatStartTime(tournament.start_time, t)}
               </span>
               {distance != null && (
-                <span className="text-primary font-medium">{formatDistance(distance)} from you</span>
+                <span className="text-primary font-medium">
+                  {t("landing.distanceFromYou", { distance: formatDistance(distance, t) })}
+                </span>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
               {playerCount > 0 && (
                 <span>
                   <span className="font-medium text-foreground">
-                    {playerCount} {playerCount === 1 ? "player" : "players"}
+                    {playerCount === 1
+                      ? t("landing.playersCountSingle", { count: playerCount })
+                      : t("landing.playersCountMultiple", { count: playerCount })}
                   </span>
                   {playerNames.length > 0 && (
                     <span className="text-muted-foreground ml-1 min-w-0 truncate block sm:inline" title={playerNames.slice(0, 5).join(", ") + (playerCount > 5 ? ` +${playerCount - 5} more` : "")}>
                       — {playerNames.slice(0, 5).join(", ")}
-                      {playerCount > 5 ? ` +${playerCount - 5} more` : ""}
+                      {playerCount > 5 ? ` ${t("landing.morePlayers", { count: playerCount - 5 })}` : ""}
                     </span>
                   )}
                 </span>
               )}
               {interestCount > 0 && (
                 <span>
-                  {interestCount} {interestCount === 1 ? "person" : "people"} interested
+                  {interestCount === 1
+                    ? t("landing.interestSingle", { count: interestCount })
+                    : t("landing.interestMultiple", { count: interestCount })}
                 </span>
               )}
             </div>
@@ -199,19 +217,19 @@ export function LandingTournamentCard({
                   className={cn("h-4 w-4 mr-2", userInterested && "fill-current")}
                 />
               )}
-              {userInterested ? "Interested" : "Interest"}
+              {userInterested ? t("landing.interestButtonOn") : t("landing.interestButtonOff")}
             </Button>
           ) : null}
           <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation" asChild>
             <Link href={`/tournament/${tournament.id}`}>
               <Eye className="h-4 w-4 mr-2 shrink-0" />
-              View
+              {t("landing.viewButton")}
             </Link>
           </Button>
           <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation bg-[#F97316]/10 text-[#F97316] hover:bg-[#F97316] hover:text-white font-semibold transition-colors" asChild>
             <Link href={`/join/${tournament.id}`}>
               <LogIn className="h-4 w-4 mr-2 shrink-0" />
-              Join
+              {t("landing.joinButton")}
             </Link>
           </Button>
         </div>
