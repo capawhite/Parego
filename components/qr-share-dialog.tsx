@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { QrCode, Copy, Check, Share2 } from "lucide-react"
+import Image from "next/image"
 import { useState } from "react"
 import { generateQRCode } from "@/lib/qr-utils"
 
@@ -69,7 +70,14 @@ export function QRShareDialog({ tournamentId, tournamentName }: QRShareDialogPro
         <div className="flex flex-col items-center gap-4 py-4">
           {/* QR Code */}
           <div className="bg-white p-4 rounded-lg shadow-sm">
-            <img src={qrCodeUrl || "/placeholder.svg"} alt="Tournament QR Code" className="w-48 h-48" />
+            <Image
+              src={qrCodeUrl || "/placeholder.svg"}
+              alt="Tournament QR Code"
+              width={192}
+              height={192}
+              className="h-48 w-48"
+              unoptimized
+            />
           </div>
 
           {/* Tournament Code */}
@@ -87,7 +95,7 @@ export function QRShareDialog({ tournamentId, tournamentName }: QRShareDialogPro
               </Button>
             </div>
 
-            {typeof navigator !== "undefined" && navigator.share && (
+            {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
               <Button variant="outline" className="w-full bg-transparent" onClick={handleShare}>
                 <Share2 className="h-4 w-4 mr-2" />
                 Share via...

@@ -66,6 +66,8 @@ export async function compareAlgorithms(
   const allVsAllAlgo = getPairingAlgorithm("all-vs-all")
   const balancedStrengthAlgo = getPairingAlgorithm("balanced-strength")
 
+  const maxPairingsPerRound = Math.max(1, Math.floor(players.length / 2))
+
   const balancedSettings = {
     ...settings,
     pairingAlgorithm: "balanced-strength" as const,
@@ -84,7 +86,7 @@ export async function compareAlgorithms(
       allVsAllPlayers,
       allVsAllMatches,
       { ...settings, pairingAlgorithm: "all-vs-all" },
-      { tableCount: settings.tableCount || 10 },
+      maxPairingsPerRound,
     )
 
     // Get pairings from Balanced Strength
@@ -92,7 +94,7 @@ export async function compareAlgorithms(
       balancedStrengthPlayers,
       balancedStrengthMatches,
       balancedSettings,
-      { tableCount: settings.tableCount || 10 },
+      maxPairingsPerRound,
     )
 
     console.log("[v0] All vs All would create:", allVsAllPairings.length, "matches")
@@ -102,13 +104,13 @@ export async function compareAlgorithms(
     const allVsAllPairs = allVsAllPairings.map((m) => ({
       player1: m.player1.name,
       player2: m.player2.name,
-      table: m.table,
+      table: m.tableNumber ?? 0,
     }))
 
     const balancedStrengthPairs = balancedStrengthPairings.map((m) => ({
       player1: m.player1.name,
       player2: m.player2.name,
-      table: m.table,
+      table: m.tableNumber ?? 0,
     }))
 
     // Check if pairings diverged
@@ -170,25 +172,15 @@ function updatePlayersWithResult(players: Player[], match: Match) {
   const player1 = players.find((p) => p.id === match.player1.id)
   const player2 = players.find((p) => p.id === match.player2.id)
 
-  if (!player1 || !player2 || !match.result) return
+  if (!player1 || !player2 || !match.result?.completed) return
 
-  // Update scores based on result
-  if (match.result.winner === "player1") {
-    player1.score += 1
-    player1.wins += 1
-    player2.losses += 1
-  } else if (match.result.winner === "player2") {
-    player2.score += 1
-    player2.wins += 1
-    player1.losses += 1
-  } else {
+  const { winnerId, isDraw } = match.result
+  if (isDraw) {
     player1.score += 0.5
     player2.score += 0.5
-    player1.draws += 1
-    player2.draws += 1
+  } else if (winnerId === player1.id) {
+    player1.score += 1
+  } else if (winnerId === player2.id) {
+    player2.score += 1
   }
-
-  // Update match history
-  player1.matchHistory.push(match)
-  player2.matchHistory.push(match)
 }

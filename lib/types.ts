@@ -30,17 +30,20 @@ export interface Player {
   presenceSource?: "gps" | "qr" | "override" | null // how presence was verified
 }
 
+/** Completed match result shape (non-optional) for handlers that require a finished game */
+export type MatchResult = {
+  winnerId?: string
+  isDraw: boolean
+  completed: boolean
+  completedAt: number
+}
+
 export interface Match {
   id: string
   player1: Player
   player2: Player
   tableNumber?: number
-  result?: {
-    winnerId?: string
-    isDraw: boolean
-    completed: boolean
-    completedAt: number
-  }
+  result?: MatchResult
   player1Submission?: {
     result: "player1-win" | "draw" | "player2-win"
     timestamp: number

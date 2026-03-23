@@ -4,5 +4,5 @@ services:
   - type: web
     name: parego
     runtime: node
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run build
-    startCommand: pnpm run start
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start

@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: ["**/*.test.{ts,tsx}", "**/__tests__/**/*.{ts,tsx}"],
+    exclude: ["node_modules", "OldPairingAlgo"],
     globals: true,
     setupFiles: ["./vitest-setup.ts"],
   },

@@ -11,6 +11,21 @@
     "copyLink": "Copiar enlace",
     "linkCopied": "¡Enlace copiado!"
   },
+  "submitErrors": {
+    "MISSING_AUTH": "Debes iniciar sesión o enviar un ID de jugador para enviar resultados.",
+    "MISSING_SUPABASE_URL": "Error de configuración del servidor: Supabase no está configurado.",
+    "SERVER_MISCONFIGURED_NO_SERVICE_ROLE": "Error de configuración: falta la clave de rol de servicio. No se pueden guardar los resultados.",
+    "MATCH_NOT_FOUND": "Partida no encontrada.",
+    "TOURNAMENT_NOT_ACTIVE": "El torneo no está activo.",
+    "MATCH_ALREADY_COMPLETED": "Esta partida ya está terminada.",
+    "NOT_A_PLAYER_IN_MATCH": "No eres jugador de esta partida. Si entraste como invitado, vuelve a unirte con el enlace del torneo.",
+    "SAVE_RESULT_FAILED": "No se pudo guardar el resultado. Si sigue pasando, contacta al organizador.",
+    "SUBMISSION_NOT_PERSISTED": "No se pudo guardar el resultado. El servidor puede estar mal configurado.",
+    "BAD_REQUEST_MISSING_FIELDS": "Solicitud no válida. Inténtalo de nuevo.",
+    "BAD_REQUEST_GUEST_NO_PLAYER_ID": "Los invitados deben usar el enlace de unión para que se reconozca la sesión.",
+    "INVALID_RESULT": "Valor de resultado no válido.",
+    "INTERNAL_ERROR": "Algo salió mal en el servidor."
+  },
   "layout": {
     "title": "Parego - Emparejamiento de torneos de ajedrez",
     "description": "Empareja. Juega. Sigue. Gestión sencilla de torneos presenciales de ajedrez con emparejamiento instantáneo y enlaces fáciles para unirse."
@@ -213,6 +228,8 @@
     "setupPlayersNeedTables": "{players} jugadores • Se necesitan {tables} mesas para emparejamientos completos",
     "waitingForOrganizer": "Esperando a que el organizador inicie",
     "playersRegisteredSoFar": "{count} inscritos por ahora",
+    "rematchAnalysisTitle": "Análisis de revanchas",
+    "qrJoinCodeAlt": "Código QR del enlace para unirse al torneo",
     "playerJoinLink": "Enlace para unirse",
     "copy": "Copiar",
     "tournamentIdLabel": "ID:",
@@ -220,6 +237,8 @@
     "joinTournament": "Unirse al torneo",
     "checkInAtVenue": "Registrarse en el lugar",
     "youHaveJoined": "Te has unido a este torneo",
+    "welcomePlayerTitle": "¡Bienvenido, {name}!",
+    "welcomePlayerBody": "Te has unido al torneo correctamente. Revisa la pestaña Emparejamientos para ver tus partidas cuando estén listas.",
     "searchRegisteredPlayers": "Buscar jugadores registrados",
     "orAddGuest": "O añadir invitado",
     "addGuestPlayer": "Añadir jugador invitado",
@@ -281,7 +300,9 @@
     "alertCannotAddPlayerTables": "No se puede añadir: los emparejamientos simultáneos máximos ({max}) superarían las mesas disponibles ({tables}).",
     "alertNotEnoughTables": "No hay suficientes mesas. Con {players} jugadores necesitas al menos {tables} mesas para todos los emparejamientos simultáneos posibles.",
     "alertRequestFailed": "Error en la solicitud ({status}). Inténtalo de nuevo.",
-    "alertStartTournamentFailed": "No se pudo iniciar el torneo. Inténtalo de nuevo."
+    "alertStartTournamentFailed": "No se pudo iniciar el torneo. Inténtalo de nuevo.",
+    "alertInvalidDurationMinutes": "Introduce una duración de torneo válida (al menos 1 minuto).",
+    "confirmPausePlayer": "¿Pausar a {name}? No se emparejará hasta que se reanude."
   },
   "currentRound": {
     "waitingToBePaired": "Esperando a ser emparejado",

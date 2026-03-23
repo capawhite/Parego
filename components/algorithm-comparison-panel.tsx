@@ -64,6 +64,8 @@ export function AlgorithmComparisonPanel({
       // Group matches by rounds (every N matches where N = number of tables)
       const matchesPerRound = Math.floor(players.length / 2)
 
+      const maxPairingsThisRound = Math.max(1, Math.floor(players.length / 2))
+
       for (let i = 0; i < completedMatches.length; i += matchesPerRound) {
         const roundMatches = completedMatches.slice(i, i + matchesPerRound)
 
@@ -72,7 +74,7 @@ export function AlgorithmComparisonPanel({
           allVsAllPlayers,
           allVsAllMatches,
           { ...settings, pairingAlgorithm: "all-vs-all" },
-          {},
+          maxPairingsThisRound,
         )
 
         // Create next pairings with Balanced Strength
@@ -85,7 +87,7 @@ export function AlgorithmComparisonPanel({
             baseTimeMinutes: 5,
             incrementSeconds: 3,
           },
-          {},
+          maxPairingsThisRound,
         )
 
         if (process.env.NODE_ENV === "development")
@@ -101,12 +103,12 @@ export function AlgorithmComparisonPanel({
           allVsAllPairings: allVsAllPairings.map((m) => ({
             player1: m.player1.name,
             player2: m.player2.name,
-            table: m.table,
+            table: m.tableNumber ?? 0,
           })),
           balancedStrengthPairings: balancedPairings.map((m) => ({
             player1: m.player1.name,
             player2: m.player2.name,
-            table: m.table,
+            table: m.tableNumber ?? 0,
           })),
           diverged,
           divergenceNote: diverged ? "Algorithms produced different pairings" : "Algorithms matched",
@@ -150,31 +152,22 @@ export function AlgorithmComparisonPanel({
     )
   }
 
-  // Helper function to update player scores based on match result
+  // Helper function to update player scores based on match result (Parego Match shape)
   function updatePlayerScores(players: Player[], match: Match) {
     const p1 = players.find((p) => p.id === match.player1.id)
     const p2 = players.find((p) => p.id === match.player2.id)
 
-    if (!p1 || !p2 || !match.result) return
+    if (!p1 || !p2 || !match.result?.completed) return
 
-    if (match.result.winner === "white") {
-      p1.score += 1
-      p1.wins += 1
-      p2.losses += 1
-    } else if (match.result.winner === "black") {
-      p2.score += 1
-      p2.wins += 1
-      p1.losses += 1
-    } else {
+    const { winnerId, isDraw } = match.result
+    if (isDraw) {
       p1.score += 0.5
       p2.score += 0.5
-      p1.draws += 1
-      p2.draws += 1
+    } else if (winnerId === p1.id) {
+      p1.score += 1
+    } else if (winnerId === p2.id) {
+      p2.score += 1
     }
-
-    // Update match history
-    p1.history.push(match)
-    p2.history.push(match)
   }
 
   return (

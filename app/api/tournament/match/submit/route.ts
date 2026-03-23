@@ -18,27 +18,34 @@ export async function POST(request: Request) {
     if (DEBUG) console.log("[api/submit] POST body:", { matchId, result, confirmed, playerId })
 
     if (!matchId || result == null || confirmed == null) {
-      return NextResponse.json(
-        { success: false, error: "Missing matchId, result, or confirmed" },
-        { status: 400 },
-      )
+      const body: SubmitResultResponse = {
+        success: false,
+        error: "Missing matchId, result, or confirmed",
+        errorCode: "BAD_REQUEST_MISSING_FIELDS",
+      }
+      return NextResponse.json(body, { status: 400 })
     }
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user && !playerId) {
-      return NextResponse.json(
-        { success: false, error: "Guest players must send playerId. Rejoin the tournament from the join link if you don't see your session." },
-        { status: 400 },
-      )
+      const body: SubmitResultResponse = {
+        success: false,
+        error:
+          "Guest players must send playerId. Rejoin the tournament from the join link if you don't see your session.",
+        errorCode: "BAD_REQUEST_GUEST_NO_PLAYER_ID",
+      }
+      return NextResponse.json(body, { status: 400 })
     }
 
     const validResults: ResultType[] = ["player1-win", "draw", "player2-win"]
     if (!validResults.includes(result)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid result" },
-        { status: 400 },
-      )
+      const body: SubmitResultResponse = {
+        success: false,
+        error: "Invalid result",
+        errorCode: "INVALID_RESULT",
+      }
+      return NextResponse.json(body, { status: 400 })
     }
 
     const res: SubmitResultResponse = await submitMatchResultImpl(matchId, result, !!confirmed, {
@@ -54,9 +61,11 @@ export async function POST(request: Request) {
     return NextResponse.json(res)
   } catch (err) {
     console.error("[v0] API submit result error:", err)
-    return NextResponse.json(
-      { success: false, error: "Server error" },
-      { status: 500 },
-    )
+    const body: SubmitResultResponse = {
+      success: false,
+      error: "Server error",
+      errorCode: "INTERNAL_ERROR",
+    }
+    return NextResponse.json(body, { status: 500 })
   }
 }

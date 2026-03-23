@@ -16,6 +16,8 @@ interface TournamentSettingsProps {
   showSimulator?: boolean
   onToggleSimulator?: (show: boolean) => void
   isOrganizer?: boolean
+  /** When true, render only the settings card (no fullscreen backdrop). Parent must provide overlay and layout. */
+  embedded?: boolean
 }
 
 export function TournamentSettingsPanel({
@@ -25,18 +27,15 @@ export function TournamentSettingsPanel({
   showSimulator = false,
   onToggleSimulator,
   isOrganizer = true,
+  embedded = false,
 }: TournamentSettingsProps) {
   const { t } = useI18n()
   const updateSetting = <K extends keyof TournamentSettings>(key: K, value: TournamentSettings[K]) => {
     onUpdateSettings({ ...settings, [key]: value })
   }
 
-  return (
-    <div
-      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <Card className="w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+  const card = (
+    <Card className="w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <CardHeader className="relative">
           <Button
             variant="ghost"
@@ -320,6 +319,18 @@ export function TournamentSettingsPanel({
           </div>
         </CardContent>
       </Card>
+  )
+
+  if (embedded) {
+    return card
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      {card}
     </div>
   )
 }

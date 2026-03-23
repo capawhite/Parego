@@ -35,6 +35,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     setLocaleState(getInitialLocale())
   }, [])
 
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    document.documentElement.lang = locale === "es" ? "es" : "en"
+  }, [locale])
+
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next)
     if (typeof window !== "undefined") {

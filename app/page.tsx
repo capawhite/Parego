@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Zap, MapPin, Hash, User, LogOut, Plus, AlertCircle, Compass, Loader2, RefreshCw } from "lucide-react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -199,13 +199,16 @@ export default function Home() {
 
   // Load player counts and previews when tournament list changes
   const displayedTournaments = showNearby ? nearbyTournaments : fallbackTournaments
-  const tournamentIds = displayedTournaments.map((t) => t.id)
+  const previewTournamentIds = useMemo(
+    () => displayedTournaments.map((t) => t.id),
+    [displayedTournaments],
+  )
   useEffect(() => {
-    if (tournamentIds.length === 0) return
+    if (previewTournamentIds.length === 0) return
     let cancelled = false
     Promise.all([
-      getPlayerCounts(tournamentIds),
-      getPlayerPreviews(tournamentIds, 5),
+      getPlayerCounts(previewTournamentIds),
+      getPlayerPreviews(previewTournamentIds, 5),
     ]).then(([counts, previews]) => {
       if (!cancelled) {
         setPlayerCounts(counts)
@@ -215,7 +218,7 @@ export default function Home() {
     return () => {
       cancelled = true
     }
-  }, [tournamentIds.join(",")])
+  }, [previewTournamentIds])
 
   const handleLogout = async () => {
     const supabase = createClient()

@@ -3,33 +3,17 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" // Added CardDescription
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CurrentRound } from "./current-round"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Leaderboard } from "./leaderboard"
 import { TournamentPodium } from "./tournament-podium"
-import { TournamentSettingsPanel, type TournamentSettings } from "./tournament-settings" // Import TournamentSettings
-import { Badge } from "@/components/ui/badge"
-import { PlayersList } from "@/components/players-list"
-import type { ArenaState, Player, Match, MatchResult } from "@/lib/types" // Added Match import and MatchResult
+import { TournamentSettingsPanel } from "./tournament-settings"
+import { AlgorithmComparisonPanel } from "./algorithm-comparison-panel"
+import type { ArenaState, Player, Match, MatchResult, TournamentSettings } from "@/lib/types"
 import { getPairingAlgorithm } from "@/lib/pairing"
 import {
-  Maximize2,
   X,
-  QrCode,
   Trophy,
-  Users,
-  Swords,
-  Award,
-  SettingsIcon,
-  Clock,
-  Home,
-  UserPlus,
-  Check,
   Loader2,
-  MapPin,
-  AlertCircle,
-  LogIn,
   Trash2,
 } from "lucide-react" // Added SettingsIcon, Home, Grid3x3, ClipboardList, AlertTriangle, UserPlus, Check
 import {
@@ -51,14 +35,13 @@ import {
   playerNameExistsInTournament,
   getAvatarUrls,
 } from "@/lib/database/tournament-db"
-import { generateQRCode } from "@/lib/qr-utils" // Fixed import to use correct path for generateQRCode
-import { TournamentSimulatorPanel } from "@/components/tournament-simulator-panel"
 import { useRouter } from "next/navigation"
-import { AlgorithmComparisonPanel } from "./algorithm-comparison-panel"
-import { UserSearchAutocomplete } from "@/components/user-search-autocomplete" // Import UserSearchAutocomplete
+import { ArenaPlayersTab } from "@/components/tournament/arena-players-tab"
+import { ArenaPairingsTab } from "@/components/tournament/arena-pairings-tab"
+import { ArenaResultsTab } from "@/components/tournament/arena-results-tab"
+import { ArenaTournamentHeader } from "@/components/tournament/arena-tournament-header"
+import { PairingMatchCard } from "@/components/tournament/pairing-match-card"
 import { createClient } from "@/lib/supabase/client" // Import createClient for Supabase
-import Link from "next/link" // Import Link for navigation
-import { Label } from "@/components/ui/label" // Import Label for forms
 import { generateGuestUsername } from "@/lib/guest-names" // Import memorable guest name generator
 import {
   addGuestSession,
@@ -71,11 +54,12 @@ import { cn } from "@/lib/utils"
 import { verifyAndCheckIn, markPresentOverride, checkVenueProximity } from "@/app/actions/check-in"
 import { renamePlayer } from "@/app/actions/rename-player"
 import { deleteTournament } from "@/app/actions/delete-tournament"
-import { resolveRating } from "@/lib/rating-bands"
+import { resolveRating, type RatingBandValue } from "@/lib/rating-bands"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
 import { useRealtime } from "@/hooks/tournament/use-realtime"
 import { getDeviceId } from "@/lib/device-id"
+import { messageForSubmitResponse } from "@/lib/submit-client-message"
 
 const TOURNAMENT_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
 
@@ -208,6 +192,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     arenaState.players,
     arenaState.pairedMatches,
     arenaState.allTimeMatches,
+    isOrganizer,
+    t,
   ])
 
   const isCurrentUserInTournament = currentUserId
@@ -266,7 +252,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
       setHasNewPairing(true)
     },
-    [playerSession?.playerId],
+    [playerSession?.playerId, t],
   )
 
   const { suppressRealtime } = useRealtime({
@@ -418,16 +404,16 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           ...prev,
           players: enrichedPlayers.length > 0 ? enrichedPlayers : prev.players,
           tableCount: tournament.tables_count,
-          settings:
-            {
-              ...tournament.settings,
-              tableCount: tournament.tables_count, // Ensure tableCount is synced
-            } || prev.settings,
+          settings: {
+            ...DEFAULT_SETTINGS,
+            ...(tournament.settings && typeof tournament.settings === "object" ? tournament.settings : {}),
+            tableCount: tournament.tables_count,
+          },
           status: tournament.status,
           isActive: tournament.status === "active",
           pairedMatches: activeMatches,
           allTimeMatches: completedMatches,
-          tournamentDuration: tournament.duration || TOURNAMENT_DURATION,
+          tournamentDuration: TOURNAMENT_DURATION,
           tournamentStartTime: startTimeMs,
         }))
       } else {
@@ -497,6 +483,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     currentUserId,
     isLoading,
     isOrganizer,
+    suppressRealtime,
   ])
 
   useEffect(() => {
@@ -523,6 +510,9 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     return () => clearInterval(interval)
   }, [arenaState.isActive, arenaState.tournamentStartTime, arenaState.tournamentDuration, waitingForFinalResults, isOrganizer])
 
+  /* Pairing interval reads latest arenaState via closure; listing assignTablesToMatches/getOccupiedTables would
+   * retrigger every render (unstable function identities). Dependencies mirror when the interval should reset.
+   */
   useEffect(() => {
     if (!arenaState.isActive || waitingForFinalResults) return
 
@@ -586,6 +576,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     }, algorithm.getPollingInterval()) // Use algorithm-specific polling interval
 
     return () => clearInterval(pairingTimer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getOccupiedTables/assignTablesToMatches: unstable identities; interval uses latest state via closure
   }, [
     arenaState.isActive,
     arenaState.pairedMatches,
@@ -611,15 +602,15 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       return
     const allComplete = arenaState.pairedMatches.every((m) => m.result?.completed)
     if (!allComplete) return
-    const t = setTimeout(() => finalizeEndTournament(), 600)
-    return () => clearTimeout(t)
+    const timerId = setTimeout(() => finalizeEndTournament(), 600)
+    return () => clearTimeout(timerId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- finalizeEndTournament identity changes each render
   }, [
     tournamentId,
     isOrganizer,
     waitingForFinalResults,
     arenaState.status,
     arenaState.pairedMatches,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   ])
 
   useEffect(() => {
@@ -708,7 +699,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       suppressRealtime()
       saveMatches(tournamentId, activeMatches).catch((err) => console.error("[v0] Failed to save active matches:", err))
     }
-  }, [arenaState.pairedMatches.length, tournamentId, arenaState.isActive, isOrganizer])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- length-only dep: avoid save spam; body reads latest pairedMatches
+  }, [
+    arenaState.pairedMatches.length,
+    tournamentId,
+    arenaState.isActive,
+    isOrganizer,
+    suppressRealtime,
+  ])
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000)
@@ -730,12 +728,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     })
 
     if (isDuplicate) {
-      alert(t("arena.alertPlayerAlreadyInTournament"))
+      toast.error(t("arena.alertPlayerAlreadyInTournament"))
       return
     }
 
     if (arenaState.isActive && !arenaState.settings.allowLateJoin) {
-      alert(t("arena.alertLateJoinsNotAllowed"))
+      toast.error(t("arena.alertLateJoinsNotAllowed"))
       return
     }
 
@@ -744,7 +742,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const maxSimultaneousPairings = Math.floor(newTotalPlayers / 2)
 
       if (maxSimultaneousPairings > arenaState.tableCount) {
-        alert(t("arena.alertCannotAddPlayerTables", { max: maxSimultaneousPairings, tables: arenaState.tableCount }))
+        toast.error(t("arena.alertCannotAddPlayerTables", { max: maxSimultaneousPairings, tables: arenaState.tableCount }))
         return
       }
     }
@@ -764,7 +762,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       joinedAt: Date.now(),
       userId: userId || null,
       isGuest: isGuest,
-      rating: resolveRating(userRating, userRatingBand ?? undefined),
+      rating: resolveRating(userRating, userRatingBand as RatingBandValue | null | undefined),
       buchholz: 0,
       sonnebornBerger: 0,
       country: userCountry,
@@ -810,7 +808,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           device_id: deviceId,
         })
         if (insertErr) {
-          const err = insertErr as Record<string, unknown>
+          const err = insertErr as unknown as Record<string, unknown>
           const msg = (err.message as string) ?? (insertErr instanceof Error ? insertErr.message : String(insertErr))
           const code = (err.code as string) ?? ""
           const details = (err.details as string) ?? ""
@@ -1027,7 +1025,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     const newPlayer: Player = {
       id: crypto.randomUUID(),
       name: userName,
-      rating: resolveRating(userRating, userRatingBand ?? undefined),
+      rating: resolveRating(userRating, userRatingBand as RatingBandValue | null | undefined),
       score: 0,
       buchholz: 0,
       sonnebornBerger: 0,
@@ -1172,30 +1170,30 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
   const handleStartTournament = async () => {
     if (arenaState.status === "completed") {
-      alert(t("arena.alertTournamentAlreadyCompleted"))
+      toast.error(t("arena.alertTournamentAlreadyCompleted"))
       return
     }
 
     if (arenaState.players.length < 2) {
-      alert(t("arena.alertNeedAtLeastTwoPlayers"))
+      toast.error(t("arena.alertNeedAtLeastTwoPlayers"))
       return
     }
 
     const tableCount = Number.parseInt(tableCountInput)
     if (!tableCount || tableCount < 1) {
-      alert(t("arena.alertInvalidTableCount"))
+      toast.error(t("arena.alertInvalidTableCount"))
       return
     }
 
     const maxSimultaneousPairings = Math.floor(arenaState.players.length / 2)
     if (tableCount < maxSimultaneousPairings) {
-      alert(t("arena.alertNotEnoughTables", { players: arenaState.players.length, tables: maxSimultaneousPairings }))
+      toast.error(t("arena.alertNotEnoughTables", { players: arenaState.players.length, tables: maxSimultaneousPairings }))
       return
     }
 
     const durationMinutes = Number.parseInt(tournamentDurationInput)
     if (!durationMinutes || durationMinutes < 1) {
-      alert("Please enter a valid tournament duration (at least 1 minute)")
+      toast.error(t("arena.alertInvalidDurationMinutes"))
       return
     }
     const durationMs = durationMinutes * 60 * 1000
@@ -1211,12 +1209,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const result = await startTournamentAction(tournamentId)
 
       if (!result.success) {
-        alert(result.error || t("arena.alertStartTournamentFailed"))
+        toast.error(result.error || t("arena.alertStartTournamentFailed"))
         return
       }
     } catch (error) {
       console.error("[v0] Error calling startTournament action:", error)
-      alert(t("arena.alertStartTournamentFailed"))
+      toast.error(t("arena.alertStartTournamentFailed"))
       return
     }
 
@@ -1577,9 +1575,14 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       rematchDetails: rematches.length > 0 ? rematches : "No rematches detected",
     })
 
-    alert(
-      `Rematch Analysis:\nTotal unique pairings: ${uniquePairings.size}\nRematches found: ${rematches.length}\n\n${rematches.length > 0 ? rematches.map((r) => `${r.players}: ${r.count} times`).join("\n") : "No rematches detected!"}`,
-    )
+    const rematchDetail =
+      rematches.length > 0
+        ? rematches.map((r) => `${r.players}: ${r.count} times`).join("\n")
+        : "No rematches detected!"
+    toast.info(t("arena.rematchAnalysisTitle"), {
+      description: `Unique pairings: ${uniquePairings.size}\nRematches: ${rematches.length}\n\n${rematchDetail}`,
+      duration: 20_000,
+    })
 
     return rematches
   }
@@ -1591,7 +1594,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     if (
       !player.paused &&
       !player.markedForPause &&
-      !confirm(`Pause ${player.name}? They won't be paired until resumed.`)
+      !confirm(t("arena.confirmPausePlayer", { name: player.name }))
     ) {
       return
     }
@@ -1599,12 +1602,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     const isSelfPause = !isOrganizer && (playerId === currentPlayerInTournament?.id || playerId === playerSession?.playerId)
 
     if (!player.paused && isSelfPause && !arenaState.settings.allowSelfPause) {
-      alert(t("arena.alertSelfPauseNotAllowed"))
+      toast.error(t("arena.alertSelfPauseNotAllowed"))
       return
     }
 
     if (!player.paused && isSelfPause && player.gamesPlayed < arenaState.settings.minGamesBeforePause) {
-      alert(t("arena.alertMinGamesBeforePause", { count: arenaState.settings.minGamesBeforePause }))
+      toast.error(t("arena.alertMinGamesBeforePause", { count: arenaState.settings.minGamesBeforePause }))
       return
     }
 
@@ -1728,7 +1731,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     const isPlayerInMatch = match.player1.id === playerSession.playerId || match.player2.id === playerSession.playerId
     if (!isPlayerInMatch) {
       if (DEBUG) console.log("[v0] Player not in match, rejecting submission")
-      alert(t("arena.alertOnlyOwnMatches"))
+      toast.error(t("arena.alertOnlyOwnMatches"))
       return
     }
 
@@ -1746,7 +1749,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     const effectiveResult = result ?? playerSubmissions[matchId]?.result
     if (DEBUG) console.log("[v0] Player confirming result:", matchId, "result:", effectiveResult, "from arg:", !!result, "playerId:", playerSession?.playerId)
     if (!playerSession?.playerId) {
-      alert(t("arena.alertMissingPlayerSession"))
+      toast.error(t("arena.alertMissingPlayerSession"))
       return
     }
 
@@ -1786,14 +1789,16 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         }),
       })
 
-      const response = await res.json().catch(() => ({ success: false, error: "Invalid response" }))
+      const response = await res
+        .json()
+        .catch(() => ({ success: false, error: "Invalid response", errorCode: "INTERNAL_ERROR" as const }))
       // Always log so we can see what the server returned (helps debug guest submission)
       console.log("[result-submit] Response:", res.status, JSON.stringify(response))
       if (DEBUG) console.log("[v0] Submit response:", res.status, response)
 
       if (!res.ok) {
         console.error("[v0] Submit result HTTP error:", res.status, response?.error ?? res.statusText)
-        alert(response?.error || t("arena.alertRequestFailed", { status: res.status }))
+        toast.error(messageForSubmitResponse(t, response, "arena.alertRequestFailed", { status: res.status }))
         setPlayerSubmissions((prev) => ({
           ...prev,
           [matchId]: { ...prev[matchId], confirmed: false },
@@ -1802,8 +1807,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       }
 
       if (!response.success) {
-        console.error("[v0] Server rejected submission:", response.error)
-        alert(response.error || t("arena.toastResultSubmitFailed"))
+        console.error("[v0] Server rejected submission:", response.error, response.errorCode)
+        toast.error(messageForSubmitResponse(t, response, "arena.toastResultSubmitFailed"))
         setPlayerSubmissions((prev) => ({
           ...prev,
           [matchId]: { ...prev[matchId], confirmed: false },
@@ -1834,7 +1839,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               ? updatedMatch.player1_id
               : updatedMatch.player2_id
           const completedAt = Date.now()
-          const playerUpdates = new Map(response.updatedPlayers.map((u) => [u.id, u]))
+          const serverPlayerUpdates = response.updatedPlayers as {
+            id: string
+            points: number
+            games_played: number
+            streak: number
+          }[]
+          const playerUpdates = new Map(serverPlayerUpdates.map((u) => [u.id, u]))
 
           setArenaState((prev) => {
             const updatedPlayers = prev.players.map((p) => {
@@ -1893,7 +1904,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
       console.error("[result-submit] Request failed:", msg, error)
-      alert(msg.includes("fetch") || msg.includes("Network") ? t("arena.toastResultSubmitFailedNetwork") : t("arena.toastResultSubmitFailed"))
+      toast.error(
+        msg.includes("fetch") || msg.includes("Network")
+          ? t("arena.toastResultSubmitFailedNetwork")
+          : t("arena.toastResultSubmitFailed"),
+      )
       setPlayerSubmissions((prev) => ({
         ...prev,
         [matchId]: { ...prev[matchId], confirmed: false },
@@ -2086,45 +2101,23 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       <div className="fixed inset-0 z-50 overflow-auto bg-secondary">
         <div className="container mx-auto py-3 px-4">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-2xl font-bold">Current Pairings</h1>
+            <h1 className="text-2xl font-bold">{t("arena.currentPairings")}</h1>
             <Button variant="outline" size="sm" onClick={() => setIsFullScreenPairings(false)}>
               <X className="h-4 w-4 mr-2" />
-              Exit
+              {t("common.close")}
             </Button>
           </div>
 
           {sortedPendingMatches.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
               {sortedPendingMatches.map((match) => (
-                <div
-                  key={match.id}
-                  className="border-2 rounded-lg hover:bg-accent/50 transition-colors overflow-hidden"
-                >
-                  {match.tableNumber && (
-                    <div className="bg-amber-700 px-3 py-1 flex items-center gap-2">
-                      <span className="text-white font-bold text-sm">Table {match.tableNumber}</span>
-                    </div>
-                  )}
-                  <div className="p-2 space-y-1">
-                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded px-2 py-1">
-                      <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded-sm flex-shrink-0" />
-                      <span className="font-semibold text-sm break-words">{match.player1.name}</span>
-                    </div>
-                    <div className="text-center text-xs text-muted-foreground">vs</div>
-                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
-                      <div className="w-4 h-4 bg-gray-900 border-2 border-gray-600 rounded-sm flex-shrink-0" />
-                      <span className="font-semibold text-sm break-words">{match.player2.name}</span>
-                    </div>
-                  </div>
-                </div>
+                <PairingMatchCard key={match.id} match={match} showSubmissionStatus={false} />
               ))}
             </div>
           ) : (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">
-                  No active pairings. Waiting for more players to be available.
-                </p>
+                <p className="text-center text-muted-foreground">{t("arena.noActivePairings")}</p>
               </CardContent>
             </Card>
           )}
@@ -2147,14 +2140,33 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         )}
 
         {showSettings && (
-          <TournamentSettingsPanel
-            settings={arenaState.settings}
-            onUpdateSettings={handleUpdateSettings}
-            onClose={() => setShowSettings(false)}
-            showSimulator={showSimulator}
-            onToggleSimulator={(show) => setShowSimulator(show)}
-            isOrganizer={isOrganizer}
-          />
+          <div
+            className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-sm"
+            onClick={() => setShowSettings(false)}
+          >
+            <div
+              className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <TournamentSettingsPanel
+                embedded
+                settings={arenaState.settings}
+                onUpdateSettings={handleUpdateSettings}
+                onClose={() => setShowSettings(false)}
+                showSimulator={showSimulator}
+                onToggleSimulator={(show) => setShowSimulator(show)}
+                isOrganizer={isOrganizer}
+              />
+              {arenaState.allTimeMatches.length > 0 && (
+                <AlgorithmComparisonPanel
+                  tournamentId={tournamentId || ""}
+                  players={arenaState.players}
+                  matches={arenaState.allTimeMatches}
+                  settings={arenaState.settings}
+                />
+              )}
+            </div>
+          </div>
         )}
 
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -2215,11 +2227,10 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               <div className="flex items-start gap-3">
                 <Trophy className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-semibold text-sm">Welcome, {playerSession?.playerName}!</p>
-                  <p className="text-sm text-muted-foreground">
-                    You've successfully joined the tournament. Check the Pairings tab to see your matches when they're
-                    ready.
+                  <p className="font-semibold text-sm">
+                    {t("arena.welcomePlayerTitle", { name: playerSession?.playerName ?? "" })}
                   </p>
+                  <p className="text-sm text-muted-foreground">{t("arena.welcomePlayerBody")}</p>
                 </div>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setShowWelcomeMessage(false)}>
                   <X className="h-4 w-4" />
@@ -2237,562 +2248,96 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           }}
           className="w-full"
         >
-          {/* Consolidate header elements */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 sm:gap-3 mb-1">
-                <h1 className="text-xl sm:text-2xl font-bold truncate">{displayName}</h1>
-                {tournamentId && !isCurrentUserInTournament && (
-                  <Button variant="default" size="sm" className="shrink-0 h-9 gap-1.5" asChild>
-                    <Link href={`/join/${tournamentId}`}>
-                      <LogIn className="h-4 w-4" />
-                      {t("tournamentHeader.joinButton")}
-                    </Link>
-                  </Button>
-                )}
-                <Link href="/">
-                  <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8 shrink-0">
-                    <Home className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                <Badge variant="secondary" className="font-normal">
-                  {userRole === "organizer"
-                    ? t("tournamentHeader.roleOrganizer")
-                    : userRole === "registered-player" || userRole === "guest-player"
-                      ? t("tournamentHeader.rolePlayer")
-                      : t("tournamentHeader.roleVisitor")}
-                </Badge>
-                {organizerName && (
-                  <p className="text-sm text-muted-foreground">
-                    {t("tournamentHeader.organizedBy", { name: organizerName })}
-                    {isOrganizer && <span className="text-primary ml-1">{t("tournamentHeader.organizedByYou")}</span>}
-                  </p>
-                )}
-              </div>
-              {tournamentMetadata?.latitude != null && tournamentMetadata?.longitude != null && (
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${tournamentMetadata.latitude},${tournamentMetadata.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-1"
-                >
-                  <MapPin className="h-4 w-4" />
-                  {t("tournamentHeader.getDirections")}
-                </a>
-              )}
-              {arenaState.status === "completed" && (
-                <p className="text-sm text-muted-foreground mt-1">{t("tournamentHeader.statusCompleted")}</p>
-              )}
-            </div>
-
-            <TabsList
-              className={`grid h-auto w-full sm:w-auto min-h-[44px] ${
-                arenaState.status === "completed" ? "grid-cols-3" : "grid-cols-4"
-              }`}
-            >
-              <TabsTrigger value="players" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
-                <Users className="h-4 w-4 mr-1" />
-                {t("tournamentHeader.playersTab")}
-              </TabsTrigger>
-              <TabsTrigger value="pairings" className="relative text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
-                <Swords className="h-4 w-4 mr-1" />
-                {t("tournamentHeader.pairingsTab")}
-                {arenaState.pairedMatches.some(
-                  (m) =>
-                    m.player1Submission?.confirmed &&
-                    m.player2Submission?.confirmed &&
-                    m.player1Submission.result !== m.player2Submission.result,
-                ) && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                )}
-              </TabsTrigger>
-              {arenaState.status !== "completed" && (
-                <TabsTrigger value="results" className="relative text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
-                  <Trophy className="h-4 w-4 mr-1" />
-                  {t("tournamentHeader.resultsTab")}
-                  {(() => {
-                    const hasConflict = arenaState.pairedMatches.some(
-                      (m) =>
-                        m.player1Submission?.confirmed &&
-                        m.player2Submission?.confirmed &&
-                        m.player1Submission.result !== m.player2Submission.result,
-                    )
-                    const hasSubmissions = arenaState.pairedMatches.some(
-                      (m) => m.player1Submission?.confirmed || m.player2Submission?.confirmed,
-                    )
-                    if (hasConflict) {
-                      return <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                    }
-                    if (hasNewPairing || hasSubmissions) {
-                      return <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                    }
-                    return null
-                  })()}
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="standings" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
-                <Award className="h-4 w-4 mr-1" />
-                {t("tournamentHeader.standingsTab")}
-              </TabsTrigger>
-            </TabsList>
-
-            {arenaState.isActive && (
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-md">
-                  <Clock className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-primary">{formatTime(timeRemaining)}</span>
-                </div>
-                {isOrganizer &&
-                  arenaState.settings.pairingAlgorithm === "all-vs-all" && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md">
-                      <span className="text-xs text-muted-foreground">
-                        {t("arena.allVsAllCompletionLabel")}:{" "}
-                        <span className="font-semibold text-foreground">
-                          {Math.round(completionRatio * 100)}%
-                        </span>
-                      </span>
-                    </div>
-                  )}
-                {isOrganizer &&
-                  arenaState.settings.pairingAlgorithm === "all-vs-all" &&
-                  completionRatio >= 1 && (
-                    <p className="text-xs text-muted-foreground w-full sm:w-auto sm:max-w-[220px]">
-                      {t("arena.allUniquePairingsCompleteMessage")}
-                    </p>
-                  )}
-                {arenaState.status === "active" && permissions.canEndTournament && (
-                  <Button variant="destructive" size="sm" onClick={endTournament}>
-                    {t("arena.endTournamentButton")}
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {permissions.canAccessSettings && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0 bg-transparent text-muted-foreground hover:text-destructive hover:border-destructive/50"
-                  onClick={() => setShowDeleteDialog(true)}
-                  title={t("tournamentHeader.deleteTournamentButton")}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0 bg-transparent"
-                  onClick={() => setShowSettings(true)}
-                  title={t("tournamentHeader.settingsTooltip")}
-                >
-                  <SettingsIcon className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
+          <ArenaTournamentHeader
+            displayName={displayName}
+            tournamentId={tournamentId}
+            isCurrentUserInTournament={isCurrentUserInTournament}
+            userRole={userRole}
+            organizerName={organizerName}
+            isOrganizer={isOrganizer}
+            tournamentMetadata={tournamentMetadata}
+            tournamentStatus={arenaState.status}
+            arenaIsActive={arenaState.isActive}
+            pairedMatches={arenaState.pairedMatches}
+            pairingAlgorithm={arenaState.settings.pairingAlgorithm}
+            hasNewPairing={hasNewPairing}
+            timeRemainingFormatted={formatTime(timeRemaining)}
+            completionRatio={completionRatio}
+            canEndTournament={permissions.canEndTournament}
+            canAccessSettings={permissions.canAccessSettings}
+            onEndTournament={endTournament}
+            onOpenDeleteDialog={() => setShowDeleteDialog(true)}
+            onOpenSettings={() => setShowSettings(true)}
+          />
 
           <TabsContent value="players" className="space-y-2">
-              {/* Tournament Setup Card - only show in setup status */}
-              {arenaState.status === "setup" && (
-                isOrganizer ? (
-                  <Card className="mb-4">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">{t("arena.setupTitle")}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex flex-wrap gap-3 items-end">
-                        <div className="flex-1 min-w-[120px] space-y-1.5">
-                          <Label htmlFor="tables" className="text-sm">
-                            {t("arena.setupTables")}
-                          </Label>
-                          <Input
-                            id="tables"
-                            type="number"
-                            placeholder={t("arena.setupTablesPlaceholder")}
-                            value={tableCountInput}
-                            onChange={(e) => setTableCountInput(e.target.value)}
-                            className="w-20 h-8 text-sm"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-[120px] space-y-1.5">
-                          <Label htmlFor="duration" className="text-sm">
-                            {t("arena.setupDuration")}
-                          </Label>
-                          <Input
-                            id="duration"
-                            type="number"
-                            placeholder={t("arena.setupDurationPlaceholder")}
-                            value={tournamentDurationInput}
-                            onChange={(e) => setTournamentDurationInput(e.target.value)}
-                            className="w-20 h-8 text-sm"
-                          />
-                        </div>
-                        {permissions.canStartTournament && (
-                          <Button onClick={handleStartTournament} className="w-full h-8 text-sm" size="sm">
-                            {t("arena.setupStartTournament")}
-                          </Button>
-                        )}
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-xs text-muted-foreground">
-                          {t("arena.setupPlayersNeedTables", { players: arenaState.players.length, tables: maxSimultaneousPairings })}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card className="mb-4 border-amber-400/30 bg-amber-50/40 dark:bg-amber-950/20">
-                    <CardContent className="pt-4 pb-4">
-                      <div className="flex items-center gap-3">
-                        <Loader2 className="h-5 w-5 animate-spin text-amber-500 flex-shrink-0" />
-                        <div>
-                          <p className="font-semibold text-sm">{t("arena.waitingForOrganizer")}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {t("arena.playersRegisteredSoFar", { count: arenaState.players.filter((p) => !p.hasLeft).length })}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              )}
-
-              {tournamentId && permissions.canAccessQR && (
-                <Card className="p-2 bg-primary/5 mb-4">
-                  <div className="flex items-start gap-2">
-                    <div className="flex-shrink-0">
-                      <div className="bg-white p-1 rounded border border-primary/20">
-                        <img
-                          src={generateQRCode(`${window.location.origin || "/placeholder.svg"}/join/${tournamentId}`)}
-                          alt="QR Code"
-                          className="w-14 h-14"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <QrCode className="h-3.5 w-3.5 flex-shrink-0" />
-                        <h3 className="font-semibold text-xs">{t("arena.playerJoinLink")}</h3>
-                      </div>
-                      <div className="flex gap-1">
-                        <Input
-                          value={`${window.location.origin}/join/${tournamentId}`}
-                          readOnly
-                          className="text-[11px] font-mono h-7 flex-1 min-w-0"
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 bg-transparent text-xs flex-shrink-0"
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/join/${tournamentId}`)
-                            toast.success(t("common.linkCopied"))
-                          }}
-                        >
-                          {t("arena.copy")}
-                        </Button>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">
-                        {t("arena.tournamentIdLabel")} <span className="font-mono font-semibold">{tournamentId}</span>
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">
-                    {t("tournamentHeader.playersTab")} ({arenaState.players.filter((p) => !p.hasLeft).length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {(!arenaState.isActive || (arenaState.isActive && arenaState.settings.allowLateJoin)) &&
-                    arenaState.status !== "completed" && (
-                      <div className="space-y-3">
-                        {currentUserId && !isOrganizer && !isCurrentUserInTournament && (
-                          <Button onClick={joinAsSelf} className="w-full" disabled={joiningSelf}>
-                            {joiningSelf ? (
-                              <>
-                                <MapPin className="mr-2 h-4 w-4" />
-                                {t("arena.verifyingLocation")}
-                              </>
-                            ) : (
-                              <>
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                {t("arena.joinTournament")}
-                              </>
-                            )}
-                          </Button>
-                        )}
-
-                        {currentUserId && !isOrganizer && isCurrentUserInTournament && (() => {
-                          const me = arenaState.players.find((p) => p.userId === currentUserId && !p.hasLeft)
-                          const needsCheckIn = me && me.checkedInAt == null
-                          return (
-                            <div className="space-y-2">
-                              {needsCheckIn ? (
-                                <Button
-                                  onClick={handleCheckIn}
-                                  disabled={checkingIn}
-                                  variant="default"
-                                  className="w-full"
-                                >
-                                  {checkingIn ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  ) : (
-                                    <MapPin className="h-4 w-4 mr-2" />
-                                  )}
-                                  {t("arena.checkInAtVenue")}
-                                </Button>
-                              ) : (
-                                <div className="text-center text-sm text-muted-foreground p-3 border rounded-lg bg-primary/5">
-                                  <Check className="inline-block mr-1 h-4 w-4 text-green-500" />
-                                  {t("arena.youHaveJoined")}
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })()}
-
-                        {isOrganizer && (
-                          <>
-                            <div className="space-y-1.5">
-                              <label className="text-xs font-medium text-muted-foreground">
-                                {t("arena.searchRegisteredPlayers")}
-                              </label>
-                              <UserSearchAutocomplete onSelectUser={handleSelectUser} />
-                            </div>
-
-                            <div className="relative">
-                              <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t" />
-                              </div>
-                              <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-background px-2 text-muted-foreground">{t("arena.orAddGuest")}</span>
-                              </div>
-                            </div>
-
-                            <Button
-                              onClick={handleAddGuestPlayer}
-                              variant="outline"
-                              className="w-full h-8 text-sm bg-transparent"
-                            >
-                              {t("arena.addGuestPlayer")}
-                            </Button>
-                          </>
-                        )}
-
-                        {!currentUserId && (
-                          <div className="space-y-3">
-                            <Button onClick={handleAddGuestPlayer} variant="outline" className="w-full bg-transparent">
-                              <UserPlus className="mr-2 h-4 w-4" />
-                              {t("arena.joinAsGuest")}
-                            </Button>
-                            <p className="text-xs text-center text-muted-foreground">
-                              <Link href="/auth/login" className="text-primary hover:underline">
-                                {t("home.loginButton")}
-                              </Link>{" "}
-                              or{" "}
-                              <Link href="/auth/signup" className="text-primary hover:underline">
-                                {t("home.signUp")}
-                              </Link>{" "}
-                              {t("arena.loginOrRegisterToTrack")}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                  <PlayersList
-                    players={arenaState.players}
-                    onRemovePlayer={removePlayer}
-                    onTogglePause={isOrganizer ? togglePause : undefined}
-                    onMarkPresent={isOrganizer ? handleMarkPresent : undefined}
-                    markingPresentPlayerId={markingPresentPlayerId}
-                    onRenamePlayer={isOrganizer ? handleRenamePlayer : undefined}
-                    renamingPlayerId={renamingPlayerId}
-                    status={arenaState.status}
-                    isOrganizer={isOrganizer}
-                    currentUserId={currentUserId}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
+            <ArenaPlayersTab
+              tournamentId={tournamentId}
+              status={arenaState.status}
+              isActive={arenaState.isActive}
+              allowLateJoin={arenaState.settings.allowLateJoin}
+              players={arenaState.players}
+              maxSimultaneousPairings={maxSimultaneousPairings}
+              tableCountInput={tableCountInput}
+              tournamentDurationInput={tournamentDurationInput}
+              isOrganizer={isOrganizer}
+              currentUserId={currentUserId}
+              isCurrentUserInTournament={isCurrentUserInTournament}
+              joiningSelf={joiningSelf}
+              checkingIn={checkingIn}
+              markingPresentPlayerId={markingPresentPlayerId}
+              renamingPlayerId={renamingPlayerId}
+              canStartTournament={permissions.canStartTournament}
+              canAccessQR={permissions.canAccessQR}
+              onTableCountChange={setTableCountInput}
+              onDurationChange={setTournamentDurationInput}
+              onStartTournament={handleStartTournament}
+              onJoinAsSelf={joinAsSelf}
+              onCheckIn={handleCheckIn}
+              onAddGuestPlayer={handleAddGuestPlayer}
+              onSelectUser={handleSelectUser}
+              onRemovePlayer={removePlayer}
+              onTogglePause={isOrganizer ? togglePause : undefined}
+              onMarkPresent={isOrganizer ? handleMarkPresent : undefined}
+              onRenamePlayer={isOrganizer ? handleRenamePlayer : undefined}
+            />
+          </TabsContent>
 
           <TabsContent value="pairings">
-            {pendingMatches.length > 0 ? (
-              <div className="space-y-3">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">{t("arena.currentPairings")}</CardTitle>
-                      <Button variant="outline" size="sm" onClick={() => setIsFullScreenPairings(true)}>
-                        <Maximize2 className="h-4 w-4 mr-2" />
-                        {t("arena.fullScreen")}
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="grid gap-3">
-                      {sortedPendingMatches.map((match) => {
-                        const p1Sub = match.player1Submission
-                        const p2Sub = match.player2Submission
-                        const bothSubmitted = p1Sub?.confirmed && p2Sub?.confirmed
-                        const hasConflict = bothSubmitted && p1Sub.result !== p2Sub.result
-                        const oneSubmitted = (p1Sub?.confirmed || p2Sub?.confirmed) && !bothSubmitted
-
-                        return (
-                          <div
-                            key={match.id}
-                            className={`border-2 rounded-lg hover:bg-accent/50 transition-colors overflow-hidden ${
-                              hasConflict ? "border-red-500 bg-red-50/50 dark:bg-red-950/20" :
-                              oneSubmitted ? "border-amber-400" : ""
-                            }`}
-                          >
-                            {/* Table number header */}
-                            {match.tableNumber && (
-                              <div className="bg-amber-700 px-3 py-1 flex items-center gap-2">
-                                <span className="text-white font-bold text-sm">{t("arena.tableNumber", { number: match.tableNumber })}</span>
-                              </div>
-                            )}
-
-                            <div className="p-2 space-y-1">
-                              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded px-2 py-1">
-                                <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded-sm flex-shrink-0" />
-                                <span className="font-semibold text-sm break-words">{match.player1.name}</span>
-                              </div>
-                              <div className="text-center text-xs text-muted-foreground">vs</div>
-                              <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
-                                <div className="w-4 h-4 bg-gray-900 border-2 border-gray-600 rounded-sm flex-shrink-0" />
-                                <span className="font-semibold text-sm break-words">{match.player2.name}</span>
-                              </div>
-
-                              {hasConflict && (
-                                <div className="flex items-center gap-1 px-1 py-0.5 text-red-600 dark:text-red-400 text-xs font-medium">
-                                  <AlertCircle className="h-3.5 w-3.5" />
-                                  {t("arena.resultConflictCheckResults")}
-                                </div>
-                              )}
-                              {oneSubmitted && (
-                                <div className="flex items-center gap-1 px-1 py-0.5 text-amber-600 dark:text-amber-400 text-xs">
-                                  <Clock className="h-3 w-3" />
-                                  {t("arena.oneResultSubmitted")}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-center text-muted-foreground">
-                    {t("arena.noActivePairings")}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            <ArenaPairingsTab
+              matches={sortedPendingMatches}
+              onOpenFullScreen={() => setIsFullScreenPairings(true)}
+            />
           </TabsContent>
 
           <TabsContent value="results">
-            {arenaState.status === "completed" ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-center text-muted-foreground">
-                    {t("results.tournamentEndedNoResults")}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                {!effectivePlayerView && arenaState.isActive && showSimulator && (
-                  <div className="mb-4">
-                    <TournamentSimulatorPanel />
-                  </div>
-                )}
-                {(() => {
-                  const normalizedSession =
-                    playerSession?.playerId && playerSession?.role
-                      ? { playerId: playerSession.playerId, role: playerSession.role as "player" | "organizer" }
-                      : undefined
-                  const isPlayer = normalizedSession?.role === "player"
-                  return isPlayer ? (
-                    // Players always see CurrentRound — it shows WaitingRoom when no match is pending
-                    <CurrentRound
-                      matches={arenaState.pairedMatches}
-                      onRecordResult={(id, winner, isDraw) => recordResult(id, winner, isDraw ?? false)}
-                      playerSession={normalizedSession}
-                      onPlayerSubmit={handlePlayerSubmit}
-                      onPlayerConfirm={handlePlayerConfirm}
-                      onPlayerCancel={handlePlayerCancel}
-                      canRecordResults={permissions.canRecordAnyResult}
-                      allPlayers={arenaState.players}
-                    />
-                  ) : arenaState.pairedMatches.length > 0 ? (
-                    <div className="space-y-4">
-                      <CurrentRound
-                        matches={arenaState.pairedMatches}
-                        onRecordResult={(id, winner, isDraw) => recordResult(id, winner, isDraw ?? false)}
-                        playerSession={normalizedSession}
-                        onPlayerSubmit={handlePlayerSubmit}
-                        onPlayerConfirm={handlePlayerConfirm}
-                        onPlayerCancel={handlePlayerCancel}
-                        canRecordResults={permissions.canRecordAnyResult}
-                        allPlayers={arenaState.players}
-                      />
-                    </div>
-                  ) : (
-                    <Card>
-                      <CardContent className="pt-6">
-                        <p className="text-center text-muted-foreground">
-                          {arenaState.isActive ? t("results.morePairingsComingSoon") : t("results.noMatchesYet")}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )
-                })()}
-              </>
-            )}
+            <ArenaResultsTab
+              tournamentStatus={arenaState.status}
+              isActive={arenaState.isActive}
+              pairedMatches={arenaState.pairedMatches}
+              players={arenaState.players}
+              effectivePlayerView={effectivePlayerView}
+              showSimulator={showSimulator}
+              playerSession={
+                playerSession?.playerId && playerSession?.role
+                  ? { playerId: playerSession.playerId, role: playerSession.role as "player" | "organizer" }
+                  : undefined
+              }
+              canRecordResults={permissions.canRecordAnyResult}
+              onRecordResult={(id, winner, isDraw) => recordResult(id, winner, isDraw ?? false)}
+              onPlayerSubmit={handlePlayerSubmit}
+              onPlayerConfirm={handlePlayerConfirm}
+              onPlayerCancel={handlePlayerCancel}
+            />
           </TabsContent>
 
           <TabsContent value="standings">
             <Leaderboard
               players={arenaState.players}
-              effectivePlayerView={effectivePlayerView}
+              isPlayerView={effectivePlayerView}
               onOverrideResult={!effectivePlayerView ? overrideResult : undefined}
             />
           </TabsContent>
-
-          {/* Added Settings tab content */}
-          {!effectivePlayerView && activeTab === "settings" && (
-            <TabsContent value="settings" className="space-y-4">
-              <TournamentSettingsPanel
-                settings={arenaState.settings}
-                onUpdateSettings={handleUpdateSettings}
-                onClose={() => {}}
-                showSimulator={showSimulator}
-                onToggleSimulator={setShowSimulator}
-              />
-
-              {arenaState.allTimeMatches.length > 0 && (
-                <AlgorithmComparisonPanel
-                  tournamentId={tournamentId || ""}
-                  players={arenaState.players}
-                  matches={arenaState.allTimeMatches}
-                  settings={arenaState.settings}
-                />
-              )}
-            </TabsContent>
-          )}
         </Tabs>
 
         <Dialog

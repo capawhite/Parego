@@ -173,9 +173,9 @@ export function CurrentRound({
                     isPlayer1={isPlayer1}
                     mySubmission={mySubmission}
                     opponentSubmission={opponentSubmission}
-                    onSubmit={(result) => onPlayerSubmit(match.id, result)}
-                    onConfirm={(result) => onPlayerConfirm(match.id, result)}
-                    onCancel={() => onPlayerCancel(match.id)}
+                    onSubmit={(result) => onPlayerSubmit?.(match.id, result)}
+                    onConfirm={(result) => onPlayerConfirm?.(match.id, result)}
+                    onCancel={() => onPlayerCancel?.(match.id)}
                   />
                 )
               }

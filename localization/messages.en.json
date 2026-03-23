@@ -11,6 +11,21 @@
     "copyLink": "Copy link",
     "linkCopied": "Link copied!"
   },
+  "submitErrors": {
+    "MISSING_AUTH": "You must be logged in or provide a player ID to submit results.",
+    "MISSING_SUPABASE_URL": "Server configuration error: Supabase is not configured.",
+    "SERVER_MISCONFIGURED_NO_SERVICE_ROLE": "Server misconfiguration: the service role key is missing. Match results cannot be saved.",
+    "MATCH_NOT_FOUND": "Match not found.",
+    "TOURNAMENT_NOT_ACTIVE": "Tournament is not active.",
+    "MATCH_ALREADY_COMPLETED": "This match is already completed.",
+    "NOT_A_PLAYER_IN_MATCH": "You are not a player in this match. If you joined as a guest, try rejoining from the tournament link.",
+    "SAVE_RESULT_FAILED": "Could not save your result. If this persists, contact the organizer.",
+    "SUBMISSION_NOT_PERSISTED": "Your result could not be saved. The server may be misconfigured.",
+    "BAD_REQUEST_MISSING_FIELDS": "Invalid request. Please try again.",
+    "BAD_REQUEST_GUEST_NO_PLAYER_ID": "Guest players must use the join link so your session is recognized.",
+    "INVALID_RESULT": "Invalid result value.",
+    "INTERNAL_ERROR": "Something went wrong on the server."
+  },
   "layout": {
     "title": "Parego - Chess Tournament Pairing",
     "description": "Pair. Play. Go. Simple over-the-board chess tournament management with instant pairing and easy join links."
@@ -213,6 +228,8 @@
     "setupPlayersNeedTables": "{players} players • Need {tables} tables for full pairings",
     "waitingForOrganizer": "Waiting for the organizer to start",
     "playersRegisteredSoFar": "{count} registered so far",
+    "rematchAnalysisTitle": "Rematch analysis",
+    "qrJoinCodeAlt": "QR code for tournament join link",
     "playerJoinLink": "Player Join Link",
     "copy": "Copy",
     "tournamentIdLabel": "ID:",
@@ -220,6 +237,8 @@
     "joinTournament": "Join Tournament",
     "checkInAtVenue": "Check in at venue",
     "youHaveJoined": "You have joined this tournament",
+    "welcomePlayerTitle": "Welcome, {name}!",
+    "welcomePlayerBody": "You've successfully joined the tournament. Check the Pairings tab to see your matches when they're ready.",
     "searchRegisteredPlayers": "Search Registered Players",
     "orAddGuest": "Or add guest",
     "addGuestPlayer": "Add Guest Player",
@@ -282,7 +301,9 @@
     "alertCannotAddPlayerTables": "Cannot add player: Maximum simultaneous pairings ({max}) would exceed available tables ({tables}).",
     "alertNotEnoughTables": "Not enough tables! With {players} players, you need at least {tables} tables for all possible simultaneous pairings.",
     "alertRequestFailed": "Request failed ({status}). Try again.",
-    "alertStartTournamentFailed": "Failed to start tournament. Please try again."
+    "alertStartTournamentFailed": "Failed to start tournament. Please try again.",
+    "alertInvalidDurationMinutes": "Please enter a valid tournament duration (at least 1 minute).",
+    "confirmPausePlayer": "Pause {name}? They won't be paired until resumed."
   },
   "currentRound": {
     "waitingToBePaired": "Waiting to be paired",

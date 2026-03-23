@@ -107,7 +107,7 @@ export function TournamentPodium({ players, totalMatches, onClose }: TournamentP
                   <div className="text-6xl font-bold text-primary mb-2">1</div>
                   <p className="font-bold text-center text-xl text-foreground">{topThree[0].name}</p>
                   <p className="text-3xl font-bold text-primary mt-2">{topThree[0].score}</p>
-                  <p className="text-xs text-primary">points</p>
+                  <p className="text-xs text-primary">{t("podium.points")}</p>
                 </div>
               </div>
             )}

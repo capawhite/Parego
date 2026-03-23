@@ -9,15 +9,23 @@ import { createClient } from "@supabase/supabase-js"
 import { getSubmissionSide, parsePlayerData, type ResultType } from "@/lib/result-utils"
 import { calculatePointsFromSettings } from "@/lib/points"
 import { DEFAULT_SETTINGS, type TournamentSettings } from "@/lib/types"
+import type { SubmitErrorCode } from "@/lib/submit-error-codes"
+
+export type { SubmitErrorCode } from "@/lib/submit-error-codes"
 
 export interface SubmitResultResponse {
   success: boolean
   error?: string
+  errorCode?: SubmitErrorCode
   match?: any
   /** True when both players agreed and the match was completed on the server. */
   matchCompleted?: boolean
   /** When matchCompleted, new points/games/streak for the two players so client can update UI. */
   updatedPlayers?: { id: string; points: number; games_played: number; streak: number }[]
+}
+
+function reject(code: SubmitErrorCode, message: string): SubmitResultResponse {
+  return { success: false, error: message, errorCode: code }
 }
 
 function getSettings(tournament: { settings?: unknown }): TournamentSettings {
@@ -50,13 +58,42 @@ export async function submitMatchResultImpl(
 ): Promise<SubmitResultResponse> {
   const { playerId, userId } = options
   if (!userId && !playerId) {
-    return { success: false, error: "You must be logged in or provide a player ID to submit results" }
+    return reject(
+      "MISSING_AUTH",
+      "You must be logged in or provide a player ID to submit results",
+    )
   }
 
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+  if (!supabaseUrl) {
+    console.error("[submit-match-result] NEXT_PUBLIC_SUPABASE_URL is not set.")
+    return reject(
+      "MISSING_SUPABASE_URL",
+      "Server configuration error: Supabase URL is missing.",
+    )
+  }
+
+  const isProduction = process.env.NODE_ENV === "production"
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+  if (isProduction && !serviceRole) {
+    console.error(
+      "[submit-match-result] SUPABASE_SERVICE_ROLE_KEY is required in production for match writes.",
+    )
+    return reject(
+      "SERVER_MISCONFIGURED_NO_SERVICE_ROLE",
+      "Server misconfiguration: service role key is missing. Match results cannot be saved.",
+    )
+  }
+
+  const adminKey = serviceRole || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  if (!adminKey) {
+    return reject(
+      "MISSING_SUPABASE_URL",
+      "Server configuration error: no Supabase API key available.",
+    )
+  }
+
+  const adminClient = createClient(supabaseUrl, adminKey)
 
   const { data: match, error: fetchError } = await adminClient
     .from("matches")
@@ -66,7 +103,7 @@ export async function submitMatchResultImpl(
 
   if (fetchError || !match) {
     console.error("[v0] Error fetching match:", fetchError)
-    return { success: false, error: "Match not found" }
+    return reject("MATCH_NOT_FOUND", "Match not found")
   }
 
   const { data: tournament } = await adminClient
@@ -76,11 +113,11 @@ export async function submitMatchResultImpl(
     .single()
 
   if (!tournament || tournament.status !== "active") {
-    return { success: false, error: "Tournament is not active" }
+    return reject("TOURNAMENT_NOT_ACTIVE", "Tournament is not active")
   }
 
   if (match.completed) {
-    return { success: false, error: "Match is already completed" }
+    return reject("MATCH_ALREADY_COMPLETED", "Match is already completed")
   }
 
   const DEBUG = process.env.NODE_ENV === "development"
@@ -103,22 +140,24 @@ export async function submitMatchResultImpl(
 
   if (!side) {
     if (DEBUG) console.warn("[submit-match-result] Side not resolved — playerId/userId did not match match players")
-    return {
-      success: false,
-      error: "You are not a player in this match. If you joined as a guest, try refreshing and rejoining from the join link.",
-    }
+    return reject(
+      "NOT_A_PLAYER_IN_MATCH",
+      "You are not a player in this match. If you joined as a guest, try refreshing and rejoining from the join link.",
+    )
   }
 
   const submissionField = side === "player1" ? "player1_submission" : "player2_submission"
   const timestampField = side === "player1" ? "player1_submission_time" : "player2_submission_time"
 
-  const { error: updateError } = await adminClient
+  const { data: updatedMatch, error: updateError } = await adminClient
     .from("matches")
     .update({
       [submissionField]: confirmed ? result : null,
       [timestampField]: confirmed ? new Date().toISOString() : null,
     })
     .eq("id", matchId)
+    .select()
+    .single()
 
   if (updateError) {
     console.error("[v0] Error updating match submission:", updateError)
@@ -126,11 +165,25 @@ export async function submitMatchResultImpl(
     const hint = msg.includes("policy") || msg.includes("RLS") || msg.includes("42501")
       ? " (Check SUPABASE_SERVICE_ROLE_KEY is set in production.)"
       : ""
-    return { success: false, error: `Failed to save result.${hint}` }
+    return reject("SAVE_RESULT_FAILED", `Failed to save result.${hint}`)
   }
 
-  const { data: updatedMatch } = await adminClient.from("matches").select("*").eq("id", matchId).single()
-  if (!updatedMatch) return { success: true, match: updatedMatch }
+  if (!updatedMatch) {
+    console.error("[v0] Update returned no row — RLS may have blocked the write. Set SUPABASE_SERVICE_ROLE_KEY in production.")
+    return reject(
+      "SAVE_RESULT_FAILED",
+      "Your result could not be saved. The server may be misconfigured (missing service role key).",
+    )
+  }
+
+  const savedSubmission = side === "player1" ? updatedMatch.player1_submission : updatedMatch.player2_submission
+  if (confirmed && savedSubmission !== result) {
+    console.error("[v0] Submission did not persist after update (expected", result, "got", savedSubmission, ")")
+    return reject(
+      "SUBMISSION_NOT_PERSISTED",
+      "Your result could not be saved. Ensure SUPABASE_SERVICE_ROLE_KEY is set in production.",
+    )
+  }
 
   const p1Sub = updatedMatch.player1_submission
   const p2Sub = updatedMatch.player2_submission

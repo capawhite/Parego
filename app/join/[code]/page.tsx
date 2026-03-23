@@ -98,7 +98,7 @@ export default function JoinTournamentPage() {
     if (code) {
       loadTournamentData()
     }
-  }, [code])
+  }, [code, t])
 
   // Prevent duplicate joins: check DB for registered users, localStorage for guests
   useEffect(() => {
@@ -368,7 +368,8 @@ export default function JoinTournamentPage() {
           <Trophy className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h1 className="text-2xl font-bold mb-2">Tournament Not Found</h1>
           <p className="text-muted-foreground mb-4">
-            The tournament code "{code}" is invalid or the tournament has been deleted.
+            The tournament code <span className="font-mono">{code}</span> is invalid or the tournament has been
+            deleted.
           </p>
           <Button onClick={() => router.push("/")}>Go to Homepage</Button>
         </Card>

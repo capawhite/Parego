@@ -94,7 +94,7 @@ export default function NearbyPage() {
     }
 
     initLocation()
-  }, [supabase])
+  }, [supabase, t])
 
   const refreshNearby = useCallback(async (isInitialLoad = false) => {
     if (!userLocation) return
@@ -120,7 +120,7 @@ export default function NearbyPage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [userLocation, radius, timeWindow])
+  }, [userLocation, radius, timeWindow, t])
 
   // Fetch nearby tournaments when location or filters change
   useEffect(() => {
