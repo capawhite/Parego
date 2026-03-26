@@ -334,11 +334,19 @@ export async function loadMatches(tournamentId: string): Promise<Match[]> {
       }
     }
 
+    const createdMs = m.created_at ? new Date(m.created_at).getTime() : undefined
+    const completedMs = m.completed_at ? new Date(m.completed_at).getTime() : undefined
+    if (result?.completed && result.completedAt == null && completedMs != null) {
+      result = { ...result, completedAt: completedMs }
+    }
+
     return {
     id: m.id,
     player1: m.player1_data ? JSON.parse(m.player1_data) : { id: m.player1_id, name: "Unknown" },
     player2: m.player2_data ? JSON.parse(m.player2_data) : { id: m.player2_id, name: "Unknown" },
     tableNumber: m.table_number,
+    startTime: createdMs,
+    endTime: result?.completed ? completedMs ?? result.completedAt : undefined,
     result,
     player1Submission: m.player1_submission
       ? {

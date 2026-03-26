@@ -8,8 +8,9 @@ import {
   loadMatches,
   getAvatarUrls,
 } from "@/lib/database/tournament-db"
-import type { ArenaState, Player } from "@/lib/types"
+import type { ArenaState, Player, TournamentSettings } from "@/lib/types"
 import { DEFAULT_SETTINGS } from "@/lib/types"
+import { effectiveTableCountFromDb } from "@/lib/tournament/effective-table-count"
 
 const TOURNAMENT_DURATION = 60 * 60 * 1000
 const DEBUG = process.env.NODE_ENV === "development"
@@ -147,13 +148,25 @@ export function useTournamentLoad(tournamentId: string | null): TournamentLoadRe
           ? new Date(tournament.start_time).getTime()
           : null
 
+        const savedSettings =
+          tournament.settings && typeof tournament.settings === "object"
+            ? (tournament.settings as TournamentSettings)
+            : {}
+        const resolvedTables = effectiveTableCountFromDb({
+          tables_count: tournament.tables_count,
+          settings: savedSettings,
+          status: tournament.status,
+        })
+
         setArenaState((prev) => ({
           ...prev,
           players: enrichedPlayers.length > 0 ? enrichedPlayers : prev.players,
-          tableCount: tournament.tables_count,
-          settings: tournament.settings
-            ? { ...tournament.settings, tableCount: tournament.tables_count }
-            : prev.settings,
+          tableCount: resolvedTables,
+          settings: {
+            ...DEFAULT_SETTINGS,
+            ...savedSettings,
+            tableCount: resolvedTables,
+          },
           status: tournament.status,
           isActive: tournament.status === "active",
           pairedMatches: activeMatches,

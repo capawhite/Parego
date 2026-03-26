@@ -1,0 +1,5205 @@
+════════════════════════════════════════════════════════════
+  Parego Overnight Stress Test — started Tue Mar 10 01:57:20 CET 2026
+  5 passes × 100 tournaments = 500 total
+════════════════════════════════════════════════════════════
+
+──── PASS 1 / 5  [01:57:21] ────────────────────────────
+[dotenv@17.3.1] injecting env (3) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+════════════════════════════════════════════════════════════
+  Parego Tournament Simulation
+  100 tournaments × 24 players × 6 rounds
+  Batch size: 5 parallel tournaments
+════════════════════════════════════════════════════════════
+
+[00:57:21] [RUNNER] Batch 1/20: tournaments 1–5
+[00:57:21] [T1] ▶ Starting simulation
+[00:57:21] [T2] ▶ Starting simulation
+[00:57:21] [T3] ▶ Starting simulation
+[00:57:21] [T4] ▶ Starting simulation
+[00:57:21] [T5] ▶ Starting simulation
+[00:57:23] [T4] Round 1/6
+[00:57:23] [T3] Round 1/6
+[00:57:23] [T2] Round 1/6
+[00:57:23] [T1] Round 1/6
+[00:57:23] [T5] Round 1/6
+[00:57:30] [T4] Round 2/6
+[00:57:30] [T2] Round 2/6
+[00:57:30] [T3] Round 2/6
+[00:57:30] [T1] Round 2/6
+[00:57:30] [T5] Round 2/6
+[00:57:37] [T4] Round 3/6
+[00:57:37] [T3] Round 3/6
+[00:57:37] [T2] Round 3/6
+[00:57:37] [T1] Round 3/6
+[00:57:37] [T5] Round 3/6
+[00:57:44] [T4] Round 4/6
+[00:57:44] [T3] Round 4/6
+[00:57:44] [T2] Round 4/6
+[00:57:45] [T1] Round 4/6
+[00:57:45] [T5] Round 4/6
+[00:57:52] [T4] Round 5/6
+[00:57:52] [T2] Round 5/6
+[00:57:52] [T1] Round 5/6
+[00:57:52] [T3] Round 5/6
+[00:57:52] [T5] Round 5/6
+[01:13:16] [T2] ❌ FAIL [round-5-submission]: Player2 submit failed: TypeError: fetch failed
+[01:13:16] [T4] ❌ FAIL [round-5-submission]: Player1 submit failed: TypeError: fetch failed
+[01:13:24] [T4] Round 6/6
+[01:13:25] [T2] Round 6/6
+[01:13:32] [T4] ✓ Complete
+[01:13:32] [T2] ✓ Complete
+[01:13:58] [T3] ❌ FAIL [round-5-submission]: Player1 submit failed: TypeError: fetch failed
+[01:13:58] [T1] ❌ FAIL [round-5-submission]: Player1 submit failed: TypeError: fetch failed
+[01:13:58] [T5] ❌ FAIL [round-5-submission]: Player1 submit failed: TypeError: fetch failed
+[01:14:04] [T3] Round 6/6
+[01:14:05] [T1] Round 6/6
+[01:14:05] [T5] Round 6/6
+[01:14:13] [T3] ✓ Complete
+[01:14:13] [T1] ✓ Complete
+[01:14:13] [T5] ✓ Complete
+[01:14:13] [RUNNER] Batch complete. Cooling down 2s...
+[01:14:15] [RUNNER] Batch 2/20: tournaments 6–10
+[01:14:15] [T6] ▶ Starting simulation
+[01:14:15] [T7] ▶ Starting simulation
+[01:14:15] [T8] ▶ Starting simulation
+[01:14:15] [T9] ▶ Starting simulation
+[01:14:15] [T10] ▶ Starting simulation
+[01:14:16] [T8] Round 1/6
+[01:14:16] [T6] Round 1/6
+[01:14:17] [T7] Round 1/6
+[01:14:17] [T10] Round 1/6
+[01:14:17] [T9] Round 1/6
+[01:14:24] [T8] Round 2/6
+[01:14:24] [T9] Round 2/6
+[01:14:24] [T7] Round 2/6
+[01:14:24] [T10] Round 2/6
+[01:14:24] [T6] Round 2/6
+[01:14:26] [T6] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[01:14:26] [T8] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[01:14:26] [T7] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[01:14:26] [T9] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[01:14:26] [T10] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[01:14:31] [T8] Round 3/6
+[01:14:31] [T10] Round 3/6
+[01:14:31] [T7] Round 3/6
+[01:14:31] [T9] Round 3/6
+[01:14:32] [T6] Round 3/6
+[01:31:26] [T8] ❌ FAIL [round-3-submission]: Player1 submit failed: TypeError: fetch failed
+[01:31:26] [T10] ❌ FAIL [round-3-submission]: Player1 submit failed: TypeError: fetch failed
+[01:31:34] [T8] Round 4/6
+[01:31:34] [T10] Round 4/6
+[01:31:39] [T9] ❌ FAIL [round-3-submission]: Player1 submit failed: TypeError: fetch failed
+[01:31:42] [T8] Round 5/6
+[01:31:42] [T10] Round 5/6
+[01:31:44] [T9] Round 4/6
+[01:31:49] [T10] Round 6/6
+[01:31:49] [T8] Round 6/6
+[01:31:51] [T9] Round 5/6
+[01:49:06] [T7] ❌ FAIL [round-3-confirm]: TypeError: fetch failed
+[01:49:06] [T6] ❌ FAIL [round-3-submission]: Player1 submit failed: TypeError: fetch failed
+[01:49:12] [T7] Round 4/6
+[01:49:13] [T6] Round 4/6
+[01:49:13] [T8] ❌ FAIL [sync-standings]: TypeError: fetch failed
+[01:49:13] [T8] ✓ Complete
+[01:49:21] [T6] Round 5/6
+[01:49:21] [T7] Round 5/6
+[01:49:28] [T6] Round 6/6
+[01:49:28] [T7] Round 6/6
+[01:49:36] [T6] ✓ Complete
+[01:49:36] [T7] ✓ Complete
+[01:49:36] [T10] ❌ FAIL [sync-standings]: TypeError: fetch failed
+[01:49:36] [T10] ✓ Complete
+[01:49:54] [T9] ❌ FAIL [round-5-confirm]: TypeError: fetch failed
+[01:49:56] [T9] Round 6/6
+[02:22:52] [T9] ❌ FAIL [round-6-confirm]: TypeError: fetch failed
+[02:23:00] [T9] ✓ Complete
+[02:23:00] [RUNNER] Batch complete. Cooling down 2s...
+[02:23:02] [RUNNER] Batch 3/20: tournaments 11–15
+[02:23:02] [T11] ▶ Starting simulation
+[02:23:02] [T12] ▶ Starting simulation
+[02:23:02] [T13] ▶ Starting simulation
+[02:23:02] [T14] ▶ Starting simulation
+[02:23:02] [T15] ▶ Starting simulation
+[02:23:04] [T12] Round 1/6
+[02:23:04] [T11] Round 1/6
+[02:23:04] [T14] Round 1/6
+[02:23:04] [T13] Round 1/6
+[02:23:05] [T15] Round 1/6
+[02:23:12] [T11] Round 2/6
+[02:23:12] [T12] Round 2/6
+[02:23:12] [T14] Round 2/6
+[02:23:12] [T13] Round 2/6
+[02:23:12] [T15] Round 2/6
+[02:23:13] [T12] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[02:23:13] [T11] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[02:23:13] [T13] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[02:23:13] [T14] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[02:23:13] [T15] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[02:23:19] [T12] Round 3/6
+[02:23:20] [T14] Round 3/6
+[02:23:20] [T11] Round 3/6
+[02:23:20] [T13] Round 3/6
+[02:23:20] [T15] Round 3/6
+[02:23:27] [T12] Round 4/6
+[02:23:27] [T14] Round 4/6
+[02:23:27] [T11] Round 4/6
+[02:23:27] [T13] Round 4/6
+[02:23:27] [T15] Round 4/6
+[02:38:46] [T11] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[02:38:54] [T11] Round 5/6
+[02:39:02] [T11] Round 6/6
+[02:39:09] [T11] ✓ Complete
+[02:45:16] [T13] ❌ FAIL [round-4-confirm]: TypeError: fetch failed
+[02:45:16] [T12] ❌ FAIL [round-4-submission]: Player2 submit failed: TypeError: fetch failed
+[02:45:16] [T14] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[02:45:16] [T15] ❌ FAIL [round-4-submission]: Player2 submit failed: TypeError: fetch failed
+[02:45:23] [T12] Round 5/6
+[02:45:24] [T14] Round 5/6
+[02:45:24] [T15] Round 5/6
+[02:45:24] [T13] Round 5/6
+[02:45:32] [T12] Round 6/6
+[02:45:33] [T14] Round 6/6
+[02:45:33] [T15] Round 6/6
+[02:45:34] [T13] Round 6/6
+[02:45:40] [T12] ✓ Complete
+[02:45:40] [T15] ✓ Complete
+[02:45:40] [T14] ✓ Complete
+[02:45:41] [T13] ✓ Complete
+[02:45:41] [RUNNER] Batch complete. Cooling down 2s...
+[02:45:43] [RUNNER] Batch 4/20: tournaments 16–20
+[02:45:43] [T16] ▶ Starting simulation
+[02:45:43] [T17] ▶ Starting simulation
+[02:45:43] [T18] ▶ Starting simulation
+[02:45:43] [T19] ▶ Starting simulation
+[02:45:43] [T20] ▶ Starting simulation
+[02:45:44] [T20] Round 1/6
+[02:45:44] [T18] Round 1/6
+[02:45:44] [T16] Round 1/6
+[02:45:44] [T17] Round 1/6
+[02:45:44] [T19] Round 1/6
+[02:45:51] [T20] Round 2/6
+[02:45:51] [T18] Round 2/6
+[02:45:51] [T17] Round 2/6
+[02:45:51] [T19] Round 2/6
+[02:45:51] [T16] Round 2/6
+[03:01:30] [T16] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[03:01:30] [T17] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[03:01:30] [T20] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[03:01:30] [T18] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[03:01:30] [T19] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[03:01:47] [T18] ❌ FAIL [round-2-submission]: Player2 submit failed: TypeError: fetch failed
+[03:01:51] [T20] ❌ FAIL [round-2-submission]: Player2 submit failed: TypeError: fetch failed
+[03:01:55] [T18] Round 3/6
+[03:01:59] [T20] Round 3/6
+[03:02:00] [T17] ❌ FAIL [round-2-submission]: Player1 submit failed: TypeError: fetch failed
+[03:02:03] [T18] Round 4/6
+[03:02:06] [T20] Round 4/6
+[03:02:07] [T17] Round 3/6
+[03:02:10] [T18] Round 5/6
+[03:02:13] [T17] Round 4/6
+[03:02:13] [T20] Round 5/6
+[03:02:17] [T18] Round 6/6
+[03:02:21] [T17] Round 5/6
+[03:02:21] [T20] Round 6/6
+[03:02:25] [T18] ✓ Complete
+[03:02:29] [T20] ✓ Complete
+[03:02:29] [T16] ❌ FAIL [round-2-submission]: Player2 submit failed: TypeError: fetch failed
+[03:02:29] [T19] ❌ FAIL [round-2-confirm]: TypeError: fetch failed
+[03:02:29] [T17] Round 6/6
+[03:18:20] [T19] Round 3/6
+[03:18:38] [T19] ❌ FAIL [round-3-insert]: TypeError: fetch failed
+[03:18:39] [T19] Round 4/6
+[03:18:49] [T19] Round 5/6
+[03:18:56] [T19] Round 6/6
+[03:19:03] [T19] ✓ Complete
+[03:35:09] [T17] ❌ FAIL [round-6-submission]: Player1 submit failed: TypeError: fetch failed
+[03:35:09] [T16] ❌ FAIL [round-2-submission]: Player2 submit failed: TypeError: fetch failed
+[03:35:19] [T17] ❌ FAIL [round-6-submission]: Player2 submit failed: TypeError: fetch failed
+[03:35:19] [T16] ❌ FAIL [round-2-confirm]: TypeError: fetch failed
+[03:35:21] [T16] Round 3/6
+[03:35:30] [T17] ❌ FAIL [round-6-confirm]: TypeError: fetch failed
+[03:35:31] [T16] ❌ FAIL [round-3-insert]: TypeError: fetch failed
+[03:35:33] [T16] Round 4/6
+[03:36:05] [T17] ❌ FAIL [round-6-submission]: Player1 submit failed: TypeError: fetch failed
+[03:36:08] [T16] ❌ FAIL [round-4-insert]: TypeError: fetch failed
+[03:36:09] [T16] Round 5/6
+[03:36:16] [T17] ❌ FAIL [round-6-submission]: Player2 submit failed: TypeError: fetch failed
+[03:36:19] [T16] ❌ FAIL [round-5-insert]: TypeError: fetch failed
+[03:36:21] [T16] Round 6/6
+[03:36:26] [T17] ❌ FAIL [round-6-confirm]: TypeError: fetch failed
+[03:36:31] [T16] ❌ FAIL [round-6-insert]: TypeError: fetch failed
+[03:36:38] [T17] ❌ FAIL [sync-standings]: TypeError: fetch failed
+[03:36:43] [T16] ❌ FAIL [sync-standings]: TypeError: fetch failed
+[03:36:49] [T16] ✓ Complete
+[03:36:49] [T17] ✓ Complete
+[03:36:49] [RUNNER] Batch complete. Cooling down 2s...
+[03:36:51] [RUNNER] Batch 5/20: tournaments 21–25
+[03:36:51] [T21] ▶ Starting simulation
+[03:36:51] [T22] ▶ Starting simulation
+[03:36:51] [T23] ▶ Starting simulation
+[03:36:51] [T24] ▶ Starting simulation
+[03:36:51] [T25] ▶ Starting simulation
+[03:36:53] [T23] Round 1/6
+[03:36:53] [T21] Round 1/6
+[03:36:53] [T25] Round 1/6
+[03:36:53] [T24] Round 1/6
+[03:36:53] [T22] Round 1/6
+[03:37:00] [T23] Round 2/6
+[03:37:00] [T21] Round 2/6
+[03:37:00] [T24] Round 2/6
+[03:37:01] [T25] Round 2/6
+[03:37:01] [T22] Round 2/6
+[03:37:02] [T22] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[03:37:02] [T21] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[03:37:02] [T23] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[03:37:02] [T24] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[03:37:02] [T25] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[03:37:08] [T23] Round 3/6
+[03:37:08] [T25] Round 3/6
+[03:37:08] [T21] Round 3/6
+[03:37:08] [T24] Round 3/6
+[03:37:08] [T22] Round 3/6
+[03:37:15] [T23] Round 4/6
+[03:37:15] [T25] Round 4/6
+[03:37:15] [T21] Round 4/6
+[03:37:15] [T24] Round 4/6
+[03:37:15] [T22] Round 4/6
+[03:37:22] [T25] Round 5/6
+[03:37:22] [T23] Round 5/6
+[03:37:22] [T21] Round 5/6
+[03:37:22] [T24] Round 5/6
+[03:37:23] [T22] Round 5/6
+[03:37:29] [T23] Round 6/6
+[03:37:29] [T21] Round 6/6
+[03:37:29] [T24] Round 6/6
+[03:37:29] [T25] Round 6/6
+[03:37:30] [T22] Round 6/6
+[03:37:38] [T24] ✓ Complete
+[03:37:39] [T21] ✓ Complete
+[03:37:39] [T23] ✓ Complete
+[03:37:39] [T25] ✓ Complete
+[03:37:39] [T22] ✓ Complete
+[03:37:39] [RUNNER] Batch complete. Cooling down 2s...
+[03:37:41] [RUNNER] Batch 6/20: tournaments 26–30
+[03:37:41] [T26] ▶ Starting simulation
+[03:37:41] [T27] ▶ Starting simulation
+[03:37:41] [T28] ▶ Starting simulation
+[03:37:41] [T29] ▶ Starting simulation
+[03:37:41] [T30] ▶ Starting simulation
+[03:37:43] [T30] Round 1/6
+[03:37:43] [T26] Round 1/6
+[03:37:43] [T27] Round 1/6
+[03:37:43] [T28] Round 1/6
+[03:37:43] [T29] Round 1/6
+[03:37:50] [T27] Round 2/6
+[03:37:50] [T30] Round 2/6
+[03:37:50] [T26] Round 2/6
+[03:37:50] [T28] Round 2/6
+[03:37:50] [T29] Round 2/6
+[03:37:57] [T27] Round 3/6
+[03:37:57] [T30] Round 3/6
+[03:37:57] [T28] Round 3/6
+[03:37:57] [T26] Round 3/6
+[03:37:57] [T29] Round 3/6
+[04:03:51] [T27] ❌ FAIL [round-3-confirm]: TypeError: fetch failed
+[04:03:51] [T30] ❌ FAIL [round-3-confirm]: TypeError: fetch failed
+[04:03:51] [T26] ❌ FAIL [round-3-confirm]: TypeError: fetch failed
+[04:03:51] [T28] ❌ FAIL [round-3-confirm]: TypeError: fetch failed
+[04:03:51] [T29] ❌ FAIL [round-3-submission]: Player2 submit failed: TypeError: fetch failed
+[04:03:58] [T27] Round 4/6
+[04:03:59] [T28] Round 4/6
+[04:03:59] [T30] Round 4/6
+[04:03:59] [T29] Round 4/6
+[04:03:59] [T26] Round 4/6
+[04:04:07] [T27] Round 5/6
+[04:04:07] [T29] Round 5/6
+[04:04:08] [T30] Round 5/6
+[04:04:08] [T28] Round 5/6
+[04:04:08] [T26] Round 5/6
+[04:04:14] [T27] Round 6/6
+[04:04:14] [T29] Round 6/6
+[04:04:15] [T30] Round 6/6
+[04:04:15] [T28] Round 6/6
+[04:04:15] [T26] Round 6/6
+[04:04:22] [T29] ✓ Complete
+[04:04:22] [T27] ✓ Complete
+[04:04:22] [T30] ✓ Complete
+[04:04:22] [T28] ✓ Complete
+[04:04:23] [T26] ✓ Complete
+[04:04:23] [RUNNER] Batch complete. Cooling down 2s...
+[04:04:25] [RUNNER] Batch 7/20: tournaments 31–35
+[04:04:25] [T31] ▶ Starting simulation
+[04:04:25] [T32] ▶ Starting simulation
+[04:04:25] [T33] ▶ Starting simulation
+[04:04:25] [T34] ▶ Starting simulation
+[04:04:25] [T35] ▶ Starting simulation
+[04:04:26] [T33] Round 1/6
+[04:04:26] [T34] Round 1/6
+[04:04:27] [T35] Round 1/6
+[04:04:27] [T32] Round 1/6
+[04:04:27] [T31] Round 1/6
+[04:04:33] [T33] Round 2/6
+[04:04:34] [T34] Round 2/6
+[04:04:34] [T35] Round 2/6
+[04:04:34] [T32] Round 2/6
+[04:04:34] [T31] Round 2/6
+[04:04:35] [T33] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[04:04:35] [T34] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[04:04:41] [T34] Round 3/6
+[04:04:41] [T33] Round 3/6
+[04:04:41] [T35] Round 3/6
+[04:04:41] [T32] Round 3/6
+[04:04:42] [T31] Round 3/6
+[04:37:45] [T31] ❌ FAIL [round-3-submission]: Player1 submit failed: TypeError: fetch failed
+[04:37:45] [T32] ❌ FAIL [round-3-confirm]: TypeError: fetch failed
+[04:37:45] [T35] ❌ FAIL [round-3-submission]: Player1 submit failed: TypeError: fetch failed
+[04:37:45] [T33] ❌ FAIL [round-3-confirm]: TypeError: fetch failed
+[04:37:45] [T34] ❌ FAIL [round-3-submission]: Player1 submit failed: TypeError: fetch failed
+[04:37:51] [T33] Round 4/6
+[04:37:52] [T34] Round 4/6
+[04:37:52] [T32] Round 4/6
+[04:37:52] [T35] Round 4/6
+[04:37:53] [T31] Round 4/6
+[04:37:59] [T33] Round 5/6
+[04:37:59] [T34] Round 5/6
+[04:37:59] [T32] Round 5/6
+[04:38:00] [T35] Round 5/6
+[04:38:00] [T31] Round 5/6
+[04:38:08] [T33] Round 6/6
+[04:38:08] [T32] Round 6/6
+[04:38:08] [T34] Round 6/6
+[04:38:08] [T31] Round 6/6
+[04:38:08] [T35] Round 6/6
+[04:38:15] [T32] ✓ Complete
+[04:38:15] [T34] ✓ Complete
+[04:38:15] [T31] ✓ Complete
+[04:38:15] [T33] ✓ Complete
+[04:38:15] [T35] ✓ Complete
+[04:38:15] [RUNNER] Batch complete. Cooling down 2s...
+[04:38:17] [RUNNER] Batch 8/20: tournaments 36–40
+[04:38:17] [T36] ▶ Starting simulation
+[04:38:17] [T37] ▶ Starting simulation
+[04:38:17] [T38] ▶ Starting simulation
+[04:38:17] [T39] ▶ Starting simulation
+[04:38:17] [T40] ▶ Starting simulation
+[04:38:18] [T40] Round 1/6
+[04:38:18] [T38] Round 1/6
+[04:38:18] [T36] Round 1/6
+[04:38:18] [T37] Round 1/6
+[04:38:19] [T39] Round 1/6
+[04:47:04] [T40] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[04:47:04] [T36] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[04:47:04] [T38] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[04:47:04] [T37] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[04:47:04] [T39] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[04:47:29] [T39] ❌ FAIL [round-1-submission]: Player1 submit failed: TypeError: fetch failed
+[04:47:35] [T39] Round 2/6
+[04:47:43] [T39] Round 3/6
+[04:47:50] [T39] Round 4/6
+[04:58:29] [T40] ❌ FAIL [round-1-submission]: Player2 submit failed: TypeError: fetch failed
+[04:58:29] [T38] ❌ FAIL [round-1-submission]: Player1 submit failed: TypeError: fetch failed
+[04:58:29] [T37] ❌ FAIL [round-1-submission]: Player1 submit failed: TypeError: fetch failed
+[04:58:29] [T36] ❌ FAIL [round-1-submission]: Player2 submit failed: TypeError: fetch failed
+[04:58:35] [T36] Round 2/6
+[04:58:35] [T40] Round 2/6
+[04:58:35] [T38] Round 2/6
+[04:58:35] [T37] Round 2/6
+[04:58:43] [T40] Round 3/6
+[04:58:43] [T38] Round 3/6
+[04:58:43] [T36] Round 3/6
+[04:58:43] [T37] Round 3/6
+[04:58:50] [T37] Round 4/6
+[04:58:51] [T36] Round 4/6
+[04:58:51] [T40] Round 4/6
+[04:58:51] [T38] Round 4/6
+[04:58:57] [T37] Round 5/6
+[04:58:58] [T36] Round 5/6
+[04:58:58] [T40] Round 5/6
+[04:58:58] [T38] Round 5/6
+[04:59:04] [T37] Round 6/6
+[04:59:05] [T36] Round 6/6
+[04:59:05] [T40] Round 6/6
+[04:59:05] [T38] Round 6/6
+[04:59:11] [T37] ✓ Complete
+[04:59:12] [T40] ✓ Complete
+[04:59:12] [T36] ✓ Complete
+[04:59:13] [T38] ✓ Complete
+[04:59:17] [T39] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[05:14:25] [T39] Round 5/6
+[05:14:35] [T39] Round 6/6
+[05:14:42] [T39] ✓ Complete
+[05:14:42] [RUNNER] Batch complete. Cooling down 2s...
+[05:14:44] [RUNNER] Batch 9/20: tournaments 41–45
+[05:14:44] [T41] ▶ Starting simulation
+[05:14:44] [T42] ▶ Starting simulation
+[05:14:44] [T43] ▶ Starting simulation
+[05:14:44] [T44] ▶ Starting simulation
+[05:14:44] [T45] ▶ Starting simulation
+[05:14:45] [T41] Round 1/6
+[05:14:45] [T42] Round 1/6
+[05:14:45] [T44] Round 1/6
+[05:14:45] [T43] Round 1/6
+[05:14:46] [T45] Round 1/6
+[05:14:54] [T42] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[05:14:54] [T41] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[05:14:54] [T41] Round 2/6
+[05:14:54] [T42] Round 2/6
+[05:14:54] [T43] Round 2/6
+[05:14:54] [T44] Round 2/6
+[05:14:54] [T44] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[05:14:54] [T43] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[05:14:54] [T45] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[05:14:55] [T45] Round 2/6
+[05:15:02] [T41] Round 3/6
+[05:15:02] [T43] Round 3/6
+[05:15:02] [T42] Round 3/6
+[05:15:02] [T44] Round 3/6
+[05:15:02] [T45] Round 3/6
+[05:15:08] [T41] Round 4/6
+[05:15:09] [T43] Round 4/6
+[05:15:09] [T44] Round 4/6
+[05:15:09] [T42] Round 4/6
+[05:15:09] [T45] Round 4/6
+[05:33:16] [T43] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[05:33:20] [T43] Round 5/6
+[05:48:04] [T43] Round 6/6
+[05:48:16] [T45] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[05:48:16] [T41] ❌ FAIL [round-4-submission]: Player2 submit failed: TypeError: fetch failed
+[05:48:16] [T44] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[05:48:16] [T42] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[05:48:19] [T41] Round 5/6
+[05:48:20] [T42] Round 5/6
+[05:48:20] [T44] Round 5/6
+[05:48:20] [T45] Round 5/6
+[05:48:23] [T43] ❌ FAIL [round-6-insert]: TypeError: fetch failed
+[05:48:25] [T43] ✓ Complete
+[05:48:26] [T41] Round 6/6
+[05:48:27] [T44] Round 6/6
+[05:48:27] [T42] Round 6/6
+[05:48:28] [T45] Round 6/6
+[05:48:35] [T41] ✓ Complete
+[05:48:36] [T44] ✓ Complete
+[05:48:36] [T45] ✓ Complete
+[05:48:36] [T42] ✓ Complete
+[05:48:36] [RUNNER] Batch complete. Cooling down 2s...
+[05:48:38] [RUNNER] Batch 10/20: tournaments 46–50
+[05:48:38] [T46] ▶ Starting simulation
+[05:48:38] [T47] ▶ Starting simulation
+[05:48:38] [T48] ▶ Starting simulation
+[05:48:38] [T49] ▶ Starting simulation
+[05:48:38] [T50] ▶ Starting simulation
+[05:48:39] [T47] Round 1/6
+[05:48:39] [T46] Round 1/6
+[05:48:40] [T49] Round 1/6
+[05:48:40] [T50] Round 1/6
+[05:48:40] [T48] Round 1/6
+[05:48:46] [T46] Round 2/6
+[05:48:46] [T47] Round 2/6
+[05:48:47] [T49] Round 2/6
+[05:48:47] [T50] Round 2/6
+[05:48:47] [T48] Round 2/6
+[05:48:49] [T47] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[05:48:49] [T46] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[05:48:49] [T48] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[05:48:49] [T49] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[05:48:49] [T50] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[06:05:00] [T50] ❌ FAIL [round-2-submission]: Player1 submit failed: TypeError: fetch failed
+[06:05:04] [T50] Round 3/6
+[06:05:12] [T50] Round 4/6
+[06:05:19] [T49] ❌ FAIL [round-2-submission]: Player1 submit failed: TypeError: fetch failed
+[06:05:20] [T50] Round 5/6
+[06:05:21] [T49] Round 3/6
+[06:20:54] [T50] Round 6/6
+[06:21:04] [T50] ✓ Complete
+[06:21:06] [T47] ❌ FAIL [round-2-confirm]: TypeError: fetch failed
+[06:21:06] [T48] ❌ FAIL [round-2-confirm]: TypeError: fetch failed
+[06:21:06] [T46] ❌ FAIL [round-2-confirm]: TypeError: fetch failed
+[06:21:08] [T46] Round 3/6
+[06:21:08] [T48] Round 3/6
+[06:21:08] [T47] Round 3/6
+[06:21:16] [T46] Round 4/6
+[06:21:16] [T48] Round 4/6
+[06:21:16] [T47] Round 4/6
+[06:21:25] [T48] Round 5/6
+[06:21:25] [T46] Round 5/6
+[06:21:25] [T47] Round 5/6
+[06:21:32] [T48] Round 6/6
+[06:21:32] [T46] Round 6/6
+[06:21:32] [T47] Round 6/6
+[06:21:39] [T48] ✓ Complete
+[06:21:39] [T46] ✓ Complete
+[06:21:40] [T47] ✓ Complete
+[06:39:24] [T49] ❌ FAIL [round-3-confirm]: TypeError: fetch failed
+[06:39:28] [T49] Round 4/6
+[06:39:37] [T49] Round 5/6
+[06:39:45] [T49] Round 6/6
+[06:39:53] [T49] ✓ Complete
+[06:39:53] [RUNNER] Batch complete. Cooling down 2s...
+[06:39:55] [RUNNER] Batch 11/20: tournaments 51–55
+[06:39:55] [T51] ▶ Starting simulation
+[06:39:55] [T52] ▶ Starting simulation
+[06:39:55] [T53] ▶ Starting simulation
+[06:39:55] [T54] ▶ Starting simulation
+[06:39:55] [T55] ▶ Starting simulation
+[06:39:56] [T51] Round 1/6
+[06:39:56] [T54] Round 1/6
+[06:39:56] [T53] Round 1/6
+[06:39:56] [T52] Round 1/6
+[06:39:57] [T55] Round 1/6
+[06:49:04] [T51] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[06:49:04] [T52] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[06:49:04] [T54] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[06:49:04] [T53] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[06:49:04] [T55] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[06:49:49] [T52] ❌ FAIL [round-1-submission]: Player1 submit failed: TypeError: fetch failed
+[06:49:53] [T52] Round 2/6
+[06:50:00] [T52] Round 3/6
+[06:50:04] [T53] ❌ FAIL [round-1-confirm]: TypeError: fetch failed
+[06:50:04] [T51] ❌ FAIL [round-1-submission]: Player1 submit failed: TypeError: fetch failed
+[06:50:04] [T55] ❌ FAIL [round-1-confirm]: TypeError: fetch failed
+[06:50:04] [T54] ❌ FAIL [round-1-submission]: Player1 submit failed: TypeError: fetch failed
+[06:50:08] [T52] Round 4/6
+[07:05:36] [T51] Round 2/6
+[07:05:36] [T54] Round 2/6
+[07:05:36] [T53] Round 2/6
+[07:05:36] [T55] Round 2/6
+[07:05:54] [T51] ❌ FAIL [round-2-insert]: TypeError: fetch failed
+[07:05:54] [T55] ❌ FAIL [round-2-insert]: TypeError: fetch failed
+[07:05:54] [T53] ❌ FAIL [round-2-insert]: TypeError: fetch failed
+[07:05:54] [T54] ❌ FAIL [round-2-insert]: TypeError: fetch failed
+[07:05:55] [T51] Round 3/6
+[07:05:55] [T55] Round 3/6
+[07:05:55] [T53] Round 3/6
+[07:05:55] [T54] Round 3/6
+[07:06:06] [T55] Round 4/6
+[07:06:06] [T53] Round 4/6
+[07:06:06] [T51] Round 4/6
+[07:06:06] [T54] Round 4/6
+[07:06:13] [T55] Round 5/6
+[07:06:13] [T53] Round 5/6
+[07:06:13] [T51] Round 5/6
+[07:06:13] [T54] Round 5/6
+[07:06:20] [T54] Round 6/6
+[07:06:20] [T53] Round 6/6
+[07:06:20] [T55] Round 6/6
+[07:06:20] [T51] Round 6/6
+[07:21:55] [T52] ❌ FAIL [round-4-insert]: TypeError: fetch failed
+[07:21:57] [T52] Round 5/6
+[07:22:02] [T51] ❌ FAIL [round-6-submission]: Player2 submit failed: TypeError: fetch failed
+[07:22:05] [T52] Round 6/6
+[07:22:07] [T51] ✓ Complete
+[07:22:14] [T52] ✓ Complete
+[07:38:49] [T54] ❌ FAIL [round-6-submission]: Player1 submit failed: TypeError: fetch failed
+[07:38:49] [T55] ❌ FAIL [round-6-submission]: Player2 submit failed: TypeError: fetch failed
+[07:38:49] [T53] ❌ FAIL [round-6-confirm]: TypeError: fetch failed
+[07:38:54] [T54] ✓ Complete
+[07:38:55] [T53] ✓ Complete
+[07:38:55] [T55] ✓ Complete
+[07:38:55] [RUNNER] Batch complete. Cooling down 2s...
+[07:38:57] [RUNNER] Batch 12/20: tournaments 56–60
+[07:38:57] [T56] ▶ Starting simulation
+[07:38:57] [T57] ▶ Starting simulation
+[07:38:57] [T58] ▶ Starting simulation
+[07:38:57] [T59] ▶ Starting simulation
+[07:38:57] [T60] ▶ Starting simulation
+[07:38:59] [T56] Round 1/6
+[07:38:59] [T59] Round 1/6
+[07:38:59] [T58] Round 1/6
+[07:38:59] [T60] Round 1/6
+[07:38:59] [T57] Round 1/6
+[07:39:08] [T56] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[07:39:08] [T59] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[07:39:08] [T58] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[07:39:08] [T57] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[07:39:08] [T60] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[07:39:08] [T58] Round 2/6
+[07:39:08] [T57] Round 2/6
+[07:39:08] [T56] Round 2/6
+[07:39:08] [T60] Round 2/6
+[07:39:08] [T59] Round 2/6
+[07:39:16] [T58] Round 3/6
+[07:39:16] [T57] Round 3/6
+[07:39:16] [T56] Round 3/6
+[07:39:16] [T59] Round 3/6
+[07:39:16] [T60] Round 3/6
+[07:39:23] [T57] Round 4/6
+[07:39:23] [T58] Round 4/6
+[07:39:23] [T60] Round 4/6
+[07:39:24] [T56] Round 4/6
+[07:39:24] [T59] Round 4/6
+[07:50:35] [T58] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[07:50:44] [T58] Round 5/6
+[07:50:51] [T58] Round 6/6
+[07:50:59] [T58] ✓ Complete
+[07:51:05] [T59] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[07:51:05] [T56] ❌ FAIL [round-4-confirm]: TypeError: fetch failed
+[07:51:05] [T57] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[07:51:05] [T60] ❌ FAIL [round-4-submission]: Player2 submit failed: TypeError: fetch failed
+[08:06:55] [T57] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[08:06:58] [T57] Round 5/6
+[08:07:07] [T57] Round 6/6
+[08:07:15] [T57] ✓ Complete
+[08:24:16] [T60] ❌ FAIL [round-4-submission]: Player2 submit failed: TypeError: fetch failed
+[08:24:16] [T59] ❌ FAIL [round-4-submission]: Player1 submit failed: TypeError: fetch failed
+[08:24:16] [T56] ❌ FAIL [round-4-confirm]: TypeError: fetch failed
+[08:24:21] [T56] Round 5/6
+[08:24:21] [T60] Round 5/6
+[08:24:21] [T59] Round 5/6
+[08:24:29] [T56] Round 6/6
+[08:24:29] [T60] Round 6/6
+[08:24:30] [T59] Round 6/6
+[08:24:37] [T60] ✓ Complete
+[08:24:37] [T56] ✓ Complete
+[08:24:38] [T59] ✓ Complete
+[08:24:38] [RUNNER] Batch complete. Cooling down 2s...
+[08:24:40] [RUNNER] Batch 13/20: tournaments 61–65
+[08:24:40] [T61] ▶ Starting simulation
+[08:24:40] [T62] ▶ Starting simulation
+[08:24:40] [T63] ▶ Starting simulation
+[08:24:40] [T64] ▶ Starting simulation
+[08:24:40] [T65] ▶ Starting simulation
+[08:24:41] [T61] Round 1/6
+[08:24:41] [T62] Round 1/6
+[08:24:41] [T64] Round 1/6
+[08:24:41] [T63] Round 1/6
+[08:24:41] [T65] Round 1/6
+[08:24:49] [T64] Round 2/6
+[08:24:49] [T63] Round 2/6
+[08:24:49] [T62] Round 2/6
+[08:24:49] [T65] Round 2/6
+[08:24:49] [T61] Round 2/6
+[08:24:50] [T64] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[08:24:50] [T62] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[08:24:50] [T61] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[08:24:50] [T65] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[08:24:50] [T63] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[08:41:15] [T65] ❌ FAIL [round-2-submission]: Player1 submit failed: TypeError: fetch failed
+[08:41:22] [T65] Round 3/6
+[08:41:29] [T65] Round 4/6
+[08:41:36] [T65] Round 5/6
+[08:41:45] [T65] Round 6/6
+[08:41:53] [T65] ✓ Complete
+[08:51:18] [T64] ❌ FAIL [round-2-submission]: Player1 submit failed: TypeError: fetch failed
+[08:51:18] [T61] ❌ FAIL [round-2-confirm]: TypeError: fetch failed
+[08:51:18] [T63] ❌ FAIL [round-2-confirm]: TypeError: fetch failed
+[08:51:22] [T64] Round 3/6
+[08:51:23] [T63] Round 3/6
+[08:51:24] [T61] Round 3/6
+[08:51:27] [T62] ❌ FAIL [round-2-submission]: Player1 submit failed: TypeError: fetch failed
+[08:51:31] [T64] Round 4/6
+[08:51:32] [T63] Round 4/6
+[08:51:32] [T61] Round 4/6
+[08:51:33] [T62] Round 3/6
+[08:51:39] [T64] Round 5/6
+[08:51:40] [T63] Round 5/6
+[08:51:40] [T61] Round 5/6
+[08:51:41] [T62] Round 4/6
+[08:51:46] [T64] Round 6/6
+[08:51:47] [T63] Round 6/6
+[08:51:47] [T61] Round 6/6
+[08:51:49] [T62] Round 5/6
+[08:51:54] [T64] ✓ Complete
+[08:51:55] [T61] ✓ Complete
+[08:51:56] [T62] Round 6/6
+[08:51:57] [T63] ✓ Complete
+[08:52:05] [T62] ✓ Complete
+[08:52:05] [RUNNER] Batch complete. Cooling down 2s...
+[08:52:07] [RUNNER] Batch 14/20: tournaments 66–70
+[08:52:07] [T66] ▶ Starting simulation
+[08:52:07] [T67] ▶ Starting simulation
+[08:52:07] [T68] ▶ Starting simulation
+[08:52:07] [T69] ▶ Starting simulation
+[08:52:07] [T70] ▶ Starting simulation
+[08:52:08] [T67] Round 1/6
+[08:52:08] [T69] Round 1/6
+[08:52:08] [T70] Round 1/6
+[08:52:08] [T66] Round 1/6
+[08:52:09] [T68] Round 1/6
+[09:08:42] [T67] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[09:08:42] [T69] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[09:08:42] [T66] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[09:08:42] [T70] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[09:08:42] [T68] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[09:14:59] [T66] ❌ FAIL [round-1-submission]: Player1 submit failed: TypeError: fetch failed
+[09:14:59] [T67] ❌ FAIL [round-1-confirm]: TypeError: fetch failed
+[09:14:59] [T68] ❌ FAIL [round-1-submission]: Player1 submit failed: TypeError: fetch failed
+[09:14:59] [T70] ❌ FAIL [round-1-submission]: Player2 submit failed: TypeError: fetch failed
+[09:14:59] [T69] ❌ FAIL [round-1-confirm]: TypeError: fetch failed
+[09:15:06] [T66] Round 2/6
+[09:15:06] [T67] Round 2/6
+[09:15:07] [T69] Round 2/6
+[09:15:07] [T70] Round 2/6
+[09:15:07] [T68] Round 2/6
+[09:15:15] [T66] Round 3/6
+[09:15:16] [T67] Round 3/6
+[09:15:16] [T68] Round 3/6
+[09:15:16] [T70] Round 3/6
+[09:15:16] [T69] Round 3/6
+[09:15:23] [T67] Round 4/6
+[09:15:23] [T68] Round 4/6
+[09:15:24] [T66] Round 4/6
+[09:15:24] [T69] Round 4/6
+[09:15:24] [T70] Round 4/6
+[09:15:31] [T68] Round 5/6
+[09:15:31] [T66] Round 5/6
+[09:15:31] [T69] Round 5/6
+[09:15:32] [T70] Round 5/6
+[09:15:32] [T67] Round 5/6
+[09:30:37] [T68] ❌ FAIL [round-5-confirm]: TypeError: fetch failed
+[09:30:41] [T68] Round 6/6
+[09:30:50] [T68] ✓ Complete
+[09:30:54] [T69] ❌ FAIL [round-5-submission]: Player2 submit failed: TypeError: fetch failed
+[09:30:58] [T69] Round 6/6
+[09:31:07] [T69] ✓ Complete
+[09:42:52] [T66] ❌ FAIL [round-5-submission]: Player2 submit failed: TypeError: fetch failed
+[09:42:52] [T67] ❌ FAIL [round-5-submission]: Player2 submit failed: TypeError: fetch failed
+[09:42:52] [T70] ❌ FAIL [round-5-submission]: Player1 submit failed: TypeError: fetch failed
+[09:42:56] [T66] Round 6/6
+[09:42:57] [T70] Round 6/6
+[09:42:58] [T67] Round 6/6
+[09:43:04] [T66] ✓ Complete
+[09:43:06] [T70] ✓ Complete
+[09:43:07] [T67] ✓ Complete
+[09:43:07] [RUNNER] Batch complete. Cooling down 2s...
+[09:43:09] [RUNNER] Batch 15/20: tournaments 71–75
+[09:43:09] [T71] ▶ Starting simulation
+[09:43:09] [T72] ▶ Starting simulation
+[09:43:09] [T73] ▶ Starting simulation
+[09:43:09] [T74] ▶ Starting simulation
+[09:43:09] [T75] ▶ Starting simulation
+[09:43:11] [T72] Round 1/6
+[09:43:11] [T71] Round 1/6
+[09:43:11] [T74] Round 1/6
+[09:43:11] [T73] Round 1/6
+[09:43:11] [T75] Round 1/6
+[09:43:18] [T72] Round 2/6
+[09:43:18] [T71] Round 2/6
+[09:43:19] [T75] Round 2/6
+[09:43:19] [T74] Round 2/6
+[09:43:19] [T73] Round 2/6
+[09:43:20] [T72] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[09:43:20] [T74] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[09:43:20] [T71] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[09:43:20] [T73] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[09:43:20] [T75] ❌ FAIL [realtime]: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+[09:43:26] [T72] Round 3/6
+[09:43:26] [T75] Round 3/6
+[09:43:26] [T71] Round 3/6
+[09:43:26] [T74] Round 3/6
+[09:43:27] [T73] Round 3/6
+[09:43:33] [T71] Round 4/6
+[09:43:33] [T72] Round 4/6
+[09:43:33] [T75] Round 4/6
+[09:43:34] [T73] Round 4/6
+[09:43:34] [T74] Round 4/6
+[09:43:40] [T72] Round 5/6
+[09:43:41] [T71] Round 5/6
+[09:43:41] [T75] Round 5/6
+[09:43:42] [T73] Round 5/6
+[09:43:42] [T74] Round 5/6
+[09:43:48] [T75] Round 6/6
+[09:43:49] [T72] Round 6/6
+[09:43:49] [T71] Round 6/6
+[09:43:49] [T73] Round 6/6
+[09:43:50] [T74] Round 6/6
+[09:45:03] [T75] ✓ Complete
+[09:45:06] [T73] ✓ Complete
+[09:45:48] [T72] ✓ Complete
+[09:45:48] [T71] ✓ Complete
+[09:45:49] [T74] ✓ Complete
+[09:45:49] [RUNNER] Batch complete. Cooling down 2s...
+[09:45:51] [RUNNER] Batch 16/20: tournaments 76–80
+[09:45:51] [T76] ▶ Starting simulation
+[09:45:51] [T77] ▶ Starting simulation
+[09:45:51] [T78] ▶ Starting simulation
+[09:45:51] [T79] ▶ Starting simulation
+[09:45:51] [T80] ▶ Starting simulation
+[09:45:52] [T80] Round 1/6
+[09:45:52] [T76] Round 1/6
+[09:45:52] [T79] Round 1/6
+[09:45:52] [T78] Round 1/6
+[09:45:53] [T77] Round 1/6
+[09:46:00] [T80] Round 2/6
+[09:46:00] [T76] Round 2/6
+[09:46:00] [T78] Round 2/6
+[09:46:00] [T77] Round 2/6
+[09:46:00] [T79] Round 2/6
+[09:46:08] [T80] Round 3/6
+[09:46:08] [T78] Round 3/6
+[09:46:08] [T77] Round 3/6
+[09:46:08] [T79] Round 3/6
+[09:46:08] [T76] Round 3/6
+[09:46:15] [T77] Round 4/6
+[09:46:15] [T80] Round 4/6
+[09:46:15] [T79] Round 4/6
+[09:46:15] [T78] Round 4/6
+[09:46:15] [T76] Round 4/6
+[09:46:22] [T77] Round 5/6
+[09:46:23] [T80] Round 5/6
+[09:46:23] [T78] Round 5/6
+[09:46:23] [T79] Round 5/6
+[09:46:23] [T76] Round 5/6
+[09:46:30] [T78] Round 6/6
+[09:46:30] [T80] Round 6/6
+[09:46:30] [T77] Round 6/6
+[09:46:30] [T79] Round 6/6
+[09:46:31] [T76] Round 6/6
+[09:46:37] [T78] ✓ Complete
+[09:46:38] [T77] ✓ Complete
+[09:46:39] [T79] ✓ Complete
+[09:46:39] [T80] ✓ Complete
+[09:46:39] [T76] ✓ Complete
+[09:46:39] [RUNNER] Batch complete. Cooling down 2s...
+[09:46:41] [RUNNER] Batch 17/20: tournaments 81–85
+[09:46:41] [T81] ▶ Starting simulation
+[09:46:41] [T82] ▶ Starting simulation
+[09:46:41] [T83] ▶ Starting simulation
+[09:46:41] [T84] ▶ Starting simulation
+[09:46:41] [T85] ▶ Starting simulation
+[09:46:42] [T83] Round 1/6
+[09:46:42] [T81] Round 1/6
+[09:46:43] [T84] Round 1/6
+[09:46:43] [T85] Round 1/6
+[09:46:43] [T82] Round 1/6
+[09:46:50] [T81] Round 2/6
+[09:46:50] [T83] Round 2/6
+[09:46:50] [T85] Round 2/6
+[09:46:50] [T84] Round 2/6
+[09:46:50] [T82] Round 2/6
+[09:46:57] [T85] Round 3/6
+[09:46:57] [T83] Round 3/6
+[09:46:58] [T82] Round 3/6
+[09:46:58] [T81] Round 3/6
+[09:46:58] [T84] Round 3/6
+[09:47:04] [T85] Round 4/6
+[09:47:05] [T82] Round 4/6
+[09:47:05] [T83] Round 4/6
+[09:47:06] [T81] Round 4/6
+[09:47:06] [T84] Round 4/6
+[09:47:11] [T85] Round 5/6
+[09:47:12] [T82] Round 5/6
+[09:47:13] [T81] Round 5/6
+[09:47:13] [T84] Round 5/6
+[09:47:14] [T83] Round 5/6
+[09:47:18] [T85] Round 6/6
+[09:47:20] [T82] Round 6/6
+[09:47:21] [T81] Round 6/6
+[09:47:21] [T84] Round 6/6
+[09:47:21] [T83] Round 6/6
+[09:47:27] [T85] ✓ Complete
+[09:47:28] [T82] ✓ Complete
+[09:47:28] [T84] ✓ Complete
+[09:47:30] [T81] ✓ Complete
+[09:47:30] [T83] ✓ Complete
+[09:47:30] [RUNNER] Batch complete. Cooling down 2s...
+[09:47:32] [RUNNER] Batch 18/20: tournaments 86–90
+[09:47:32] [T86] ▶ Starting simulation
+[09:47:32] [T87] ▶ Starting simulation
+[09:47:32] [T88] ▶ Starting simulation
+[09:47:32] [T89] ▶ Starting simulation
+[09:47:32] [T90] ▶ Starting simulation
+[09:47:33] [T88] Round 1/6
+[09:47:33] [T89] Round 1/6
+[09:47:33] [T90] Round 1/6
+[09:47:33] [T86] Round 1/6
+[09:47:33] [T87] Round 1/6
+[09:47:41] [T87] Round 2/6
+[09:47:41] [T90] Round 2/6
+[09:47:41] [T89] Round 2/6
+[09:47:41] [T88] Round 2/6
+[09:47:41] [T86] Round 2/6
+[09:47:49] [T90] Round 3/6
+[09:47:49] [T87] Round 3/6
+[09:47:49] [T89] Round 3/6
+[09:47:49] [T88] Round 3/6
+[09:47:49] [T86] Round 3/6
+[09:47:56] [T90] Round 4/6
+[09:47:56] [T87] Round 4/6
+[09:47:57] [T89] Round 4/6
+[09:47:57] [T86] Round 4/6
+[09:47:57] [T88] Round 4/6
+[09:48:04] [T90] Round 5/6
+[09:48:04] [T87] Round 5/6
+[09:48:04] [T89] Round 5/6
+[09:48:04] [T86] Round 5/6
+[09:48:05] [T88] Round 5/6
+[09:48:11] [T90] Round 6/6
+[09:48:12] [T86] Round 6/6
+[09:48:12] [T89] Round 6/6
+[09:48:12] [T86] ❌ FAIL [round-6-confirm]: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head>
+
+<title> | 502: Bad gateway</title>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" />
+</head>
+<body>
+<div id="cf-wrapper">
+    <div id="cf-error-details" class="p-0">
+        <header class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-8">
+            <h1 class="inline-block sm:block sm:mb-2 font-light text-60 lg:text-4xl text-black-dark leading-tight mr-2">
+                <span class="inline-block">Bad gateway</span>
+                <span class="code-label">Error code 502</span>
+            </h1>
+            <div>
+                Visit <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">cloudflare.com</a> for more information.
+            </div>
+            <div class="mt-3">2026-03-10 09:48:12 UTC</div>
+        </header>
+        <div class="my-8 bg-gradient-gray">
+            <div class="w-240 lg:w-full mx-auto">
+                <div class="clearfix md:px-8">
+                    <div id="cf-browser-status" class=" relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    
+    <span class="cf-icon-browser block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-ok w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    
+  </div>
+  <span class="md:block w-full truncate">You</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  
+    Browser
+  
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-green-success">Working</span>
+  
+</div>
+                    <div id="cf-cloudflare-status" class=" relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&#38;utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">
+    <span class="cf-icon-cloud block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-ok w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    </a>
+  </div>
+  <span class="md:block w-full truncate">Madrid</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">
+    Cloudflare
+  </a>
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-green-success">Working</span>
+  
+</div>
+                    <div id="cf-host-status" class="cf-error-source relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    
+    <span class="cf-icon-server block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-error w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    
+  </div>
+  <span class="md:block w-full truncate">mwuoovdepfylavqveswe.supabase.co</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  
+    Host
+  
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-red-error">Error</span>
+  
+</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+            <div class="clearfix">
+                <div class="w-1/2 md:w-full float-left pr-6 md:pb-10 md:pr-0 leading-relaxed">
+                    <h2 class="text-3xl font-normal leading-1.3 mb-4">What happened?</h2>
+                    <p>The web server reported a bad gateway error.</p>
+                </div>
+                <div class="w-1/2 md:w-full float-left leading-relaxed">
+                    <h2 class="text-3xl font-normal leading-1.3 mb-4">What can I do?</h2>
+                    <p class="mb-6">Please try again in a few minutes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+    <p class="text-13">
+      <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">9da16703aa34f91f</strong></span>
+      <span class="cf-footer-separator sm:hidden">&bull;</span>
+      <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+        Your IP:
+        <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+        <span class="hidden" id="cf-footer-ip">84.126.128.103</span>
+        <span class="cf-footer-separator sm:hidden">&bull;</span>
+      </span>
+      <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&#38;utm_campaign=mwuoovdepfylavqveswe.supabase.co" id="brand_link" target="_blank">Cloudflare</a></span>
+      
+    </p>
+    <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+  </div><!-- /.error-footer -->
+
+    </div>
+</div>
+</body>
+</html>
+[09:48:12] [T88] Round 6/6
+[09:48:12] [T87] Round 6/6
+[09:48:19] [T90] ✓ Complete
+[09:48:19] [T86] ✓ Complete
+[09:48:19] [T89] ✓ Complete
+[09:48:20] [T87] ✓ Complete
+[09:48:20] [T88] ✓ Complete
+[09:48:20] [RUNNER] Batch complete. Cooling down 2s...
+[09:48:22] [RUNNER] Batch 19/20: tournaments 91–95
+[09:48:22] [T91] ▶ Starting simulation
+[09:48:22] [T92] ▶ Starting simulation
+[09:48:22] [T93] ▶ Starting simulation
+[09:48:22] [T94] ▶ Starting simulation
+[09:48:22] [T95] ▶ Starting simulation
+[09:48:24] [T92] Round 1/6
+[09:48:24] [T95] Round 1/6
+[09:48:24] [T91] Round 1/6
+[09:48:24] [T93] Round 1/6
+[09:48:24] [T94] Round 1/6
+[09:48:31] [T92] Round 2/6
+[09:48:31] [T93] Round 2/6
+[09:48:31] [T95] Round 2/6
+[09:48:31] [T91] Round 2/6
+[09:48:32] [T94] Round 2/6
+[09:48:39] [T92] Round 3/6
+[09:48:39] [T95] Round 3/6
+[09:48:39] [T93] Round 3/6
+[09:48:39] [T91] Round 3/6
+[09:48:39] [T94] Round 3/6
+[09:48:46] [T92] Round 4/6
+[09:48:46] [T95] Round 4/6
+[09:48:46] [T91] Round 4/6
+[09:48:47] [T93] Round 4/6
+[09:48:47] [T94] Round 4/6
+[09:48:53] [T95] Round 5/6
+[09:48:54] [T91] Round 5/6
+[09:48:54] [T93] Round 5/6
+[09:48:55] [T92] Round 5/6
+[09:48:55] [T94] Round 5/6
+[09:49:01] [T95] Round 6/6
+[09:49:01] [T93] Round 6/6
+[09:49:02] [T91] Round 6/6
+[09:49:02] [T92] Round 6/6
+[09:49:02] [T94] Round 6/6
+[09:49:09] [T95] ✓ Complete
+[09:49:09] [T93] ✓ Complete
+[09:49:10] [T91] ✓ Complete
+[09:49:10] [T92] ✓ Complete
+[09:49:11] [T94] ✓ Complete
+[09:49:11] [RUNNER] Batch complete. Cooling down 2s...
+[09:49:13] [RUNNER] Batch 20/20: tournaments 96–100
+[09:49:13] [T96] ▶ Starting simulation
+[09:49:13] [T97] ▶ Starting simulation
+[09:49:13] [T98] ▶ Starting simulation
+[09:49:13] [T99] ▶ Starting simulation
+[09:49:13] [T100] ▶ Starting simulation
+[09:49:14] [T98] Round 1/6
+[09:49:14] [T96] Round 1/6
+[09:49:14] [T100] Round 1/6
+[09:49:14] [T99] Round 1/6
+[09:49:14] [T97] Round 1/6
+[09:49:21] [T96] Round 2/6
+[09:49:21] [T98] Round 2/6
+[09:49:21] [T99] Round 2/6
+[09:49:22] [T97] Round 2/6
+[09:49:22] [T100] Round 2/6
+[09:49:29] [T98] Round 3/6
+[09:49:29] [T96] Round 3/6
+[09:49:29] [T97] Round 3/6
+[09:49:30] [T100] Round 3/6
+[09:49:30] [T99] Round 3/6
+[09:49:36] [T97] Round 4/6
+[09:49:36] [T98] Round 4/6
+[09:49:36] [T96] Round 4/6
+[09:49:38] [T99] Round 4/6
+[09:49:39] [T100] Round 4/6
+[09:49:43] [T97] Round 5/6
+[09:49:44] [T98] Round 5/6
+[09:49:45] [T96] Round 5/6
+[09:49:46] [T99] Round 5/6
+[09:49:47] [T100] Round 5/6
+[09:49:51] [T97] Round 6/6
+[09:49:52] [T98] Round 6/6
+[09:49:52] [T96] Round 6/6
+[09:49:54] [T99] Round 6/6
+[09:49:55] [T100] Round 6/6
+[09:49:59] [T97] ✓ Complete
+[09:50:00] [T96] ✓ Complete
+[09:50:00] [T98] ✓ Complete
+[09:50:02] [T99] ✓ Complete
+[09:50:03] [T100] ✓ Complete
+[09:50:03] [RUNNER] Batch complete. Cooling down 2s...
+[09:50:05] [CLEANUP] Deleting all test data...
+[09:50:05] [CLEANUP] ✓ Deleted 100 tournaments and all associated data
+
+════════════════════════════════════════════════════════════
+  SIMULATION COMPLETE
+════════════════════════════════════════════════════════════
+  Duration : 31963.6s
+  Tests    : 1691 total  ✓ 1523 passed  ✗ 168 failed
+════════════════════════════════════════════════════════════
+
+  FAILURES:
+  ✗ [T2] round-5-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T4] round-5-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T3] round-5-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T1] round-5-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T5] round-5-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T6] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T8] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T7] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T9] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T10] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T8] round-3-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T10] round-3-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T9] round-3-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T7] round-3-confirm: TypeError: fetch failed
+  ✗ [T6] round-3-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T8] sync-standings: TypeError: fetch failed
+  ✗ [T10] sync-standings: TypeError: fetch failed
+  ✗ [T9] round-5-confirm: TypeError: fetch failed
+  ✗ [T9] round-6-confirm: TypeError: fetch failed
+  ✗ [T12] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T11] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T13] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T14] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T15] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T11] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T13] round-4-confirm: TypeError: fetch failed
+  ✗ [T12] round-4-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T14] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T15] round-4-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T16] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T17] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T20] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T18] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T19] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T18] round-2-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T20] round-2-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T17] round-2-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T16] round-2-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T19] round-2-confirm: TypeError: fetch failed
+  ✗ [T19] round-3-insert: TypeError: fetch failed
+  ✗ [T17] round-6-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T16] round-2-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T17] round-6-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T16] round-2-confirm: TypeError: fetch failed
+  ✗ [T17] round-6-confirm: TypeError: fetch failed
+  ✗ [T16] round-3-insert: TypeError: fetch failed
+  ✗ [T17] round-6-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T16] round-4-insert: TypeError: fetch failed
+  ✗ [T17] round-6-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T16] round-5-insert: TypeError: fetch failed
+  ✗ [T17] round-6-confirm: TypeError: fetch failed
+  ✗ [T16] round-6-insert: TypeError: fetch failed
+  ✗ [T17] sync-standings: TypeError: fetch failed
+  ✗ [T16] sync-standings: TypeError: fetch failed
+  ✗ [T22] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T21] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T23] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T24] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T25] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T27] round-3-confirm: TypeError: fetch failed
+  ✗ [T30] round-3-confirm: TypeError: fetch failed
+  ✗ [T26] round-3-confirm: TypeError: fetch failed
+  ✗ [T28] round-3-confirm: TypeError: fetch failed
+  ✗ [T29] round-3-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T33] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T34] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T31] round-3-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T32] round-3-confirm: TypeError: fetch failed
+  ✗ [T35] round-3-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T33] round-3-confirm: TypeError: fetch failed
+  ✗ [T34] round-3-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T40] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T36] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T38] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T37] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T39] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T39] round-1-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T40] round-1-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T38] round-1-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T37] round-1-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T36] round-1-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T39] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T42] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T41] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T44] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T43] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T45] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T43] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T45] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T41] round-4-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T44] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T42] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T43] round-6-insert: TypeError: fetch failed
+  ✗ [T47] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T46] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T48] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T49] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T50] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T50] round-2-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T49] round-2-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T47] round-2-confirm: TypeError: fetch failed
+  ✗ [T48] round-2-confirm: TypeError: fetch failed
+  ✗ [T46] round-2-confirm: TypeError: fetch failed
+  ✗ [T49] round-3-confirm: TypeError: fetch failed
+  ✗ [T51] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T52] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T54] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T53] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T55] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T52] round-1-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T53] round-1-confirm: TypeError: fetch failed
+  ✗ [T51] round-1-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T55] round-1-confirm: TypeError: fetch failed
+  ✗ [T54] round-1-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T51] round-2-insert: TypeError: fetch failed
+  ✗ [T55] round-2-insert: TypeError: fetch failed
+  ✗ [T53] round-2-insert: TypeError: fetch failed
+  ✗ [T54] round-2-insert: TypeError: fetch failed
+  ✗ [T52] round-4-insert: TypeError: fetch failed
+  ✗ [T51] round-6-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T54] round-6-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T55] round-6-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T53] round-6-confirm: TypeError: fetch failed
+  ✗ [T56] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T59] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T58] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T57] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T60] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T58] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T59] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T56] round-4-confirm: TypeError: fetch failed
+  ✗ [T57] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T60] round-4-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T57] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T60] round-4-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T59] round-4-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T56] round-4-confirm: TypeError: fetch failed
+  ✗ [T64] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T62] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T61] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T65] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T63] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T65] round-2-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T64] round-2-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T61] round-2-confirm: TypeError: fetch failed
+  ✗ [T63] round-2-confirm: TypeError: fetch failed
+  ✗ [T62] round-2-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T67] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T69] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T66] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T70] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T68] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T66] round-1-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T67] round-1-confirm: TypeError: fetch failed
+  ✗ [T68] round-1-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T70] round-1-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T69] round-1-confirm: TypeError: fetch failed
+  ✗ [T68] round-5-confirm: TypeError: fetch failed
+  ✗ [T69] round-5-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T66] round-5-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T67] round-5-submission: Player2 submit failed: TypeError: fetch failed
+  ✗ [T70] round-5-submission: Player1 submit failed: TypeError: fetch failed
+  ✗ [T72] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T74] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T71] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T73] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T75] realtime: no event received within 10s — check Supabase Realtime is enabled for 'tournaments' table
+  ✗ [T86] round-6-confirm: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head>
+
+<title> | 502: Bad gateway</title>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" />
+</head>
+<body>
+<div id="cf-wrapper">
+    <div id="cf-error-details" class="p-0">
+        <header class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-8">
+            <h1 class="inline-block sm:block sm:mb-2 font-light text-60 lg:text-4xl text-black-dark leading-tight mr-2">
+                <span class="inline-block">Bad gateway</span>
+                <span class="code-label">Error code 502</span>
+            </h1>
+            <div>
+                Visit <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">cloudflare.com</a> for more information.
+            </div>
+            <div class="mt-3">2026-03-10 09:48:12 UTC</div>
+        </header>
+        <div class="my-8 bg-gradient-gray">
+            <div class="w-240 lg:w-full mx-auto">
+                <div class="clearfix md:px-8">
+                    <div id="cf-browser-status" class=" relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    
+    <span class="cf-icon-browser block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-ok w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    
+  </div>
+  <span class="md:block w-full truncate">You</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  
+    Browser
+  
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-green-success">Working</span>
+  
+</div>
+                    <div id="cf-cloudflare-status" class=" relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&#38;utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">
+    <span class="cf-icon-cloud block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-ok w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    </a>
+  </div>
+  <span class="md:block w-full truncate">Madrid</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">
+    Cloudflare
+  </a>
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-green-success">Working</span>
+  
+</div>
+                    <div id="cf-host-status" class="cf-error-source relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    
+    <span class="cf-icon-server block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-error w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    
+  </div>
+  <span class="md:block w-full truncate">mwuoovdepfylavqveswe.supabase.co</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  
+    Host
+  
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-red-error">Error</span>
+  
+</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+            <div class="clearfix">
+                <div class="w-1/2 md:w-full float-left pr-6 md:pb-10 md:pr-0 leading-relaxed">
+                    <h2 class="text-3xl font-normal leading-1.3 mb-4">What happened?</h2>
+                    <p>The web server reported a bad gateway error.</p>
+                </div>
+                <div class="w-1/2 md:w-full float-left leading-relaxed">
+                    <h2 class="text-3xl font-normal leading-1.3 mb-4">What can I do?</h2>
+                    <p class="mb-6">Please try again in a few minutes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+    <p class="text-13">
+      <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">9da16703aa34f91f</strong></span>
+      <span class="cf-footer-separator sm:hidden">&bull;</span>
+      <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+        Your IP:
+        <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+        <span class="hidden" id="cf-footer-ip">84.126.128.103</span>
+        <span class="cf-footer-separator sm:hidden">&bull;</span>
+      </span>
+      <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&#38;utm_campaign=mwuoovdepfylavqveswe.supabase.co" id="brand_link" target="_blank">Cloudflare</a></span>
+      
+    </p>
+    <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+  </div><!-- /.error-footer -->
+
+    </div>
+</div>
+</body>
+</html>
+
+  PHASE BREAKDOWN:
+  ✓ create-tournament              100 passed, 0 failed
+  ✓ add-players                    100 passed, 0 failed
+  ✓ start-tournament               100 passed, 0 failed
+  ✓ rls-read-tournament            100 passed, 0 failed
+  ✓ rls-block-delete               100 passed, 0 failed
+  ✓ rls-read-players               100 passed, 0 failed
+  ✓ guest-claim                    100 passed, 0 failed
+  ✗ realtime                       38 passed, 62 failed
+  ✓ round                          589 passed, 0 failed
+  ✗ round-N-submission             0 passed, 62 failed
+  ✗ sync-standings                 96 passed, 4 failed
+  ✓ end-tournament                 100 passed, 0 failed
+  ✗ round-N-confirm                0 passed, 29 failed
+  ✗ round-N-insert                 0 passed, 11 failed
+════════════════════════════════════════════════════════════
+
+  [Pass 1] Script exited OK
+  Cooling down 5 minutes before next pass...
+
+──── PASS 2 / 5  [10:55:05] ────────────────────────────
+[dotenv@17.3.1] injecting env (3) from .env.local -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+════════════════════════════════════════════════════════════
+  Parego Tournament Simulation
+  100 tournaments × 24 players × 6 rounds
+  Batch size: 5 parallel tournaments
+════════════════════════════════════════════════════════════
+
+[09:55:06] [RUNNER] Batch 1/20: tournaments 1–5
+[09:55:06] [T1] ▶ Starting simulation
+[09:55:06] [T2] ▶ Starting simulation
+[09:55:06] [T3] ▶ Starting simulation
+[09:55:06] [T4] ▶ Starting simulation
+[09:55:06] [T5] ▶ Starting simulation
+[09:55:08] [T2] Round 1/6
+[09:55:08] [T3] Round 1/6
+[09:55:08] [T1] Round 1/6
+[09:55:08] [T4] Round 1/6
+[09:55:08] [T5] Round 1/6
+[09:55:15] [T2] Round 2/6
+[09:55:15] [T3] Round 2/6
+[09:55:15] [T1] Round 2/6
+[09:55:15] [T5] Round 2/6
+[09:55:16] [T4] Round 2/6
+[09:55:23] [T5] Round 3/6
+[09:55:23] [T3] Round 3/6
+[09:55:23] [T4] Round 3/6
+[09:55:23] [T1] Round 3/6
+[09:55:23] [T2] Round 3/6
+[09:55:30] [T5] Round 4/6
+[09:55:31] [T3] Round 4/6
+[09:55:31] [T4] Round 4/6
+[09:55:31] [T1] Round 4/6
+[09:55:31] [T2] Round 4/6
+[09:55:38] [T5] Round 5/6
+[09:55:38] [T3] Round 5/6
+[09:55:38] [T1] Round 5/6
+[09:55:38] [T4] Round 5/6
+[09:55:39] [T2] Round 5/6
+[09:55:45] [T5] Round 6/6
+[09:55:45] [T3] Round 6/6
+[09:55:46] [T1] Round 6/6
+[09:55:46] [T4] Round 6/6
+[09:55:47] [T2] Round 6/6
+[09:55:53] [T5] ✓ Complete
+[09:55:54] [T1] ✓ Complete
+[09:55:54] [T3] ✓ Complete
+[09:55:54] [T2] ✓ Complete
+[09:55:54] [T4] ✓ Complete
+[09:55:54] [RUNNER] Batch complete. Cooling down 2s...
+[09:55:56] [RUNNER] Batch 2/20: tournaments 6–10
+[09:55:56] [T6] ▶ Starting simulation
+[09:55:56] [T7] ▶ Starting simulation
+[09:55:56] [T8] ▶ Starting simulation
+[09:55:56] [T9] ▶ Starting simulation
+[09:55:56] [T10] ▶ Starting simulation
+[09:55:57] [T9] Round 1/6
+[09:55:57] [T10] Round 1/6
+[09:55:57] [T8] Round 1/6
+[09:55:57] [T7] Round 1/6
+[09:55:57] [T6] Round 1/6
+[09:56:05] [T6] Round 2/6
+[09:56:05] [T10] Round 2/6
+[09:56:05] [T9] Round 2/6
+[09:56:06] [T8] Round 2/6
+[09:56:06] [T7] Round 2/6
+[09:56:13] [T6] Round 3/6
+[09:56:13] [T10] Round 3/6
+[09:56:13] [T8] Round 3/6
+[09:56:13] [T9] Round 3/6
+[09:56:13] [T7] Round 3/6
+[09:56:20] [T10] Round 4/6
+[09:56:20] [T6] Round 4/6
+[09:56:21] [T7] Round 4/6
+[09:56:21] [T9] Round 4/6
+[09:56:21] [T8] Round 4/6
+[09:56:27] [T10] Round 5/6
+[09:56:27] [T6] Round 5/6
+[09:56:28] [T8] Round 5/6
+[09:56:28] [T7] Round 5/6
+[09:56:28] [T9] Round 5/6
+[09:56:35] [T10] Round 6/6
+[09:56:35] [T6] Round 6/6
+[09:56:35] [T7] Round 6/6
+[09:56:35] [T9] Round 6/6
+[09:56:36] [T8] Round 6/6
+[09:56:42] [T10] ✓ Complete
+[09:56:43] [T6] ✓ Complete
+[09:56:43] [T7] ✓ Complete
+[09:56:44] [T9] ✓ Complete
+[09:56:44] [T8] ✓ Complete
+[09:56:44] [RUNNER] Batch complete. Cooling down 2s...
+[09:56:46] [RUNNER] Batch 3/20: tournaments 11–15
+[09:56:46] [T11] ▶ Starting simulation
+[09:56:46] [T12] ▶ Starting simulation
+[09:56:46] [T13] ▶ Starting simulation
+[09:56:46] [T14] ▶ Starting simulation
+[09:56:46] [T15] ▶ Starting simulation
+[09:56:47] [T11] Round 1/6
+[09:56:47] [T14] Round 1/6
+[09:56:47] [T12] Round 1/6
+[09:56:47] [T13] Round 1/6
+[09:56:47] [T15] Round 1/6
+[09:56:54] [T11] Round 2/6
+[09:56:54] [T12] Round 2/6
+[09:56:54] [T13] Round 2/6
+[09:56:55] [T14] Round 2/6
+[09:56:55] [T15] Round 2/6
+[09:57:02] [T13] Round 3/6
+[09:57:02] [T12] Round 3/6
+[09:57:02] [T14] Round 3/6
+[09:57:02] [T15] Round 3/6
+[09:57:02] [T11] Round 3/6
+[09:57:09] [T12] Round 4/6
+[09:57:09] [T11] Round 4/6
+[09:57:09] [T13] Round 4/6
+[09:57:09] [T14] Round 4/6
+[09:57:10] [T15] Round 4/6
+[09:57:16] [T11] Round 5/6
+[09:57:16] [T12] Round 5/6
+[09:57:17] [T15] Round 5/6
+[09:57:17] [T13] Round 5/6
+[09:57:17] [T14] Round 5/6
+[09:57:24] [T12] Round 6/6
+[09:57:24] [T11] Round 6/6
+[09:57:25] [T13] Round 6/6
+[09:57:25] [T15] Round 6/6
+[09:57:25] [T14] Round 6/6
+[09:57:32] [T11] ✓ Complete
+[09:57:32] [T12] ✓ Complete
+[09:57:33] [T13] ✓ Complete
+[09:57:33] [T15] ✓ Complete
+[09:57:33] [T14] ✓ Complete
+[09:57:33] [RUNNER] Batch complete. Cooling down 2s...
+[09:57:35] [RUNNER] Batch 4/20: tournaments 16–20
+[09:57:35] [T16] ▶ Starting simulation
+[09:57:35] [T17] ▶ Starting simulation
+[09:57:35] [T18] ▶ Starting simulation
+[09:57:35] [T19] ▶ Starting simulation
+[09:57:35] [T20] ▶ Starting simulation
+[09:57:36] [T17] Round 1/6
+[09:57:36] [T16] Round 1/6
+[09:57:36] [T18] Round 1/6
+[09:57:36] [T19] Round 1/6
+[09:57:36] [T20] Round 1/6
+[09:57:44] [T17] Round 2/6
+[09:57:44] [T18] Round 2/6
+[09:57:44] [T19] Round 2/6
+[09:57:44] [T16] Round 2/6
+[09:57:44] [T20] Round 2/6
+[09:57:51] [T18] Round 3/6
+[09:57:51] [T16] Round 3/6
+[09:57:52] [T20] Round 3/6
+[09:57:52] [T17] Round 3/6
+[09:57:52] [T19] Round 3/6
+[09:57:59] [T16] Round 4/6
+[09:57:59] [T18] Round 4/6
+[09:57:59] [T20] Round 4/6
+[09:57:59] [T17] Round 4/6
+[09:58:00] [T19] Round 4/6
+[09:58:06] [T16] Round 5/6
+[09:58:07] [T20] Round 5/6
+[09:58:07] [T18] Round 5/6
+[09:58:07] [T17] Round 5/6
+[09:58:08] [T19] Round 5/6
+[09:58:14] [T16] Round 6/6
+[09:58:14] [T18] Round 6/6
+[09:58:14] [T20] Round 6/6
+[09:58:15] [T17] Round 6/6
+[09:58:15] [T19] Round 6/6
+[09:58:21] [T18] ✓ Complete
+[09:58:22] [T20] ✓ Complete
+[09:58:22] [T16] ✓ Complete
+[09:58:22] [T17] ✓ Complete
+[09:58:23] [T19] ✓ Complete
+[09:58:23] [RUNNER] Batch complete. Cooling down 2s...
+[09:58:25] [RUNNER] Batch 5/20: tournaments 21–25
+[09:58:25] [T21] ▶ Starting simulation
+[09:58:25] [T22] ▶ Starting simulation
+[09:58:25] [T23] ▶ Starting simulation
+[09:58:25] [T24] ▶ Starting simulation
+[09:58:25] [T25] ▶ Starting simulation
+[09:58:26] [T22] Round 1/6
+[09:58:26] [T25] Round 1/6
+[09:58:26] [T23] Round 1/6
+[09:58:26] [T24] Round 1/6
+[09:58:26] [T21] Round 1/6
+[09:58:33] [T25] Round 2/6
+[09:58:34] [T24] Round 2/6
+[09:58:34] [T21] Round 2/6
+[09:58:34] [T22] Round 2/6
+[09:58:34] [T23] Round 2/6
+[09:58:41] [T21] Round 3/6
+[09:58:41] [T25] Round 3/6
+[09:58:41] [T24] Round 3/6
+[09:58:42] [T23] Round 3/6
+[09:58:42] [T22] Round 3/6
+[09:58:48] [T21] Round 4/6
+[09:58:49] [T24] Round 4/6
+[09:58:49] [T23] Round 4/6
+[09:58:49] [T25] Round 4/6
+[09:58:50] [T22] Round 4/6
+[09:58:55] [T21] Round 5/6
+[09:58:56] [T24] Round 5/6
+[09:58:57] [T25] Round 5/6
+[09:58:57] [T23] Round 5/6
+[09:58:57] [T22] Round 5/6
+[09:59:03] [T21] Round 6/6
+[09:59:04] [T25] Round 6/6
+[09:59:04] [T24] Round 6/6
+[09:59:04] [T23] Round 6/6
+[09:59:04] [T22] Round 6/6
+[09:59:10] [T21] ✓ Complete
+[09:59:12] [T24] ✓ Complete
+[09:59:12] [T25] ✓ Complete
+[09:59:12] [T23] ✓ Complete
+[09:59:12] [T22] ✓ Complete
+[09:59:12] [RUNNER] Batch complete. Cooling down 2s...
+[09:59:14] [RUNNER] Batch 6/20: tournaments 26–30
+[09:59:14] [T26] ▶ Starting simulation
+[09:59:14] [T27] ▶ Starting simulation
+[09:59:14] [T28] ▶ Starting simulation
+[09:59:14] [T29] ▶ Starting simulation
+[09:59:14] [T30] ▶ Starting simulation
+[09:59:15] [T26] Round 1/6
+[09:59:15] [T29] Round 1/6
+[09:59:15] [T27] Round 1/6
+[09:59:15] [T28] Round 1/6
+[09:59:15] [T30] Round 1/6
+[09:59:23] [T26] Round 2/6
+[09:59:23] [T30] Round 2/6
+[09:59:23] [T28] Round 2/6
+[09:59:23] [T27] Round 2/6
+[09:59:23] [T29] Round 2/6
+[09:59:30] [T27] Round 3/6
+[09:59:30] [T30] Round 3/6
+[09:59:30] [T26] Round 3/6
+[09:59:31] [T28] Round 3/6
+[09:59:31] [T29] Round 3/6
+[09:59:38] [T30] Round 4/6
+[09:59:38] [T27] Round 4/6
+[09:59:38] [T26] Round 4/6
+[09:59:39] [T28] Round 4/6
+[09:59:39] [T29] Round 4/6
+[09:59:45] [T27] Round 5/6
+[09:59:45] [T30] Round 5/6
+[09:59:45] [T26] Round 5/6
+[09:59:46] [T28] Round 5/6
+[09:59:47] [T29] Round 5/6
+[09:59:52] [T27] Round 6/6
+[09:59:53] [T30] Round 6/6
+[09:59:53] [T26] Round 6/6
+[09:59:54] [T28] Round 6/6
+[09:59:55] [T29] Round 6/6
+[10:00:00] [T30] ✓ Complete
+[10:00:00] [T27] ✓ Complete
+[10:00:01] [T26] ✓ Complete
+[10:00:02] [T29] ✓ Complete
+[10:00:03] [T28] ✓ Complete
+[10:00:03] [RUNNER] Batch complete. Cooling down 2s...
+[10:00:05] [RUNNER] Batch 7/20: tournaments 31–35
+[10:00:05] [T31] ▶ Starting simulation
+[10:00:05] [T32] ▶ Starting simulation
+[10:00:05] [T33] ▶ Starting simulation
+[10:00:05] [T34] ▶ Starting simulation
+[10:00:05] [T35] ▶ Starting simulation
+[10:00:06] [T34] Round 1/6
+[10:00:06] [T35] Round 1/6
+[10:00:06] [T32] Round 1/6
+[10:00:06] [T33] Round 1/6
+[10:00:06] [T31] Round 1/6
+[10:00:13] [T35] Round 2/6
+[10:00:13] [T32] Round 2/6
+[10:00:14] [T34] Round 2/6
+[10:00:14] [T33] Round 2/6
+[10:00:14] [T31] Round 2/6
+[10:00:21] [T35] Round 3/6
+[10:00:21] [T34] Round 3/6
+[10:00:21] [T32] Round 3/6
+[10:00:21] [T31] Round 3/6
+[10:00:22] [T33] Round 3/6
+[10:00:28] [T35] Round 4/6
+[10:00:29] [T34] Round 4/6
+[10:00:29] [T32] Round 4/6
+[10:00:29] [T31] Round 4/6
+[10:00:29] [T33] Round 4/6
+[10:00:35] [T35] Round 5/6
+[10:00:36] [T32] Round 5/6
+[10:00:36] [T34] Round 5/6
+[10:00:36] [T33] Round 5/6
+[10:00:37] [T31] Round 5/6
+[10:00:42] [T35] Round 6/6
+[10:00:43] [T32] Round 6/6
+[10:00:44] [T34] Round 6/6
+[10:00:44] [T33] Round 6/6
+[10:00:44] [T31] Round 6/6
+[10:00:51] [T35] ✓ Complete
+[10:00:51] [T32] ✓ Complete
+[10:00:51] [T34] ✓ Complete
+[10:00:52] [T31] ✓ Complete
+[10:00:52] [T33] ✓ Complete
+[10:00:52] [RUNNER] Batch complete. Cooling down 2s...
+[10:00:54] [RUNNER] Batch 8/20: tournaments 36–40
+[10:00:54] [T36] ▶ Starting simulation
+[10:00:54] [T37] ▶ Starting simulation
+[10:00:54] [T38] ▶ Starting simulation
+[10:00:54] [T39] ▶ Starting simulation
+[10:00:54] [T40] ▶ Starting simulation
+[10:00:56] [T38] Round 1/6
+[10:00:56] [T39] Round 1/6
+[10:00:56] [T40] Round 1/6
+[10:00:56] [T37] Round 1/6
+[10:00:56] [T36] Round 1/6
+[10:01:03] [T38] Round 2/6
+[10:01:03] [T36] Round 2/6
+[10:01:03] [T37] Round 2/6
+[10:01:03] [T39] Round 2/6
+[10:01:04] [T40] Round 2/6
+[10:01:10] [T36] Round 3/6
+[10:01:11] [T38] Round 3/6
+[10:01:11] [T39] Round 3/6
+[10:01:11] [T40] Round 3/6
+[10:01:11] [T37] Round 3/6
+[10:01:18] [T36] Round 4/6
+[10:01:19] [T39] Round 4/6
+[10:01:19] [T38] Round 4/6
+[10:01:19] [T37] Round 4/6
+[10:01:19] [T40] Round 4/6
+[10:01:26] [T36] Round 5/6
+[10:01:26] [T40] Round 5/6
+[10:01:26] [T39] Round 5/6
+[10:01:27] [T37] Round 5/6
+[10:01:28] [T38] Round 5/6
+[10:01:33] [T36] Round 6/6
+[10:01:34] [T39] Round 6/6
+[10:01:35] [T40] Round 6/6
+[10:01:35] [T37] Round 6/6
+[10:01:36] [T38] Round 6/6
+[10:01:41] [T36] ✓ Complete
+[10:01:42] [T39] ✓ Complete
+[10:01:43] [T40] ✓ Complete
+[10:01:43] [T37] ✓ Complete
+[10:01:44] [T38] ✓ Complete
+[10:01:44] [RUNNER] Batch complete. Cooling down 2s...
+[10:01:46] [RUNNER] Batch 9/20: tournaments 41–45
+[10:01:46] [T41] ▶ Starting simulation
+[10:01:46] [T42] ▶ Starting simulation
+[10:01:46] [T43] ▶ Starting simulation
+[10:01:46] [T44] ▶ Starting simulation
+[10:01:46] [T45] ▶ Starting simulation
+[10:01:48] [T41] Round 1/6
+[10:01:48] [T44] Round 1/6
+[10:01:48] [T43] Round 1/6
+[10:01:48] [T45] Round 1/6
+[10:01:48] [T42] Round 1/6
+[10:01:55] [T41] Round 2/6
+[10:01:55] [T44] Round 2/6
+[10:01:55] [T45] Round 2/6
+[10:01:55] [T43] Round 2/6
+[10:01:55] [T42] Round 2/6
+[10:02:03] [T43] Round 3/6
+[10:02:03] [T41] Round 3/6
+[10:02:03] [T44] Round 3/6
+[10:02:03] [T45] Round 3/6
+[10:02:03] [T42] Round 3/6
+[10:02:10] [T43] Round 4/6
+[10:02:10] [T44] Round 4/6
+[10:02:10] [T45] Round 4/6
+[10:02:10] [T41] Round 4/6
+[10:02:11] [T42] Round 4/6
+[10:02:17] [T43] Round 5/6
+[10:02:17] [T45] Round 5/6
+[10:02:18] [T44] Round 5/6
+[10:02:18] [T42] Round 5/6
+[10:02:18] [T41] Round 5/6
+[10:02:25] [T43] Round 6/6
+[10:02:25] [T45] Round 6/6
+[10:02:25] [T44] Round 6/6
+[10:02:25] [T42] Round 6/6
+[10:02:26] [T41] Round 6/6
+[10:02:33] [T43] ✓ Complete
+[10:02:33] [T44] ✓ Complete
+[10:02:33] [T42] ✓ Complete
+[10:02:33] [T45] ✓ Complete
+[10:02:34] [T41] ✓ Complete
+[10:02:34] [RUNNER] Batch complete. Cooling down 2s...
+[10:02:36] [RUNNER] Batch 10/20: tournaments 46–50
+[10:02:36] [T46] ▶ Starting simulation
+[10:02:36] [T47] ▶ Starting simulation
+[10:02:36] [T48] ▶ Starting simulation
+[10:02:36] [T49] ▶ Starting simulation
+[10:02:36] [T50] ▶ Starting simulation
+[10:02:37] [T48] Round 1/6
+[10:02:37] [T47] Round 1/6
+[10:02:37] [T46] Round 1/6
+[10:02:37] [T49] Round 1/6
+[10:02:37] [T50] Round 1/6
+[10:02:45] [T47] Round 2/6
+[10:02:45] [T50] Round 2/6
+[10:02:45] [T49] Round 2/6
+[10:02:45] [T48] Round 2/6
+[10:02:45] [T46] Round 2/6
+[10:02:52] [T50] Round 3/6
+[10:02:52] [T47] Round 3/6
+[10:02:53] [T48] Round 3/6
+[10:02:53] [T46] Round 3/6
+[10:02:53] [T49] Round 3/6
+[10:03:00] [T50] Round 4/6
+[10:03:00] [T47] Round 4/6
+[10:03:00] [T48] Round 4/6
+[10:03:01] [T46] Round 4/6
+[10:03:01] [T49] Round 4/6
+[10:03:08] [T50] Round 5/6
+[10:03:08] [T48] Round 5/6
+[10:03:08] [T46] Round 5/6
+[10:03:08] [T47] Round 5/6
+[10:03:08] [T49] Round 5/6
+[10:03:15] [T50] Round 6/6
+[10:03:15] [T47] Round 6/6
+[10:03:16] [T46] Round 6/6
+[10:03:16] [T49] Round 6/6
+[10:03:16] [T48] Round 6/6
+[10:03:22] [T50] ✓ Complete
+[10:03:23] [T46] ✓ Complete
+[10:03:24] [T47] ✓ Complete
+[10:03:24] [T49] ✓ Complete
+[10:03:25] [T48] ✓ Complete
+[10:03:25] [RUNNER] Batch complete. Cooling down 2s...
+[10:03:27] [RUNNER] Batch 11/20: tournaments 51–55
+[10:03:27] [T51] ▶ Starting simulation
+[10:03:27] [T52] ▶ Starting simulation
+[10:03:27] [T53] ▶ Starting simulation
+[10:03:27] [T54] ▶ Starting simulation
+[10:03:27] [T55] ▶ Starting simulation
+[10:03:28] [T55] Round 1/6
+[10:03:28] [T51] Round 1/6
+[10:03:28] [T54] Round 1/6
+[10:03:28] [T53] Round 1/6
+[10:03:28] [T52] Round 1/6
+[10:03:35] [T54] Round 2/6
+[10:03:36] [T52] Round 2/6
+[10:03:36] [T53] Round 2/6
+[10:03:36] [T51] Round 2/6
+[10:03:36] [T55] Round 2/6
+[10:03:43] [T54] Round 3/6
+[10:03:43] [T53] Round 3/6
+[10:03:43] [T52] Round 3/6
+[10:03:43] [T51] Round 3/6
+[10:03:44] [T55] Round 3/6
+[10:03:50] [T52] Round 4/6
+[10:03:51] [T53] Round 4/6
+[10:03:51] [T54] Round 4/6
+[10:03:51] [T51] Round 4/6
+[10:03:51] [T55] Round 4/6
+[10:03:58] [T52] Round 5/6
+[10:03:59] [T51] Round 5/6
+[10:03:59] [T53] Round 5/6
+[10:03:59] [T55] Round 5/6
+[10:03:59] [T54] Round 5/6
+[10:04:06] [T51] Round 6/6
+[10:04:06] [T52] Round 6/6
+[10:04:06] [T53] Round 6/6
+[10:04:06] [T55] Round 6/6
+[10:04:07] [T54] Round 6/6
+[10:04:14] [T51] ✓ Complete
+[10:04:14] [T52] ✓ Complete
+[10:04:14] [T53] ✓ Complete
+[10:04:14] [T55] ✓ Complete
+[10:04:15] [T54] ✓ Complete
+[10:04:15] [RUNNER] Batch complete. Cooling down 2s...
+[10:04:17] [RUNNER] Batch 12/20: tournaments 56–60
+[10:04:17] [T56] ▶ Starting simulation
+[10:04:17] [T57] ▶ Starting simulation
+[10:04:17] [T58] ▶ Starting simulation
+[10:04:17] [T59] ▶ Starting simulation
+[10:04:17] [T60] ▶ Starting simulation
+[10:04:18] [T57] Round 1/6
+[10:04:18] [T59] Round 1/6
+[10:04:18] [T60] Round 1/6
+[10:04:18] [T58] Round 1/6
+[10:04:18] [T56] Round 1/6
+[10:04:26] [T59] Round 2/6
+[10:04:26] [T56] Round 2/6
+[10:04:26] [T58] Round 2/6
+[10:04:26] [T57] Round 2/6
+[10:04:26] [T60] Round 2/6
+[10:04:33] [T59] Round 3/6
+[10:04:33] [T58] Round 3/6
+[10:04:33] [T56] Round 3/6
+[10:04:33] [T57] Round 3/6
+[10:04:34] [T60] Round 3/6
+[10:04:40] [T58] Round 4/6
+[10:04:41] [T57] Round 4/6
+[10:04:41] [T56] Round 4/6
+[10:04:41] [T59] Round 4/6
+[10:04:41] [T60] Round 4/6
+[10:04:48] [T58] Round 5/6
+[10:04:48] [T57] Round 5/6
+[10:04:48] [T59] Round 5/6
+[10:04:48] [T56] Round 5/6
+[10:04:49] [T60] Round 5/6
+[10:04:55] [T58] Round 6/6
+[10:04:56] [T57] Round 6/6
+[10:04:56] [T59] Round 6/6
+[10:04:56] [T56] Round 6/6
+[10:04:56] [T60] Round 6/6
+[10:05:03] [T57] ✓ Complete
+[10:05:04] [T58] ✓ Complete
+[10:05:04] [T59] ✓ Complete
+[10:05:04] [T56] ✓ Complete
+[10:05:04] [T60] ✓ Complete
+[10:05:04] [RUNNER] Batch complete. Cooling down 2s...
+[10:05:06] [RUNNER] Batch 13/20: tournaments 61–65
+[10:05:06] [T61] ▶ Starting simulation
+[10:05:06] [T62] ▶ Starting simulation
+[10:05:06] [T63] ▶ Starting simulation
+[10:05:06] [T64] ▶ Starting simulation
+[10:05:06] [T65] ▶ Starting simulation
+[10:05:08] [T62] Round 1/6
+[10:05:08] [T63] Round 1/6
+[10:05:08] [T65] Round 1/6
+[10:05:08] [T64] Round 1/6
+[10:05:08] [T61] Round 1/6
+[10:05:15] [T65] Round 2/6
+[10:05:15] [T63] Round 2/6
+[10:05:16] [T61] Round 2/6
+[10:05:16] [T62] Round 2/6
+[10:05:16] [T64] Round 2/6
+[10:05:23] [T65] Round 3/6
+[10:05:23] [T63] Round 3/6
+[10:05:23] [T62] Round 3/6
+[10:05:23] [T61] Round 3/6
+[10:05:24] [T64] Round 3/6
+[10:05:30] [T65] Round 4/6
+[10:05:30] [T63] Round 4/6
+[10:05:31] [T62] Round 4/6
+[10:05:31] [T61] Round 4/6
+[10:05:33] [T64] Round 4/6
+[10:05:37] [T65] Round 5/6
+[10:05:38] [T62] Round 5/6
+[10:05:38] [T63] Round 5/6
+[10:05:38] [T61] Round 5/6
+[10:05:40] [T64] Round 5/6
+[10:05:45] [T65] Round 6/6
+[10:05:45] [T62] Round 6/6
+[10:05:45] [T63] Round 6/6
+[10:05:46] [T61] Round 6/6
+[10:05:47] [T64] Round 6/6
+[10:05:53] [T62] ✓ Complete
+[10:05:53] [T63] ✓ Complete
+[10:05:53] [T65] ✓ Complete
+[10:05:53] [T61] ✓ Complete
+[10:05:55] [T64] ✓ Complete
+[10:05:55] [RUNNER] Batch complete. Cooling down 2s...
+[10:05:57] [RUNNER] Batch 14/20: tournaments 66–70
+[10:05:57] [T66] ▶ Starting simulation
+[10:05:57] [T67] ▶ Starting simulation
+[10:05:57] [T68] ▶ Starting simulation
+[10:05:57] [T69] ▶ Starting simulation
+[10:05:57] [T70] ▶ Starting simulation
+[10:05:58] [T68] Round 1/6
+[10:05:58] [T66] Round 1/6
+[10:05:58] [T70] Round 1/6
+[10:05:58] [T67] Round 1/6
+[10:05:58] [T69] Round 1/6
+[10:06:05] [T67] Round 2/6
+[10:06:05] [T66] Round 2/6
+[10:06:06] [T69] Round 2/6
+[10:06:06] [T68] Round 2/6
+[10:06:06] [T70] Round 2/6
+[10:06:13] [T69] Round 3/6
+[10:06:13] [T67] Round 3/6
+[10:06:13] [T66] Round 3/6
+[10:06:13] [T68] Round 3/6
+[10:06:14] [T70] Round 3/6
+[10:06:20] [T69] Round 4/6
+[10:06:20] [T66] Round 4/6
+[10:06:20] [T67] Round 4/6
+[10:06:20] [T68] Round 4/6
+[10:06:21] [T70] Round 4/6
+[10:06:28] [T66] Round 5/6
+[10:06:28] [T67] Round 5/6
+[10:06:28] [T69] Round 5/6
+[10:06:28] [T68] Round 5/6
+[10:06:29] [T70] Round 5/6
+[10:06:35] [T66] Round 6/6
+[10:06:36] [T68] Round 6/6
+[10:06:36] [T67] Round 6/6
+[10:06:36] [T69] Round 6/6
+[10:06:36] [T70] Round 6/6
+[10:06:43] [T66] ✓ Complete
+[10:06:43] [T68] ✓ Complete
+[10:06:44] [T67] ✓ Complete
+[10:06:44] [T69] ✓ Complete
+[10:06:44] [T70] ✓ Complete
+[10:06:44] [RUNNER] Batch complete. Cooling down 2s...
+[10:06:46] [RUNNER] Batch 15/20: tournaments 71–75
+[10:06:46] [T71] ▶ Starting simulation
+[10:06:46] [T72] ▶ Starting simulation
+[10:06:46] [T73] ▶ Starting simulation
+[10:06:46] [T74] ▶ Starting simulation
+[10:06:46] [T75] ▶ Starting simulation
+[10:06:47] [T75] Round 1/6
+[10:06:48] [T73] Round 1/6
+[10:06:48] [T71] Round 1/6
+[10:06:48] [T74] Round 1/6
+[10:06:48] [T72] Round 1/6
+[10:06:55] [T73] Round 2/6
+[10:06:55] [T74] Round 2/6
+[10:06:55] [T75] Round 2/6
+[10:06:55] [T71] Round 2/6
+[10:06:56] [T72] Round 2/6
+[10:07:02] [T73] Round 3/6
+[10:07:02] [T74] Round 3/6
+[10:07:03] [T72] Round 3/6
+[10:07:03] [T75] Round 3/6
+[10:07:03] [T71] Round 3/6
+[10:07:10] [T74] Round 4/6
+[10:07:10] [T72] Round 4/6
+[10:07:10] [T71] Round 4/6
+[10:07:10] [T73] Round 4/6
+[10:07:10] [T75] Round 4/6
+[10:07:17] [T74] Round 5/6
+[10:07:18] [T75] Round 5/6
+[10:07:18] [T71] Round 5/6
+[10:07:18] [T72] Round 5/6
+[10:07:18] [T73] Round 5/6
+[10:07:25] [T72] Round 6/6
+[10:07:25] [T74] Round 6/6
+[10:07:25] [T75] Round 6/6
+[10:07:26] [T71] Round 6/6
+[10:07:26] [T73] Round 6/6
+[10:07:32] [T72] ✓ Complete
+[10:07:33] [T74] ✓ Complete
+[10:07:33] [T75] ✓ Complete
+[10:07:33] [T71] ✓ Complete
+[10:07:34] [T73] ✓ Complete
+[10:07:34] [RUNNER] Batch complete. Cooling down 2s...
+[10:07:36] [RUNNER] Batch 16/20: tournaments 76–80
+[10:07:36] [T76] ▶ Starting simulation
+[10:07:36] [T77] ▶ Starting simulation
+[10:07:36] [T78] ▶ Starting simulation
+[10:07:36] [T79] ▶ Starting simulation
+[10:07:36] [T80] ▶ Starting simulation
+[10:07:37] [T79] Round 1/6
+[10:07:37] [T76] Round 1/6
+[10:07:37] [T78] Round 1/6
+[10:07:37] [T80] Round 1/6
+[10:07:37] [T77] Round 1/6
+[10:07:45] [T76] Round 2/6
+[10:07:45] [T79] Round 2/6
+[10:07:46] [T77] Round 2/6
+[10:07:46] [T80] Round 2/6
+[10:07:46] [T78] Round 2/6
+[10:07:53] [T76] Round 3/6
+[10:07:53] [T79] Round 3/6
+[10:07:53] [T77] Round 3/6
+[10:07:53] [T78] Round 3/6
+[10:07:53] [T80] Round 3/6
+[10:08:00] [T76] Round 4/6
+[10:08:00] [T79] Round 4/6
+[10:08:01] [T80] Round 4/6
+[10:08:01] [T77] Round 4/6
+[10:08:01] [T78] Round 4/6
+[10:08:07] [T79] Round 5/6
+[10:08:08] [T77] Round 5/6
+[10:08:08] [T76] Round 5/6
+[10:08:09] [T80] Round 5/6
+[10:08:09] [T78] Round 5/6
+[10:08:15] [T77] Round 6/6
+[10:08:15] [T79] Round 6/6
+[10:08:16] [T76] Round 6/6
+[10:08:17] [T80] Round 6/6
+[10:08:17] [T78] Round 6/6
+[10:08:24] [T76] ✓ Complete
+[10:08:24] [T79] ✓ Complete
+[10:08:24] [T77] ✓ Complete
+[10:08:25] [T80] ✓ Complete
+[10:08:25] [T78] ✓ Complete
+[10:08:25] [RUNNER] Batch complete. Cooling down 2s...
+[10:08:27] [RUNNER] Batch 17/20: tournaments 81–85
+[10:08:27] [T81] ▶ Starting simulation
+[10:08:27] [T82] ▶ Starting simulation
+[10:08:27] [T83] ▶ Starting simulation
+[10:08:27] [T84] ▶ Starting simulation
+[10:08:27] [T85] ▶ Starting simulation
+[10:08:28] [T83] Round 1/6
+[10:08:28] [T82] Round 1/6
+[10:08:28] [T85] Round 1/6
+[10:08:28] [T81] Round 1/6
+[10:08:28] [T84] Round 1/6
+[10:08:35] [T83] Round 2/6
+[10:08:35] [T82] Round 2/6
+[10:08:35] [T84] Round 2/6
+[10:08:35] [T85] Round 2/6
+[10:08:36] [T81] Round 2/6
+[10:08:43] [T83] Round 3/6
+[10:08:43] [T82] Round 3/6
+[10:08:43] [T85] Round 3/6
+[10:08:43] [T84] Round 3/6
+[10:08:44] [T81] Round 3/6
+[10:08:50] [T82] Round 4/6
+[10:08:50] [T83] Round 4/6
+[10:08:51] [T85] Round 4/6
+[10:08:51] [T84] Round 4/6
+[10:08:51] [T81] Round 4/6
+[10:08:58] [T85] Round 5/6
+[10:08:58] [T82] Round 5/6
+[10:08:59] [T84] Round 5/6
+[10:08:59] [T83] Round 5/6
+[10:09:00] [T81] Round 5/6
+[10:09:06] [T82] Round 6/6
+[10:09:06] [T85] Round 6/6
+[10:09:06] [T84] Round 6/6
+[10:09:06] [T83] Round 6/6
+[10:09:07] [T81] Round 6/6
+[10:09:13] [T85] ✓ Complete
+[10:09:13] [T82] ✓ Complete
+[10:09:14] [T84] ✓ Complete
+[10:09:14] [T83] ✓ Complete
+[10:09:15] [T81] ✓ Complete
+[10:09:15] [RUNNER] Batch complete. Cooling down 2s...
+[10:09:17] [RUNNER] Batch 18/20: tournaments 86–90
+[10:09:17] [T86] ▶ Starting simulation
+[10:09:17] [T87] ▶ Starting simulation
+[10:09:17] [T88] ▶ Starting simulation
+[10:09:17] [T89] ▶ Starting simulation
+[10:09:17] [T90] ▶ Starting simulation
+[10:09:18] [T87] Round 1/6
+[10:09:18] [T86] Round 1/6
+[10:09:18] [T89] Round 1/6
+[10:09:19] [T88] Round 1/6
+[10:09:19] [T90] Round 1/6
+[10:09:26] [T86] Round 2/6
+[10:09:26] [T89] Round 2/6
+[10:09:26] [T90] Round 2/6
+[10:09:26] [T87] Round 2/6
+[10:09:26] [T88] Round 2/6
+[10:09:33] [T86] Round 3/6
+[10:09:34] [T89] Round 3/6
+[10:09:34] [T90] Round 3/6
+[10:09:34] [T87] Round 3/6
+[10:09:34] [T88] Round 3/6
+[10:09:41] [T86] Round 4/6
+[10:09:41] [T89] Round 4/6
+[10:09:42] [T87] Round 4/6
+[10:09:42] [T90] Round 4/6
+[10:09:42] [T88] Round 4/6
+[10:09:49] [T87] Round 5/6
+[10:09:49] [T86] Round 5/6
+[10:09:49] [T89] Round 5/6
+[10:09:50] [T90] Round 5/6
+[10:09:50] [T88] Round 5/6
+[10:09:56] [T87] Round 6/6
+[10:09:57] [T86] Round 6/6
+[10:09:57] [T89] Round 6/6
+[10:09:57] [T88] Round 6/6
+[10:09:57] [T90] Round 6/6
+[10:10:04] [T87] ✓ Complete
+[10:10:05] [T86] ✓ Complete
+[10:10:05] [T89] ✓ Complete
+[10:10:05] [T88] ✓ Complete
+[10:10:05] [T90] ✓ Complete
+[10:10:05] [RUNNER] Batch complete. Cooling down 2s...
+[10:10:07] [RUNNER] Batch 19/20: tournaments 91–95
+[10:10:07] [T91] ▶ Starting simulation
+[10:10:07] [T92] ▶ Starting simulation
+[10:10:07] [T93] ▶ Starting simulation
+[10:10:07] [T94] ▶ Starting simulation
+[10:10:07] [T95] ▶ Starting simulation
+[10:10:09] [T93] Round 1/6
+[10:10:09] [T91] Round 1/6
+[10:10:09] [T94] Round 1/6
+[10:10:09] [T95] Round 1/6
+[10:10:09] [T92] Round 1/6
+[10:10:16] [T95] Round 2/6
+[10:10:16] [T94] Round 2/6
+[10:10:16] [T91] Round 2/6
+[10:10:16] [T92] Round 2/6
+[10:10:16] [T93] Round 2/6
+[10:10:24] [T95] Round 3/6
+[10:10:24] [T93] Round 3/6
+[10:10:24] [T91] Round 3/6
+[10:10:24] [T92] Round 3/6
+[10:10:24] [T94] Round 3/6
+[10:10:31] [T93] Round 4/6
+[10:10:31] [T91] Round 4/6
+[10:10:32] [T94] Round 4/6
+[10:10:32] [T95] Round 4/6
+[10:10:32] [T92] Round 4/6
+[10:10:39] [T93] Round 5/6
+[10:10:39] [T91] Round 5/6
+[10:10:39] [T94] Round 5/6
+[10:10:39] [T95] Round 5/6
+[10:10:40] [T92] Round 5/6
+[10:10:46] [T91] Round 6/6
+[10:10:47] [T93] Round 6/6
+[10:10:47] [T95] Round 6/6
+[10:10:47] [T94] Round 6/6
+[10:10:48] [T92] Round 6/6
+[10:10:54] [T95] ✓ Complete
+[10:10:54] [T91] ✓ Complete
+[10:10:55] [T93] ✓ Complete
+[10:10:56] [T94] ✓ Complete
+[10:10:56] [T92] ✓ Complete
+[10:10:56] [RUNNER] Batch complete. Cooling down 2s...
+[10:10:58] [RUNNER] Batch 20/20: tournaments 96–100
+[10:10:58] [T96] ▶ Starting simulation
+[10:10:58] [T97] ▶ Starting simulation
+[10:10:58] [T98] ▶ Starting simulation
+[10:10:58] [T99] ▶ Starting simulation
+[10:10:58] [T100] ▶ Starting simulation
+[10:10:59] [T96] Round 1/6
+[10:10:59] [T98] Round 1/6
+[10:10:59] [T100] Round 1/6
+[10:10:59] [T99] Round 1/6
+[10:10:59] [T97] Round 1/6
+[10:11:06] [T100] Round 2/6
+[10:11:06] [T99] Round 2/6
+[10:11:06] [T96] Round 2/6
+[10:11:07] [T97] Round 2/6
+[10:11:07] [T98] Round 2/6
+[10:11:14] [T100] Round 3/6
+[10:11:14] [T99] Round 3/6
+[10:11:14] [T96] Round 3/6
+[10:11:14] [T98] Round 3/6
+[10:11:14] [T97] Round 3/6
+[10:11:21] [T100] Round 4/6
+[10:11:21] [T99] Round 4/6
+[10:11:21] [T96] Round 4/6
+[10:11:21] [T98] Round 4/6
+[10:11:22] [T97] Round 4/6
+[10:11:28] [T99] Round 5/6
+[10:11:28] [T100] Round 5/6
+[10:11:28] [T98] Round 5/6
+[10:11:29] [T96] Round 5/6
+[10:11:30] [T97] Round 5/6
+[10:11:36] [T100] Round 6/6
+[10:11:36] [T99] Round 6/6
+[10:11:36] [T98] Round 6/6
+[10:11:36] [T96] Round 6/6
+[10:11:37] [T97] Round 6/6
+[10:11:43] [T100] ✓ Complete
+[10:11:43] [T96] ✓ Complete
+[10:11:44] [T98] ✓ Complete
+[10:11:44] [T97] ✓ Complete
+[10:11:45] [T99] ✓ Complete
+[10:11:45] [RUNNER] Batch complete. Cooling down 2s...
+[10:11:47] [CLEANUP] Deleting all test data...
+[10:11:47] [CLEANUP] ✓ Deleted 100 tournaments and all associated data
+
+════════════════════════════════════════════════════════════
+  SIMULATION COMPLETE
+════════════════════════════════════════════════════════════
+  Duration : 1001.2s
+  Tests    : 1600 total  ✓ 1600 passed  ✗ 0 failed
+════════════════════════════════════════════════════════════
+
+  PHASE BREAKDOWN:
+  ✓ create-tournament              100 passed, 0 failed
+  ✓ add-players                    100 passed, 0 failed
+  ✓ start-tournament               100 passed, 0 failed
+  ✓ rls-read-tournament            100 passed, 0 failed
+  ✓ rls-block-delete               100 passed, 0 failed
+  ✓ rls-read-players               100 passed, 0 failed
+  ✓ guest-claim                    100 passed, 0 failed
+  ✓ realtime                       100 passed, 0 failed
+  ✓ round                          600 passed, 0 failed
+  ✓ sync-standings                 100 passed, 0 failed
+  ✓ end-tournament                 100 passed, 0 failed
+════════════════════════════════════════════════════════════
+
+  [Pass 2] Script exited OK
+  Cooling down 5 minutes before next pass...
+
+──── PASS 3 / 5  [11:16:47] ────────────────────────────
+[dotenv@17.3.1] injecting env (3) from .env.local -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+════════════════════════════════════════════════════════════
+  Parego Tournament Simulation
+  100 tournaments × 24 players × 6 rounds
+  Batch size: 5 parallel tournaments
+════════════════════════════════════════════════════════════
+
+[10:16:48] [RUNNER] Batch 1/20: tournaments 1–5
+[10:16:48] [T1] ▶ Starting simulation
+[10:16:48] [T2] ▶ Starting simulation
+[10:16:48] [T3] ▶ Starting simulation
+[10:16:48] [T4] ▶ Starting simulation
+[10:16:48] [T5] ▶ Starting simulation
+[10:16:50] [T5] Round 1/6
+[10:16:50] [T1] Round 1/6
+[10:16:50] [T4] Round 1/6
+[10:16:50] [T3] Round 1/6
+[10:16:50] [T2] Round 1/6
+[10:16:58] [T5] Round 2/6
+[10:16:58] [T1] Round 2/6
+[10:16:58] [T4] Round 2/6
+[10:16:58] [T2] Round 2/6
+[10:16:59] [T3] Round 2/6
+[10:17:05] [T5] Round 3/6
+[10:17:05] [T4] Round 3/6
+[10:17:06] [T2] Round 3/6
+[10:17:06] [T1] Round 3/6
+[10:17:06] [T3] Round 3/6
+[10:17:13] [T4] Round 4/6
+[10:17:13] [T2] Round 4/6
+[10:17:13] [T5] Round 4/6
+[10:17:13] [T3] Round 4/6
+[10:17:14] [T1] Round 4/6
+[10:17:20] [T4] Round 5/6
+[10:17:20] [T5] Round 5/6
+[10:17:20] [T2] Round 5/6
+[10:17:20] [T3] Round 5/6
+[10:17:21] [T1] Round 5/6
+[10:17:27] [T5] Round 6/6
+[10:17:28] [T2] Round 6/6
+[10:17:28] [T3] Round 6/6
+[10:17:28] [T4] Round 6/6
+[10:17:28] [T1] Round 6/6
+[10:17:35] [T2] ✓ Complete
+[10:17:36] [T5] ✓ Complete
+[10:17:36] [T4] ✓ Complete
+[10:17:36] [T1] ✓ Complete
+[10:17:36] [T3] ✓ Complete
+[10:17:36] [RUNNER] Batch complete. Cooling down 2s...
+[10:17:38] [RUNNER] Batch 2/20: tournaments 6–10
+[10:17:38] [T6] ▶ Starting simulation
+[10:17:38] [T7] ▶ Starting simulation
+[10:17:38] [T8] ▶ Starting simulation
+[10:17:38] [T9] ▶ Starting simulation
+[10:17:38] [T10] ▶ Starting simulation
+[10:17:40] [T9] Round 1/6
+[10:17:40] [T8] Round 1/6
+[10:17:40] [T7] Round 1/6
+[10:17:40] [T6] Round 1/6
+[10:17:40] [T10] Round 1/6
+[10:17:47] [T9] Round 2/6
+[10:17:47] [T8] Round 2/6
+[10:17:47] [T10] Round 2/6
+[10:17:47] [T6] Round 2/6
+[10:17:48] [T7] Round 2/6
+[10:17:54] [T9] Round 3/6
+[10:17:55] [T10] Round 3/6
+[10:17:55] [T8] Round 3/6
+[10:17:55] [T6] Round 3/6
+[10:17:55] [T7] Round 3/6
+[10:18:02] [T9] Round 4/6
+[10:18:02] [T10] Round 4/6
+[10:18:02] [T8] Round 4/6
+[10:18:03] [T6] Round 4/6
+[10:18:03] [T7] Round 4/6
+[10:18:09] [T9] Round 5/6
+[10:18:09] [T8] Round 5/6
+[10:18:10] [T6] Round 5/6
+[10:18:11] [T7] Round 5/6
+[10:18:11] [T10] Round 5/6
+[10:18:17] [T8] Round 6/6
+[10:18:17] [T9] Round 6/6
+[10:18:18] [T6] Round 6/6
+[10:18:18] [T7] Round 6/6
+[10:18:19] [T10] Round 6/6
+[10:18:24] [T8] ✓ Complete
+[10:18:25] [T9] ✓ Complete
+[10:18:25] [T7] ✓ Complete
+[10:18:25] [T6] ✓ Complete
+[10:18:27] [T10] ✓ Complete
+[10:18:27] [RUNNER] Batch complete. Cooling down 2s...
+[10:18:29] [RUNNER] Batch 3/20: tournaments 11–15
+[10:18:29] [T11] ▶ Starting simulation
+[10:18:29] [T12] ▶ Starting simulation
+[10:18:29] [T13] ▶ Starting simulation
+[10:18:29] [T14] ▶ Starting simulation
+[10:18:29] [T15] ▶ Starting simulation
+[10:18:30] [T15] Round 1/6
+[10:18:30] [T11] Round 1/6
+[10:18:30] [T13] Round 1/6
+[10:18:30] [T14] Round 1/6
+[10:18:30] [T12] Round 1/6
+[10:18:37] [T15] Round 2/6
+[10:18:37] [T11] Round 2/6
+[10:18:37] [T13] Round 2/6
+[10:18:38] [T14] Round 2/6
+[10:18:38] [T12] Round 2/6
+[10:18:45] [T12] Round 3/6
+[10:18:45] [T15] Round 3/6
+[10:18:45] [T13] Round 3/6
+[10:18:45] [T11] Round 3/6
+[10:18:46] [T14] Round 3/6
+[10:18:52] [T12] Round 4/6
+[10:18:52] [T15] Round 4/6
+[10:18:52] [T13] Round 4/6
+[10:18:53] [T11] Round 4/6
+[10:18:54] [T14] Round 4/6
+[10:18:59] [T12] Round 5/6
+[10:18:59] [T15] Round 5/6
+[10:19:00] [T13] Round 5/6
+[10:19:01] [T11] Round 5/6
+[10:19:01] [T14] Round 5/6
+[10:19:07] [T12] Round 6/6
+[10:19:07] [T15] Round 6/6
+[10:19:08] [T14] Round 6/6
+[10:19:08] [T13] Round 6/6
+[10:19:08] [T11] Round 6/6
+[10:19:14] [T12] ✓ Complete
+[10:19:15] [T15] ✓ Complete
+[10:19:16] [T14] ✓ Complete
+[10:19:16] [T13] ✓ Complete
+[10:19:16] [T11] ✓ Complete
+[10:19:16] [RUNNER] Batch complete. Cooling down 2s...
+[10:19:18] [RUNNER] Batch 4/20: tournaments 16–20
+[10:19:18] [T16] ▶ Starting simulation
+[10:19:18] [T17] ▶ Starting simulation
+[10:19:18] [T18] ▶ Starting simulation
+[10:19:18] [T19] ▶ Starting simulation
+[10:19:18] [T20] ▶ Starting simulation
+[10:19:19] [T17] Round 1/6
+[10:19:19] [T20] Round 1/6
+[10:19:19] [T18] Round 1/6
+[10:19:19] [T19] Round 1/6
+[10:19:20] [T16] Round 1/6
+[10:19:27] [T16] Round 2/6
+[10:19:27] [T19] Round 2/6
+[10:19:27] [T20] Round 2/6
+[10:19:27] [T18] Round 2/6
+[10:19:28] [T17] Round 2/6
+[10:19:34] [T16] Round 3/6
+[10:19:35] [T19] Round 3/6
+[10:19:35] [T20] Round 3/6
+[10:19:35] [T17] Round 3/6
+[10:19:35] [T18] Round 3/6
+[10:19:42] [T17] Round 4/6
+[10:19:42] [T16] Round 4/6
+[10:19:42] [T19] Round 4/6
+[10:19:42] [T20] Round 4/6
+[10:19:42] [T18] Round 4/6
+[10:19:49] [T20] Round 5/6
+[10:19:49] [T19] Round 5/6
+[10:19:49] [T18] Round 5/6
+[10:19:49] [T17] Round 5/6
+[10:19:49] [T16] Round 5/6
+[10:19:56] [T19] Round 6/6
+[10:19:56] [T20] Round 6/6
+[10:19:57] [T16] Round 6/6
+[10:19:57] [T17] Round 6/6
+[10:19:57] [T18] Round 6/6
+[10:20:04] [T20] ✓ Complete
+[10:20:04] [T19] ✓ Complete
+[10:20:05] [T17] ✓ Complete
+[10:20:05] [T18] ✓ Complete
+[10:20:05] [T16] ✓ Complete
+[10:20:05] [RUNNER] Batch complete. Cooling down 2s...
+[10:20:07] [RUNNER] Batch 5/20: tournaments 21–25
+[10:20:07] [T21] ▶ Starting simulation
+[10:20:07] [T22] ▶ Starting simulation
+[10:20:07] [T23] ▶ Starting simulation
+[10:20:07] [T24] ▶ Starting simulation
+[10:20:07] [T25] ▶ Starting simulation
+[10:20:08] [T23] Round 1/6
+[10:20:08] [T25] Round 1/6
+[10:20:08] [T21] Round 1/6
+[10:20:08] [T22] Round 1/6
+[10:20:08] [T24] Round 1/6
+[10:20:16] [T25] Round 2/6
+[10:20:16] [T24] Round 2/6
+[10:20:16] [T22] Round 2/6
+[10:20:16] [T21] Round 2/6
+[10:20:16] [T23] Round 2/6
+[10:20:23] [T25] Round 3/6
+[10:20:23] [T23] Round 3/6
+[10:20:23] [T21] Round 3/6
+[10:20:23] [T22] Round 3/6
+[10:20:24] [T24] Round 3/6
+[10:20:31] [T22] Round 4/6
+[10:20:31] [T21] Round 4/6
+[10:20:31] [T23] Round 4/6
+[10:20:31] [T25] Round 4/6
+[10:20:32] [T24] Round 4/6
+[10:20:38] [T22] Round 5/6
+[10:20:38] [T21] Round 5/6
+[10:20:38] [T23] Round 5/6
+[10:20:39] [T25] Round 5/6
+[10:20:39] [T24] Round 5/6
+[10:20:45] [T23] Round 6/6
+[10:20:45] [T22] Round 6/6
+[10:20:46] [T21] Round 6/6
+[10:20:46] [T25] Round 6/6
+[10:20:47] [T24] Round 6/6
+[10:20:53] [T21] ✓ Complete
+[10:20:53] [T22] ✓ Complete
+[10:20:53] [T23] ✓ Complete
+[10:20:54] [T25] ✓ Complete
+[10:20:54] [T24] ✓ Complete
+[10:20:54] [RUNNER] Batch complete. Cooling down 2s...
+[10:20:56] [RUNNER] Batch 6/20: tournaments 26–30
+[10:20:56] [T26] ▶ Starting simulation
+[10:20:56] [T27] ▶ Starting simulation
+[10:20:56] [T28] ▶ Starting simulation
+[10:20:56] [T29] ▶ Starting simulation
+[10:20:56] [T30] ▶ Starting simulation
+[10:20:57] [T27] Round 1/6
+[10:20:57] [T26] Round 1/6
+[10:20:57] [T30] Round 1/6
+[10:20:57] [T29] Round 1/6
+[10:20:58] [T28] Round 1/6
+[10:21:05] [T26] Round 2/6
+[10:21:05] [T28] Round 2/6
+[10:21:05] [T30] Round 2/6
+[10:21:05] [T29] Round 2/6
+[10:21:05] [T27] Round 2/6
+[10:21:12] [T26] Round 3/6
+[10:21:12] [T30] Round 3/6
+[10:21:12] [T28] Round 3/6
+[10:21:13] [T29] Round 3/6
+[10:21:13] [T27] Round 3/6
+[10:21:19] [T29] Round 4/6
+[10:21:19] [T26] Round 4/6
+[10:21:20] [T30] Round 4/6
+[10:21:20] [T28] Round 4/6
+[10:21:20] [T27] Round 4/6
+[10:21:27] [T29] Round 5/6
+[10:21:27] [T28] Round 5/6
+[10:21:27] [T27] Round 5/6
+[10:21:27] [T30] Round 5/6
+[10:21:28] [T26] Round 5/6
+[10:21:34] [T29] Round 6/6
+[10:21:34] [T28] Round 6/6
+[10:21:34] [T30] Round 6/6
+[10:21:34] [T27] Round 6/6
+[10:21:35] [T26] Round 6/6
+[10:21:42] [T30] ✓ Complete
+[10:21:42] [T28] ✓ Complete
+[10:21:43] [T27] ✓ Complete
+[10:21:43] [T29] ✓ Complete
+[10:21:44] [T26] ✓ Complete
+[10:21:44] [RUNNER] Batch complete. Cooling down 2s...
+[10:21:46] [RUNNER] Batch 7/20: tournaments 31–35
+[10:21:46] [T31] ▶ Starting simulation
+[10:21:46] [T32] ▶ Starting simulation
+[10:21:46] [T33] ▶ Starting simulation
+[10:21:46] [T34] ▶ Starting simulation
+[10:21:46] [T35] ▶ Starting simulation
+[10:21:47] [T35] Round 1/6
+[10:21:47] [T33] Round 1/6
+[10:21:47] [T34] Round 1/6
+[10:21:47] [T32] Round 1/6
+[10:21:47] [T31] Round 1/6
+[10:21:54] [T32] Round 2/6
+[10:21:54] [T35] Round 2/6
+[10:21:54] [T33] Round 2/6
+[10:21:54] [T34] Round 2/6
+[10:21:54] [T31] Round 2/6
+[10:22:02] [T34] Round 3/6
+[10:22:02] [T32] Round 3/6
+[10:22:02] [T35] Round 3/6
+[10:22:02] [T31] Round 3/6
+[10:22:02] [T33] Round 3/6
+[10:22:09] [T32] Round 4/6
+[10:22:09] [T34] Round 4/6
+[10:22:09] [T31] Round 4/6
+[10:22:09] [T35] Round 4/6
+[10:22:09] [T33] Round 4/6
+[10:22:16] [T32] Round 5/6
+[10:22:17] [T34] Round 5/6
+[10:22:17] [T35] Round 5/6
+[10:22:17] [T33] Round 5/6
+[10:22:17] [T31] Round 5/6
+[10:22:24] [T31] Round 6/6
+[10:22:24] [T34] Round 6/6
+[10:22:24] [T35] Round 6/6
+[10:22:24] [T33] Round 6/6
+[10:22:24] [T32] Round 6/6
+[10:22:31] [T34] ✓ Complete
+[10:22:32] [T31] ✓ Complete
+[10:22:32] [T35] ✓ Complete
+[10:22:32] [T32] ✓ Complete
+[10:22:32] [T33] ✓ Complete
+[10:22:32] [RUNNER] Batch complete. Cooling down 2s...
+[10:22:34] [RUNNER] Batch 8/20: tournaments 36–40
+[10:22:34] [T36] ▶ Starting simulation
+[10:22:34] [T37] ▶ Starting simulation
+[10:22:34] [T38] ▶ Starting simulation
+[10:22:34] [T39] ▶ Starting simulation
+[10:22:34] [T40] ▶ Starting simulation
+[10:22:35] [T39] Round 1/6
+[10:22:35] [T36] Round 1/6
+[10:22:35] [T40] Round 1/6
+[10:22:35] [T38] Round 1/6
+[10:22:36] [T37] Round 1/6
+[10:22:43] [T40] Round 2/6
+[10:22:43] [T36] Round 2/6
+[10:22:43] [T39] Round 2/6
+[10:22:43] [T37] Round 2/6
+[10:22:43] [T38] Round 2/6
+[10:22:50] [T37] Round 3/6
+[10:22:50] [T39] Round 3/6
+[10:22:51] [T36] Round 3/6
+[10:22:51] [T38] Round 3/6
+[10:22:51] [T40] Round 3/6
+[10:22:58] [T37] Round 4/6
+[10:22:58] [T36] Round 4/6
+[10:22:58] [T39] Round 4/6
+[10:22:58] [T38] Round 4/6
+[10:22:59] [T40] Round 4/6
+[10:23:05] [T38] Round 5/6
+[10:23:05] [T37] Round 5/6
+[10:23:05] [T39] Round 5/6
+[10:23:06] [T36] Round 5/6
+[10:23:06] [T40] Round 5/6
+[10:23:13] [T38] Round 6/6
+[10:23:13] [T37] Round 6/6
+[10:23:13] [T36] Round 6/6
+[10:23:13] [T39] Round 6/6
+[10:23:14] [T40] Round 6/6
+[10:23:21] [T38] ✓ Complete
+[10:23:21] [T37] ✓ Complete
+[10:23:21] [T36] ✓ Complete
+[10:23:22] [T39] ✓ Complete
+[10:23:22] [T40] ✓ Complete
+[10:23:22] [RUNNER] Batch complete. Cooling down 2s...
+[10:23:24] [RUNNER] Batch 9/20: tournaments 41–45
+[10:23:24] [T41] ▶ Starting simulation
+[10:23:24] [T42] ▶ Starting simulation
+[10:23:24] [T43] ▶ Starting simulation
+[10:23:24] [T44] ▶ Starting simulation
+[10:23:24] [T45] ▶ Starting simulation
+[10:23:26] [T43] Round 1/6
+[10:23:26] [T42] Round 1/6
+[10:23:26] [T44] Round 1/6
+[10:23:26] [T45] Round 1/6
+[10:23:26] [T41] Round 1/6
+[10:23:33] [T44] Round 2/6
+[10:23:33] [T43] Round 2/6
+[10:23:33] [T45] Round 2/6
+[10:23:33] [T42] Round 2/6
+[10:23:34] [T41] Round 2/6
+[10:23:41] [T42] Round 3/6
+[10:23:41] [T44] Round 3/6
+[10:23:41] [T41] Round 3/6
+[10:23:42] [T45] Round 3/6
+[10:23:42] [T43] Round 3/6
+[10:23:49] [T42] Round 4/6
+[10:23:49] [T45] Round 4/6
+[10:23:49] [T41] Round 4/6
+[10:23:49] [T44] Round 4/6
+[10:23:50] [T43] Round 4/6
+[10:23:56] [T42] Round 5/6
+[10:23:57] [T45] Round 5/6
+[10:23:57] [T41] Round 5/6
+[10:23:57] [T44] Round 5/6
+[10:23:58] [T43] Round 5/6
+[10:24:04] [T42] Round 6/6
+[10:24:04] [T45] Round 6/6
+[10:24:05] [T41] Round 6/6
+[10:24:05] [T44] Round 6/6
+[10:24:05] [T43] Round 6/6
+[10:24:12] [T45] ✓ Complete
+[10:24:12] [T42] ✓ Complete
+[10:24:13] [T41] ✓ Complete
+[10:24:13] [T44] ✓ Complete
+[10:24:13] [T43] ✓ Complete
+[10:24:13] [RUNNER] Batch complete. Cooling down 2s...
+[10:24:15] [RUNNER] Batch 10/20: tournaments 46–50
+[10:24:15] [T46] ▶ Starting simulation
+[10:24:15] [T47] ▶ Starting simulation
+[10:24:15] [T48] ▶ Starting simulation
+[10:24:15] [T49] ▶ Starting simulation
+[10:24:15] [T50] ▶ Starting simulation
+[10:24:17] [T50] Round 1/6
+[10:24:17] [T49] Round 1/6
+[10:24:17] [T46] Round 1/6
+[10:24:17] [T47] Round 1/6
+[10:24:17] [T48] Round 1/6
+[10:24:24] [T49] Round 2/6
+[10:24:24] [T46] Round 2/6
+[10:24:24] [T50] Round 2/6
+[10:24:24] [T48] Round 2/6
+[10:24:24] [T47] Round 2/6
+[10:24:31] [T49] Round 3/6
+[10:24:31] [T50] Round 3/6
+[10:24:32] [T46] Round 3/6
+[10:24:32] [T47] Round 3/6
+[10:24:32] [T48] Round 3/6
+[10:24:39] [T49] Round 4/6
+[10:24:39] [T50] Round 4/6
+[10:24:39] [T47] Round 4/6
+[10:24:39] [T46] Round 4/6
+[10:24:39] [T48] Round 4/6
+[10:24:46] [T50] Round 5/6
+[10:24:47] [T48] Round 5/6
+[10:24:47] [T47] Round 5/6
+[10:24:47] [T49] Round 5/6
+[10:24:48] [T46] Round 5/6
+[10:24:54] [T50] Round 6/6
+[10:24:54] [T49] Round 6/6
+[10:24:54] [T48] Round 6/6
+[10:24:55] [T47] Round 6/6
+[10:24:55] [T46] Round 6/6
+[10:25:03] [T48] ✓ Complete
+[10:25:03] [T49] ✓ Complete
+[10:25:03] [T50] ✓ Complete
+[10:25:03] [T47] ✓ Complete
+[10:25:03] [T46] ✓ Complete
+[10:25:03] [RUNNER] Batch complete. Cooling down 2s...
+[10:25:05] [RUNNER] Batch 11/20: tournaments 51–55
+[10:25:05] [T51] ▶ Starting simulation
+[10:25:05] [T52] ▶ Starting simulation
+[10:25:05] [T53] ▶ Starting simulation
+[10:25:05] [T54] ▶ Starting simulation
+[10:25:05] [T55] ▶ Starting simulation
+[10:25:07] [T53] Round 1/6
+[10:25:07] [T52] Round 1/6
+[10:25:07] [T54] Round 1/6
+[10:25:07] [T51] Round 1/6
+[10:25:07] [T55] Round 1/6
+[10:25:14] [T52] Round 2/6
+[10:25:14] [T54] Round 2/6
+[10:25:14] [T53] Round 2/6
+[10:25:14] [T51] Round 2/6
+[10:25:15] [T55] Round 2/6
+[10:25:21] [T54] Round 3/6
+[10:25:22] [T52] Round 3/6
+[10:25:23] [T51] Round 3/6
+[10:25:23] [T55] Round 3/6
+[10:25:23] [T53] Round 3/6
+[10:25:29] [T54] Round 4/6
+[10:25:30] [T52] Round 4/6
+[10:25:30] [T51] Round 4/6
+[10:25:31] [T53] Round 4/6
+[10:25:31] [T55] Round 4/6
+[10:25:36] [T54] Round 5/6
+[10:25:37] [T52] Round 5/6
+[10:25:38] [T51] Round 5/6
+[10:25:38] [T55] Round 5/6
+[10:25:38] [T53] Round 5/6
+[10:25:44] [T54] Round 6/6
+[10:25:45] [T52] Round 6/6
+[10:25:46] [T53] Round 6/6
+[10:25:46] [T55] Round 6/6
+[10:25:46] [T51] Round 6/6
+[10:25:52] [T52] ✓ Complete
+[10:25:52] [T54] ✓ Complete
+[10:25:53] [T55] ✓ Complete
+[10:25:54] [T51] ✓ Complete
+[10:25:54] [T53] ✓ Complete
+[10:25:54] [RUNNER] Batch complete. Cooling down 2s...
+[10:25:56] [RUNNER] Batch 12/20: tournaments 56–60
+[10:25:56] [T56] ▶ Starting simulation
+[10:25:56] [T57] ▶ Starting simulation
+[10:25:56] [T58] ▶ Starting simulation
+[10:25:56] [T59] ▶ Starting simulation
+[10:25:56] [T60] ▶ Starting simulation
+[10:25:58] [T58] Round 1/6
+[10:25:58] [T57] Round 1/6
+[10:25:58] [T59] Round 1/6
+[10:25:58] [T60] Round 1/6
+[10:25:58] [T56] Round 1/6
+[10:26:05] [T56] Round 2/6
+[10:26:05] [T59] Round 2/6
+[10:26:05] [T58] Round 2/6
+[10:26:05] [T57] Round 2/6
+[10:26:05] [T60] Round 2/6
+[10:26:12] [T59] Round 3/6
+[10:26:12] [T58] Round 3/6
+[10:26:13] [T57] Round 3/6
+[10:26:13] [T56] Round 3/6
+[10:26:13] [T60] Round 3/6
+[10:26:19] [T59] Round 4/6
+[10:26:20] [T57] Round 4/6
+[10:26:20] [T56] Round 4/6
+[10:26:21] [T60] Round 4/6
+[10:26:21] [T58] Round 4/6
+[10:26:27] [T59] Round 5/6
+[10:26:27] [T57] Round 5/6
+[10:26:28] [T58] Round 5/6
+[10:26:28] [T56] Round 5/6
+[10:26:28] [T60] Round 5/6
+[10:26:34] [T59] Round 6/6
+[10:26:35] [T57] Round 6/6
+[10:26:35] [T58] Round 6/6
+[10:26:35] [T56] Round 6/6
+[10:26:36] [T60] Round 6/6
+[10:26:42] [T59] ✓ Complete
+[10:26:43] [T58] ✓ Complete
+[10:26:43] [T56] ✓ Complete
+[10:26:43] [T57] ✓ Complete
+[10:26:44] [T60] ✓ Complete
+[10:26:44] [RUNNER] Batch complete. Cooling down 2s...
+[10:26:46] [RUNNER] Batch 13/20: tournaments 61–65
+[10:26:46] [T61] ▶ Starting simulation
+[10:26:46] [T62] ▶ Starting simulation
+[10:26:46] [T63] ▶ Starting simulation
+[10:26:46] [T64] ▶ Starting simulation
+[10:26:46] [T65] ▶ Starting simulation
+[10:26:47] [T61] Round 1/6
+[10:26:47] [T65] Round 1/6
+[10:26:47] [T62] Round 1/6
+[10:26:47] [T63] Round 1/6
+[10:26:47] [T64] Round 1/6
+[10:26:54] [T65] Round 2/6
+[10:26:55] [T64] Round 2/6
+[10:26:55] [T63] Round 2/6
+[10:26:55] [T62] Round 2/6
+[10:26:55] [T61] Round 2/6
+[10:27:02] [T65] Round 3/6
+[10:27:02] [T64] Round 3/6
+[10:27:02] [T62] Round 3/6
+[10:27:03] [T63] Round 3/6
+[10:27:03] [T61] Round 3/6
+[10:27:09] [T65] Round 4/6
+[10:27:09] [T64] Round 4/6
+[10:27:10] [T62] Round 4/6
+[10:27:10] [T61] Round 4/6
+[10:27:11] [T63] Round 4/6
+[10:27:16] [T64] Round 5/6
+[10:27:16] [T65] Round 5/6
+[10:27:17] [T62] Round 5/6
+[10:27:18] [T63] Round 5/6
+[10:27:18] [T61] Round 5/6
+[10:27:23] [T64] Round 6/6
+[10:27:24] [T65] Round 6/6
+[10:27:25] [T62] Round 6/6
+[10:27:26] [T63] Round 6/6
+[10:27:26] [T61] Round 6/6
+[10:27:31] [T64] ✓ Complete
+[10:27:32] [T65] ✓ Complete
+[10:27:32] [T62] ✓ Complete
+[10:27:33] [T61] ✓ Complete
+[10:27:33] [T63] ✓ Complete
+[10:27:33] [RUNNER] Batch complete. Cooling down 2s...
+[10:27:35] [RUNNER] Batch 14/20: tournaments 66–70
+[10:27:35] [T66] ▶ Starting simulation
+[10:27:35] [T67] ▶ Starting simulation
+[10:27:35] [T68] ▶ Starting simulation
+[10:27:35] [T69] ▶ Starting simulation
+[10:27:35] [T70] ▶ Starting simulation
+[10:27:36] [T66] Round 1/6
+[10:27:37] [T70] Round 1/6
+[10:27:37] [T69] Round 1/6
+[10:27:37] [T68] Round 1/6
+[10:27:37] [T67] Round 1/6
+[10:27:44] [T70] Round 2/6
+[10:27:44] [T66] Round 2/6
+[10:27:44] [T68] Round 2/6
+[10:27:44] [T69] Round 2/6
+[10:27:44] [T67] Round 2/6
+[10:27:51] [T70] Round 3/6
+[10:27:51] [T66] Round 3/6
+[10:27:51] [T68] Round 3/6
+[10:27:52] [T69] Round 3/6
+[10:27:52] [T67] Round 3/6
+[10:27:59] [T70] Round 4/6
+[10:27:59] [T66] Round 4/6
+[10:27:59] [T68] Round 4/6
+[10:28:00] [T67] Round 4/6
+[10:28:00] [T69] Round 4/6
+[10:28:06] [T70] Round 5/6
+[10:28:07] [T66] Round 5/6
+[10:28:07] [T68] Round 5/6
+[10:28:07] [T67] Round 5/6
+[10:28:07] [T69] Round 5/6
+[10:28:13] [T66] Round 6/6
+[10:28:14] [T70] Round 6/6
+[10:28:14] [T68] Round 6/6
+[10:28:15] [T69] Round 6/6
+[10:28:15] [T67] Round 6/6
+[10:28:21] [T66] ✓ Complete
+[10:28:22] [T68] ✓ Complete
+[10:28:22] [T70] ✓ Complete
+[10:28:23] [T67] ✓ Complete
+[10:28:23] [T69] ✓ Complete
+[10:28:23] [RUNNER] Batch complete. Cooling down 2s...
+[10:28:25] [RUNNER] Batch 15/20: tournaments 71–75
+[10:28:25] [T71] ▶ Starting simulation
+[10:28:25] [T72] ▶ Starting simulation
+[10:28:25] [T73] ▶ Starting simulation
+[10:28:25] [T74] ▶ Starting simulation
+[10:28:25] [T75] ▶ Starting simulation
+[10:28:26] [T73] Round 1/6
+[10:28:26] [T74] Round 1/6
+[10:28:26] [T75] Round 1/6
+[10:28:27] [T71] Round 1/6
+[10:28:27] [T72] Round 1/6
+[10:28:34] [T74] Round 2/6
+[10:28:34] [T71] Round 2/6
+[10:28:34] [T73] Round 2/6
+[10:28:34] [T72] Round 2/6
+[10:28:35] [T75] Round 2/6
+[10:28:41] [T74] Round 3/6
+[10:28:42] [T72] Round 3/6
+[10:28:42] [T71] Round 3/6
+[10:28:42] [T75] Round 3/6
+[10:28:43] [T73] Round 3/6
+[10:28:49] [T71] Round 4/6
+[10:28:49] [T74] Round 4/6
+[10:28:49] [T72] Round 4/6
+[10:28:50] [T75] Round 4/6
+[10:28:50] [T73] Round 4/6
+[10:28:57] [T74] Round 5/6
+[10:28:57] [T72] Round 5/6
+[10:28:57] [T75] Round 5/6
+[10:28:58] [T71] Round 5/6
+[10:28:58] [T73] Round 5/6
+[10:29:04] [T74] Round 6/6
+[10:29:04] [T72] Round 6/6
+[10:29:04] [T75] Round 6/6
+[10:29:05] [T71] Round 6/6
+[10:29:06] [T73] Round 6/6
+[10:29:12] [T75] ✓ Complete
+[10:29:12] [T74] ✓ Complete
+[10:29:12] [T72] ✓ Complete
+[10:29:13] [T71] ✓ Complete
+[10:29:14] [T73] ✓ Complete
+[10:29:14] [RUNNER] Batch complete. Cooling down 2s...
+[10:29:16] [RUNNER] Batch 16/20: tournaments 76–80
+[10:29:16] [T76] ▶ Starting simulation
+[10:29:16] [T77] ▶ Starting simulation
+[10:29:16] [T78] ▶ Starting simulation
+[10:29:16] [T79] ▶ Starting simulation
+[10:29:16] [T80] ▶ Starting simulation
+[10:29:17] [T76] Round 1/6
+[10:29:17] [T80] Round 1/6
+[10:29:17] [T78] Round 1/6
+[10:29:17] [T79] Round 1/6
+[10:29:17] [T77] Round 1/6
+[10:29:24] [T78] Round 2/6
+[10:29:25] [T79] Round 2/6
+[10:29:25] [T76] Round 2/6
+[10:29:25] [T80] Round 2/6
+[10:29:25] [T77] Round 2/6
+[10:29:32] [T78] Round 3/6
+[10:29:32] [T79] Round 3/6
+[10:29:32] [T80] Round 3/6
+[10:29:32] [T77] Round 3/6
+[10:29:33] [T76] Round 3/6
+[10:29:38] [T78] Round 4/6
+[10:29:39] [T79] Round 4/6
+[10:29:40] [T80] Round 4/6
+[10:29:40] [T77] Round 4/6
+[10:29:41] [T76] Round 4/6
+[10:29:46] [T78] Round 5/6
+[10:29:47] [T80] Round 5/6
+[10:29:47] [T79] Round 5/6
+[10:29:47] [T77] Round 5/6
+[10:29:48] [T76] Round 5/6
+[10:29:54] [T78] Round 6/6
+[10:29:54] [T77] Round 6/6
+[10:29:54] [T80] Round 6/6
+[10:29:55] [T79] Round 6/6
+[10:29:55] [T76] Round 6/6
+[10:30:02] [T79] ✓ Complete
+[10:30:02] [T77] ✓ Complete
+[10:30:02] [T80] ✓ Complete
+[10:30:02] [T78] ✓ Complete
+[10:30:03] [T76] ✓ Complete
+[10:30:03] [RUNNER] Batch complete. Cooling down 2s...
+[10:30:05] [RUNNER] Batch 17/20: tournaments 81–85
+[10:30:05] [T81] ▶ Starting simulation
+[10:30:05] [T82] ▶ Starting simulation
+[10:30:05] [T83] ▶ Starting simulation
+[10:30:05] [T84] ▶ Starting simulation
+[10:30:05] [T85] ▶ Starting simulation
+[10:30:07] [T81] Round 1/6
+[10:30:07] [T85] Round 1/6
+[10:30:07] [T84] Round 1/6
+[10:30:07] [T82] Round 1/6
+[10:30:08] [T83] Round 1/6
+[10:30:14] [T81] Round 2/6
+[10:30:14] [T85] Round 2/6
+[10:30:14] [T84] Round 2/6
+[10:30:15] [T82] Round 2/6
+[10:30:15] [T83] Round 2/6
+[10:30:22] [T84] Round 3/6
+[10:30:22] [T85] Round 3/6
+[10:30:22] [T81] Round 3/6
+[10:30:22] [T82] Round 3/6
+[10:30:23] [T83] Round 3/6
+[10:30:30] [T85] Round 4/6
+[10:30:30] [T81] Round 4/6
+[10:30:30] [T82] Round 4/6
+[10:30:30] [T84] Round 4/6
+[10:30:31] [T83] Round 4/6
+[10:30:37] [T81] Round 5/6
+[10:30:37] [T82] Round 5/6
+[10:30:38] [T85] Round 5/6
+[10:30:38] [T84] Round 5/6
+[10:30:39] [T83] Round 5/6
+[10:30:45] [T85] Round 6/6
+[10:30:45] [T81] Round 6/6
+[10:30:45] [T84] Round 6/6
+[10:30:46] [T82] Round 6/6
+[10:30:46] [T83] Round 6/6
+[10:30:53] [T85] ✓ Complete
+[10:30:53] [T84] ✓ Complete
+[10:30:53] [T81] ✓ Complete
+[10:30:54] [T82] ✓ Complete
+[10:30:55] [T83] ✓ Complete
+[10:30:55] [RUNNER] Batch complete. Cooling down 2s...
+[10:30:57] [RUNNER] Batch 18/20: tournaments 86–90
+[10:30:57] [T86] ▶ Starting simulation
+[10:30:57] [T87] ▶ Starting simulation
+[10:30:57] [T88] ▶ Starting simulation
+[10:30:57] [T89] ▶ Starting simulation
+[10:30:57] [T90] ▶ Starting simulation
+[10:30:58] [T87] Round 1/6
+[10:30:58] [T88] Round 1/6
+[10:30:58] [T86] Round 1/6
+[10:30:58] [T89] Round 1/6
+[10:30:58] [T90] Round 1/6
+[10:31:05] [T87] Round 2/6
+[10:31:05] [T88] Round 2/6
+[10:31:06] [T86] Round 2/6
+[10:31:06] [T89] Round 2/6
+[10:31:07] [T90] Round 2/6
+[10:31:13] [T87] Round 3/6
+[10:31:13] [T86] Round 3/6
+[10:31:13] [T88] Round 3/6
+[10:31:14] [T89] Round 3/6
+[10:31:14] [T90] Round 3/6
+[10:31:20] [T87] Round 4/6
+[10:31:21] [T88] Round 4/6
+[10:31:21] [T86] Round 4/6
+[10:31:21] [T89] Round 4/6
+[10:31:22] [T90] Round 4/6
+[10:31:28] [T87] Round 5/6
+[10:31:28] [T86] Round 5/6
+[10:31:28] [T89] Round 5/6
+[10:31:30] [T90] Round 5/6
+[10:31:30] [T88] Round 5/6
+[10:31:35] [T86] Round 6/6
+[10:31:36] [T87] Round 6/6
+[10:31:36] [T89] Round 6/6
+[10:31:37] [T90] Round 6/6
+[10:31:38] [T88] Round 6/6
+[10:31:44] [T86] ✓ Complete
+[10:31:44] [T87] ✓ Complete
+[10:31:44] [T89] ✓ Complete
+[10:31:45] [T90] ✓ Complete
+[10:31:46] [T88] ✓ Complete
+[10:31:46] [RUNNER] Batch complete. Cooling down 2s...
+[10:31:48] [RUNNER] Batch 19/20: tournaments 91–95
+[10:31:48] [T91] ▶ Starting simulation
+[10:31:48] [T92] ▶ Starting simulation
+[10:31:48] [T93] ▶ Starting simulation
+[10:31:48] [T94] ▶ Starting simulation
+[10:31:48] [T95] ▶ Starting simulation
+[10:31:49] [T93] Round 1/6
+[10:31:49] [T94] Round 1/6
+[10:31:49] [T91] Round 1/6
+[10:31:49] [T95] Round 1/6
+[10:31:49] [T92] Round 1/6
+[10:31:57] [T94] Round 2/6
+[10:31:57] [T95] Round 2/6
+[10:31:57] [T92] Round 2/6
+[10:31:57] [T93] Round 2/6
+[10:31:57] [T91] Round 2/6
+[10:32:04] [T94] Round 3/6
+[10:32:05] [T92] Round 3/6
+[10:32:05] [T91] Round 3/6
+[10:32:05] [T93] Round 3/6
+[10:32:06] [T95] Round 3/6
+[10:32:13] [T94] Round 4/6
+[10:32:13] [T92] Round 4/6
+[10:32:13] [T91] Round 4/6
+[10:32:13] [T95] Round 4/6
+[10:32:13] [T93] Round 4/6
+[10:32:20] [T92] Round 5/6
+[10:32:20] [T94] Round 5/6
+[10:32:21] [T95] Round 5/6
+[10:32:21] [T91] Round 5/6
+[10:32:21] [T93] Round 5/6
+[10:32:28] [T92] Round 6/6
+[10:32:29] [T95] Round 6/6
+[10:32:29] [T91] Round 6/6
+[10:32:30] [T93] Round 6/6
+[10:32:30] [T94] Round 6/6
+[10:32:36] [T92] ✓ Complete
+[10:32:36] [T95] ✓ Complete
+[10:32:38] [T91] ✓ Complete
+[10:32:38] [T94] ✓ Complete
+[10:32:39] [T93] ✓ Complete
+[10:32:39] [RUNNER] Batch complete. Cooling down 2s...
+[10:32:41] [RUNNER] Batch 20/20: tournaments 96–100
+[10:32:41] [T96] ▶ Starting simulation
+[10:32:41] [T97] ▶ Starting simulation
+[10:32:41] [T98] ▶ Starting simulation
+[10:32:41] [T99] ▶ Starting simulation
+[10:32:41] [T100] ▶ Starting simulation
+[10:32:42] [T96] Round 1/6
+[10:32:42] [T97] Round 1/6
+[10:32:42] [T98] Round 1/6
+[10:32:42] [T100] Round 1/6
+[10:32:42] [T99] Round 1/6
+[10:32:49] [T98] Round 2/6
+[10:32:50] [T97] Round 2/6
+[10:32:50] [T96] Round 2/6
+[10:32:50] [T99] Round 2/6
+[10:32:50] [T100] Round 2/6
+[10:32:57] [T98] Round 3/6
+[10:32:57] [T97] Round 3/6
+[10:32:57] [T96] Round 3/6
+[10:32:57] [T99] Round 3/6
+[10:32:58] [T100] Round 3/6
+[10:33:04] [T98] Round 4/6
+[10:33:05] [T96] Round 4/6
+[10:33:05] [T99] Round 4/6
+[10:33:05] [T100] Round 4/6
+[10:33:05] [T97] Round 4/6
+[10:33:12] [T99] Round 5/6
+[10:33:12] [T98] Round 5/6
+[10:33:12] [T96] Round 5/6
+[10:33:13] [T100] Round 5/6
+[10:33:13] [T97] Round 5/6
+[10:33:20] [T96] Round 6/6
+[10:33:20] [T98] Round 6/6
+[10:33:20] [T99] Round 6/6
+[10:33:21] [T100] Round 6/6
+[10:33:21] [T97] Round 6/6
+[10:33:28] [T99] ✓ Complete
+[10:33:28] [T96] ✓ Complete
+[10:33:28] [T98] ✓ Complete
+[10:33:29] [T100] ✓ Complete
+[10:33:29] [T97] ✓ Complete
+[10:33:29] [RUNNER] Batch complete. Cooling down 2s...
+[10:33:31] [CLEANUP] Deleting all test data...
+[10:33:32] [CLEANUP] ✓ Deleted 100 tournaments and all associated data
+
+════════════════════════════════════════════════════════════
+  SIMULATION COMPLETE
+════════════════════════════════════════════════════════════
+  Duration : 1004.0s
+  Tests    : 1600 total  ✓ 1600 passed  ✗ 0 failed
+════════════════════════════════════════════════════════════
+
+  PHASE BREAKDOWN:
+  ✓ create-tournament              100 passed, 0 failed
+  ✓ add-players                    100 passed, 0 failed
+  ✓ start-tournament               100 passed, 0 failed
+  ✓ rls-read-tournament            100 passed, 0 failed
+  ✓ rls-block-delete               100 passed, 0 failed
+  ✓ rls-read-players               100 passed, 0 failed
+  ✓ guest-claim                    100 passed, 0 failed
+  ✓ realtime                       100 passed, 0 failed
+  ✓ round                          600 passed, 0 failed
+  ✓ sync-standings                 100 passed, 0 failed
+  ✓ end-tournament                 100 passed, 0 failed
+════════════════════════════════════════════════════════════
+
+  [Pass 3] Script exited OK
+  Cooling down 5 minutes before next pass...
+
+──── PASS 4 / 5  [11:38:32] ────────────────────────────
+[dotenv@17.3.1] injecting env (3) from .env.local -- tip: ⚙️  suppress all logs with { quiet: true }
+════════════════════════════════════════════════════════════
+  Parego Tournament Simulation
+  100 tournaments × 24 players × 6 rounds
+  Batch size: 5 parallel tournaments
+════════════════════════════════════════════════════════════
+
+[10:38:33] [RUNNER] Batch 1/20: tournaments 1–5
+[10:38:33] [T1] ▶ Starting simulation
+[10:38:33] [T2] ▶ Starting simulation
+[10:38:33] [T3] ▶ Starting simulation
+[10:38:33] [T4] ▶ Starting simulation
+[10:38:33] [T5] ▶ Starting simulation
+[10:38:35] [T4] Round 1/6
+[10:38:35] [T2] Round 1/6
+[10:38:35] [T3] Round 1/6
+[10:38:35] [T5] Round 1/6
+[10:38:35] [T1] Round 1/6
+[10:38:42] [T3] Round 2/6
+[10:38:42] [T2] Round 2/6
+[10:38:42] [T1] Round 2/6
+[10:38:43] [T5] Round 2/6
+[10:38:43] [T4] Round 2/6
+[10:38:50] [T2] Round 3/6
+[10:38:50] [T3] Round 3/6
+[10:38:50] [T4] Round 3/6
+[10:38:50] [T5] Round 3/6
+[10:38:50] [T1] Round 3/6
+[10:38:57] [T2] Round 4/6
+[10:38:58] [T3] Round 4/6
+[10:38:58] [T1] Round 4/6
+[10:38:58] [T4] Round 4/6
+[10:38:58] [T5] Round 4/6
+[10:39:04] [T2] Round 5/6
+[10:39:05] [T5] Round 5/6
+[10:39:05] [T1] Round 5/6
+[10:39:05] [T3] Round 5/6
+[10:39:05] [T4] Round 5/6
+[10:39:11] [T2] Round 6/6
+[10:39:12] [T1] Round 6/6
+[10:39:12] [T3] Round 6/6
+[10:39:12] [T5] Round 6/6
+[10:39:13] [T4] Round 6/6
+[10:39:19] [T2] ✓ Complete
+[10:39:20] [T1] ✓ Complete
+[10:39:20] [T5] ✓ Complete
+[10:39:20] [T3] ✓ Complete
+[10:39:21] [T4] ✓ Complete
+[10:39:21] [RUNNER] Batch complete. Cooling down 2s...
+[10:39:23] [RUNNER] Batch 2/20: tournaments 6–10
+[10:39:23] [T6] ▶ Starting simulation
+[10:39:23] [T7] ▶ Starting simulation
+[10:39:23] [T8] ▶ Starting simulation
+[10:39:23] [T9] ▶ Starting simulation
+[10:39:23] [T10] ▶ Starting simulation
+[10:39:24] [T7] Round 1/6
+[10:39:24] [T6] Round 1/6
+[10:39:24] [T8] Round 1/6
+[10:39:24] [T10] Round 1/6
+[10:39:25] [T9] Round 1/6
+[10:39:31] [T8] Round 2/6
+[10:39:32] [T7] Round 2/6
+[10:39:32] [T6] Round 2/6
+[10:39:32] [T10] Round 2/6
+[10:39:33] [T9] Round 2/6
+[10:39:39] [T8] Round 3/6
+[10:39:39] [T7] Round 3/6
+[10:39:40] [T10] Round 3/6
+[10:39:40] [T6] Round 3/6
+[10:39:41] [T9] Round 3/6
+[10:39:46] [T8] Round 4/6
+[10:39:47] [T7] Round 4/6
+[10:39:47] [T10] Round 4/6
+[10:39:47] [T6] Round 4/6
+[10:39:48] [T9] Round 4/6
+[10:39:54] [T8] Round 5/6
+[10:39:54] [T6] Round 5/6
+[10:39:55] [T10] Round 5/6
+[10:39:55] [T7] Round 5/6
+[10:39:56] [T9] Round 5/6
+[10:40:01] [T10] Round 6/6
+[10:40:02] [T8] Round 6/6
+[10:40:02] [T6] Round 6/6
+[10:40:03] [T7] Round 6/6
+[10:40:04] [T9] Round 6/6
+[10:40:10] [T10] ✓ Complete
+[10:40:10] [T8] ✓ Complete
+[10:40:10] [T6] ✓ Complete
+[10:40:11] [T7] ✓ Complete
+[10:40:12] [T9] ✓ Complete
+[10:40:12] [RUNNER] Batch complete. Cooling down 2s...
+[10:40:14] [RUNNER] Batch 3/20: tournaments 11–15
+[10:40:14] [T11] ▶ Starting simulation
+[10:40:14] [T12] ▶ Starting simulation
+[10:40:14] [T13] ▶ Starting simulation
+[10:40:14] [T14] ▶ Starting simulation
+[10:40:14] [T15] ▶ Starting simulation
+[10:40:16] [T11] Round 1/6
+[10:40:16] [T13] Round 1/6
+[10:40:16] [T14] Round 1/6
+[10:40:16] [T15] Round 1/6
+[10:40:16] [T12] Round 1/6
+[10:40:23] [T11] Round 2/6
+[10:40:23] [T14] Round 2/6
+[10:40:23] [T12] Round 2/6
+[10:40:23] [T13] Round 2/6
+[10:40:24] [T15] Round 2/6
+[10:40:31] [T11] Round 3/6
+[10:40:31] [T15] Round 3/6
+[10:40:31] [T12] Round 3/6
+[10:40:31] [T14] Round 3/6
+[10:40:31] [T13] Round 3/6
+[10:40:38] [T11] Round 4/6
+[10:40:38] [T15] Round 4/6
+[10:40:38] [T13] Round 4/6
+[10:40:38] [T14] Round 4/6
+[10:40:39] [T12] Round 4/6
+[10:40:45] [T11] Round 5/6
+[10:40:46] [T15] Round 5/6
+[10:40:46] [T12] Round 5/6
+[10:40:46] [T13] Round 5/6
+[10:40:47] [T14] Round 5/6
+[10:40:53] [T11] Round 6/6
+[10:40:53] [T15] Round 6/6
+[10:40:53] [T12] Round 6/6
+[10:40:53] [T13] Round 6/6
+[10:40:54] [T14] Round 6/6
+[10:41:00] [T11] ✓ Complete
+[10:41:01] [T15] ✓ Complete
+[10:41:01] [T12] ✓ Complete
+[10:41:02] [T13] ✓ Complete
+[10:41:02] [T14] ✓ Complete
+[10:41:02] [RUNNER] Batch complete. Cooling down 2s...
+[10:41:04] [RUNNER] Batch 4/20: tournaments 16–20
+[10:41:04] [T16] ▶ Starting simulation
+[10:41:04] [T17] ▶ Starting simulation
+[10:41:04] [T18] ▶ Starting simulation
+[10:41:04] [T19] ▶ Starting simulation
+[10:41:04] [T20] ▶ Starting simulation
+[10:41:06] [T18] Round 1/6
+[10:41:06] [T20] Round 1/6
+[10:41:06] [T19] Round 1/6
+[10:41:06] [T17] Round 1/6
+[10:41:06] [T16] Round 1/6
+[10:41:13] [T18] Round 2/6
+[10:41:13] [T19] Round 2/6
+[10:41:13] [T16] Round 2/6
+[10:41:13] [T20] Round 2/6
+[10:41:14] [T17] Round 2/6
+[10:41:21] [T20] Round 3/6
+[10:41:21] [T18] Round 3/6
+[10:41:21] [T16] Round 3/6
+[10:41:21] [T19] Round 3/6
+[10:41:21] [T17] Round 3/6
+[10:41:28] [T20] Round 4/6
+[10:41:28] [T18] Round 4/6
+[10:41:29] [T16] Round 4/6
+[10:41:29] [T17] Round 4/6
+[10:41:29] [T19] Round 4/6
+[10:41:36] [T18] Round 5/6
+[10:41:36] [T20] Round 5/6
+[10:41:36] [T17] Round 5/6
+[10:41:37] [T16] Round 5/6
+[10:41:38] [T19] Round 5/6
+[10:41:44] [T20] Round 6/6
+[10:41:44] [T18] Round 6/6
+[10:41:44] [T16] Round 6/6
+[10:41:45] [T17] Round 6/6
+[10:41:45] [T19] Round 6/6
+[10:41:51] [T20] ✓ Complete
+[10:41:51] [T18] ✓ Complete
+[10:41:52] [T16] ✓ Complete
+[10:41:52] [T17] ✓ Complete
+[10:41:53] [T19] ✓ Complete
+[10:41:53] [RUNNER] Batch complete. Cooling down 2s...
+[10:41:55] [RUNNER] Batch 5/20: tournaments 21–25
+[10:41:55] [T21] ▶ Starting simulation
+[10:41:55] [T22] ▶ Starting simulation
+[10:41:55] [T23] ▶ Starting simulation
+[10:41:55] [T24] ▶ Starting simulation
+[10:41:55] [T25] ▶ Starting simulation
+[10:41:56] [T21] Round 1/6
+[10:41:56] [T23] Round 1/6
+[10:41:56] [T22] Round 1/6
+[10:41:56] [T24] Round 1/6
+[10:41:56] [T25] Round 1/6
+[10:42:04] [T21] Round 2/6
+[10:42:04] [T25] Round 2/6
+[10:42:04] [T23] Round 2/6
+[10:42:04] [T22] Round 2/6
+[10:42:04] [T24] Round 2/6
+[10:42:11] [T21] Round 3/6
+[10:42:12] [T25] Round 3/6
+[10:42:12] [T23] Round 3/6
+[10:42:12] [T22] Round 3/6
+[10:42:12] [T24] Round 3/6
+[10:42:19] [T21] Round 4/6
+[10:42:19] [T22] Round 4/6
+[10:42:19] [T23] Round 4/6
+[10:42:19] [T25] Round 4/6
+[10:42:20] [T24] Round 4/6
+[10:42:26] [T21] Round 5/6
+[10:42:26] [T22] Round 5/6
+[10:42:27] [T25] Round 5/6
+[10:42:27] [T23] Round 5/6
+[10:42:28] [T24] Round 5/6
+[10:42:33] [T21] Round 6/6
+[10:42:34] [T22] Round 6/6
+[10:42:35] [T25] Round 6/6
+[10:42:35] [T23] Round 6/6
+[10:42:36] [T24] Round 6/6
+[10:42:42] [T21] ✓ Complete
+[10:42:42] [T22] ✓ Complete
+[10:42:43] [T25] ✓ Complete
+[10:42:44] [T24] ✓ Complete
+[10:42:44] [T23] ✓ Complete
+[10:42:44] [RUNNER] Batch complete. Cooling down 2s...
+[10:42:46] [RUNNER] Batch 6/20: tournaments 26–30
+[10:42:46] [T26] ▶ Starting simulation
+[10:42:46] [T27] ▶ Starting simulation
+[10:42:46] [T28] ▶ Starting simulation
+[10:42:46] [T29] ▶ Starting simulation
+[10:42:46] [T30] ▶ Starting simulation
+[10:42:47] [T28] Round 1/6
+[10:42:47] [T30] Round 1/6
+[10:42:47] [T27] Round 1/6
+[10:42:47] [T26] Round 1/6
+[10:42:47] [T29] Round 1/6
+[10:42:54] [T30] Round 2/6
+[10:42:54] [T27] Round 2/6
+[10:42:54] [T29] Round 2/6
+[10:42:54] [T26] Round 2/6
+[10:42:55] [T28] Round 2/6
+[10:43:02] [T27] Round 3/6
+[10:43:02] [T30] Round 3/6
+[10:43:02] [T29] Round 3/6
+[10:43:02] [T28] Round 3/6
+[10:43:02] [T26] Round 3/6
+[10:43:09] [T26] Round 4/6
+[10:43:09] [T30] Round 4/6
+[10:43:09] [T29] Round 4/6
+[10:43:09] [T28] Round 4/6
+[10:43:10] [T27] Round 4/6
+[10:43:17] [T26] Round 5/6
+[10:43:17] [T29] Round 5/6
+[10:43:17] [T28] Round 5/6
+[10:43:17] [T30] Round 5/6
+[10:43:17] [T27] Round 5/6
+[10:43:24] [T26] Round 6/6
+[10:43:24] [T29] Round 6/6
+[10:43:24] [T30] Round 6/6
+[10:43:25] [T28] Round 6/6
+[10:43:25] [T27] Round 6/6
+[10:43:32] [T26] ✓ Complete
+[10:43:32] [T29] ✓ Complete
+[10:43:33] [T28] ✓ Complete
+[10:43:33] [T30] ✓ Complete
+[10:43:33] [T27] ✓ Complete
+[10:43:33] [RUNNER] Batch complete. Cooling down 2s...
+[10:43:35] [RUNNER] Batch 7/20: tournaments 31–35
+[10:43:35] [T31] ▶ Starting simulation
+[10:43:35] [T32] ▶ Starting simulation
+[10:43:35] [T33] ▶ Starting simulation
+[10:43:35] [T34] ▶ Starting simulation
+[10:43:35] [T35] ▶ Starting simulation
+[10:43:36] [T34] Round 1/6
+[10:43:36] [T31] Round 1/6
+[10:43:36] [T33] Round 1/6
+[10:43:36] [T32] Round 1/6
+[10:43:37] [T35] Round 1/6
+[10:43:44] [T35] Round 2/6
+[10:43:44] [T34] Round 2/6
+[10:43:44] [T33] Round 2/6
+[10:43:45] [T31] Round 2/6
+[10:43:45] [T32] Round 2/6
+[10:43:51] [T34] Round 3/6
+[10:43:52] [T35] Round 3/6
+[10:43:52] [T33] Round 3/6
+[10:43:52] [T31] Round 3/6
+[10:43:53] [T32] Round 3/6
+[10:43:59] [T34] Round 4/6
+[10:43:59] [T33] Round 4/6
+[10:43:59] [T35] Round 4/6
+[10:44:00] [T31] Round 4/6
+[10:44:01] [T32] Round 4/6
+[10:44:06] [T34] Round 5/6
+[10:44:06] [T35] Round 5/6
+[10:44:07] [T33] Round 5/6
+[10:44:08] [T31] Round 5/6
+[10:44:08] [T32] Round 5/6
+[10:44:13] [T33] Round 6/6
+[10:44:14] [T34] Round 6/6
+[10:44:14] [T35] Round 6/6
+[10:44:16] [T32] Round 6/6
+[10:44:17] [T31] Round 6/6
+[10:44:21] [T33] ✓ Complete
+[10:44:22] [T34] ✓ Complete
+[10:44:23] [T35] ✓ Complete
+[10:44:24] [T32] ✓ Complete
+[10:44:26] [T31] ✓ Complete
+[10:44:26] [RUNNER] Batch complete. Cooling down 2s...
+[10:44:28] [RUNNER] Batch 8/20: tournaments 36–40
+[10:44:28] [T36] ▶ Starting simulation
+[10:44:28] [T37] ▶ Starting simulation
+[10:44:28] [T38] ▶ Starting simulation
+[10:44:28] [T39] ▶ Starting simulation
+[10:44:28] [T40] ▶ Starting simulation
+[10:44:29] [T37] Round 1/6
+[10:44:29] [T39] Round 1/6
+[10:44:29] [T38] Round 1/6
+[10:44:29] [T40] Round 1/6
+[10:44:29] [T36] Round 1/6
+[10:44:37] [T37] Round 2/6
+[10:44:37] [T38] Round 2/6
+[10:44:37] [T39] Round 2/6
+[10:44:37] [T36] Round 2/6
+[10:44:37] [T40] Round 2/6
+[10:44:44] [T38] Round 3/6
+[10:44:44] [T36] Round 3/6
+[10:44:44] [T37] Round 3/6
+[10:44:45] [T40] Round 3/6
+[10:44:45] [T39] Round 3/6
+[10:44:52] [T38] Round 4/6
+[10:44:52] [T37] Round 4/6
+[10:44:52] [T36] Round 4/6
+[10:44:52] [T40] Round 4/6
+[10:44:52] [T39] Round 4/6
+[10:44:59] [T38] Round 5/6
+[10:44:59] [T37] Round 5/6
+[10:44:59] [T40] Round 5/6
+[10:44:59] [T36] Round 5/6
+[10:45:00] [T39] Round 5/6
+[10:45:06] [T37] Round 6/6
+[10:45:06] [T38] Round 6/6
+[10:45:07] [T39] Round 6/6
+[10:45:07] [T36] Round 6/6
+[10:45:07] [T40] Round 6/6
+[10:45:14] [T37] ✓ Complete
+[10:45:14] [T39] ✓ Complete
+[10:45:14] [T36] ✓ Complete
+[10:45:14] [T38] ✓ Complete
+[10:45:15] [T40] ✓ Complete
+[10:45:15] [RUNNER] Batch complete. Cooling down 2s...
+[10:45:17] [RUNNER] Batch 9/20: tournaments 41–45
+[10:45:17] [T41] ▶ Starting simulation
+[10:45:17] [T42] ▶ Starting simulation
+[10:45:17] [T43] ▶ Starting simulation
+[10:45:17] [T44] ▶ Starting simulation
+[10:45:17] [T45] ▶ Starting simulation
+[10:45:18] [T45] Round 1/6
+[10:45:18] [T41] Round 1/6
+[10:45:18] [T43] Round 1/6
+[10:45:18] [T44] Round 1/6
+[10:45:18] [T42] Round 1/6
+[10:45:26] [T41] Round 2/6
+[10:45:26] [T43] Round 2/6
+[10:45:26] [T45] Round 2/6
+[10:45:26] [T42] Round 2/6
+[10:45:26] [T44] Round 2/6
+[10:45:33] [T44] Round 3/6
+[10:45:33] [T43] Round 3/6
+[10:45:33] [T45] Round 3/6
+[10:45:33] [T42] Round 3/6
+[10:45:33] [T41] Round 3/6
+[10:45:40] [T44] Round 4/6
+[10:45:40] [T45] Round 4/6
+[10:45:41] [T43] Round 4/6
+[10:45:41] [T41] Round 4/6
+[10:45:41] [T42] Round 4/6
+[10:45:48] [T44] Round 5/6
+[10:45:48] [T45] Round 5/6
+[10:45:48] [T41] Round 5/6
+[10:45:48] [T43] Round 5/6
+[10:45:49] [T42] Round 5/6
+[10:45:55] [T44] Round 6/6
+[10:45:55] [T41] Round 6/6
+[10:45:56] [T43] Round 6/6
+[10:45:56] [T45] Round 6/6
+[10:45:56] [T42] Round 6/6
+[10:46:03] [T44] ✓ Complete
+[10:46:03] [T41] ✓ Complete
+[10:46:03] [T43] ✓ Complete
+[10:46:04] [T45] ✓ Complete
+[10:46:04] [T42] ✓ Complete
+[10:46:04] [RUNNER] Batch complete. Cooling down 2s...
+[10:46:06] [RUNNER] Batch 10/20: tournaments 46–50
+[10:46:06] [T46] ▶ Starting simulation
+[10:46:06] [T47] ▶ Starting simulation
+[10:46:06] [T48] ▶ Starting simulation
+[10:46:06] [T49] ▶ Starting simulation
+[10:46:06] [T50] ▶ Starting simulation
+[10:46:07] [T47] Round 1/6
+[10:46:07] [T50] Round 1/6
+[10:46:07] [T46] Round 1/6
+[10:46:07] [T48] Round 1/6
+[10:46:08] [T49] Round 1/6
+[10:46:15] [T47] Round 2/6
+[10:46:15] [T50] Round 2/6
+[10:46:15] [T48] Round 2/6
+[10:46:15] [T49] Round 2/6
+[10:46:15] [T46] Round 2/6
+[10:46:22] [T47] Round 3/6
+[10:46:22] [T49] Round 3/6
+[10:46:22] [T50] Round 3/6
+[10:46:22] [T48] Round 3/6
+[10:46:23] [T46] Round 3/6
+[10:46:30] [T48] Round 4/6
+[10:46:30] [T49] Round 4/6
+[10:46:30] [T50] Round 4/6
+[10:46:30] [T46] Round 4/6
+[10:46:31] [T47] Round 4/6
+[10:46:37] [T48] Round 5/6
+[10:46:37] [T49] Round 5/6
+[10:46:38] [T50] Round 5/6
+[10:46:38] [T47] Round 5/6
+[10:46:38] [T46] Round 5/6
+[10:46:45] [T48] Round 6/6
+[10:46:45] [T49] Round 6/6
+[10:46:45] [T50] Round 6/6
+[10:46:45] [T47] Round 6/6
+[10:46:46] [T46] Round 6/6
+[10:46:53] [T48] ✓ Complete
+[10:46:53] [T49] ✓ Complete
+[10:46:53] [T47] ✓ Complete
+[10:46:54] [T50] ✓ Complete
+[10:46:54] [T46] ✓ Complete
+[10:46:54] [RUNNER] Batch complete. Cooling down 2s...
+[10:46:56] [RUNNER] Batch 11/20: tournaments 51–55
+[10:46:56] [T51] ▶ Starting simulation
+[10:46:56] [T52] ▶ Starting simulation
+[10:46:56] [T53] ▶ Starting simulation
+[10:46:56] [T54] ▶ Starting simulation
+[10:46:56] [T55] ▶ Starting simulation
+[10:46:57] [T55] Round 1/6
+[10:46:57] [T51] Round 1/6
+[10:46:57] [T54] Round 1/6
+[10:46:57] [T52] Round 1/6
+[10:46:57] [T53] Round 1/6
+[10:47:05] [T55] Round 2/6
+[10:47:05] [T54] Round 2/6
+[10:47:05] [T53] Round 2/6
+[10:47:05] [T52] Round 2/6
+[10:47:06] [T51] Round 2/6
+[10:47:12] [T55] Round 3/6
+[10:47:12] [T54] Round 3/6
+[10:47:12] [T53] Round 3/6
+[10:47:13] [T52] Round 3/6
+[10:47:13] [T51] Round 3/6
+[10:47:19] [T55] Round 4/6
+[10:47:19] [T54] Round 4/6
+[10:47:20] [T53] Round 4/6
+[10:47:20] [T51] Round 4/6
+[10:47:21] [T52] Round 4/6
+[10:47:27] [T53] Round 5/6
+[10:47:27] [T51] Round 5/6
+[10:47:28] [T55] Round 5/6
+[10:47:29] [T52] Round 5/6
+[10:47:29] [T54] Round 5/6
+[10:47:34] [T53] Round 6/6
+[10:47:35] [T51] Round 6/6
+[10:47:36] [T55] Round 6/6
+[10:47:36] [T52] Round 6/6
+[10:47:36] [T54] Round 6/6
+[10:47:42] [T53] ✓ Complete
+[10:47:43] [T51] ✓ Complete
+[10:47:43] [T55] ✓ Complete
+[10:47:44] [T52] ✓ Complete
+[10:47:44] [T54] ✓ Complete
+[10:47:44] [RUNNER] Batch complete. Cooling down 2s...
+[10:47:46] [RUNNER] Batch 12/20: tournaments 56–60
+[10:47:46] [T56] ▶ Starting simulation
+[10:47:46] [T57] ▶ Starting simulation
+[10:47:46] [T58] ▶ Starting simulation
+[10:47:46] [T59] ▶ Starting simulation
+[10:47:46] [T60] ▶ Starting simulation
+[10:47:47] [T60] Round 1/6
+[10:47:47] [T59] Round 1/6
+[10:47:47] [T58] Round 1/6
+[10:47:47] [T57] Round 1/6
+[10:47:47] [T56] Round 1/6
+[10:47:55] [T59] Round 2/6
+[10:47:55] [T57] Round 2/6
+[10:47:55] [T60] Round 2/6
+[10:47:55] [T58] Round 2/6
+[10:47:55] [T56] Round 2/6
+[10:48:02] [T57] Round 3/6
+[10:48:02] [T59] Round 3/6
+[10:48:02] [T60] Round 3/6
+[10:48:03] [T56] Round 3/6
+[10:48:03] [T58] Round 3/6
+[10:48:10] [T57] Round 4/6
+[10:48:10] [T59] Round 4/6
+[10:48:10] [T60] Round 4/6
+[10:48:10] [T56] Round 4/6
+[10:48:10] [T58] Round 4/6
+[10:48:17] [T59] Round 5/6
+[10:48:18] [T57] Round 5/6
+[10:48:18] [T60] Round 5/6
+[10:48:18] [T56] Round 5/6
+[10:48:18] [T58] Round 5/6
+[10:48:24] [T59] Round 6/6
+[10:48:25] [T56] Round 6/6
+[10:48:26] [T60] Round 6/6
+[10:48:26] [T57] Round 6/6
+[10:48:26] [T58] Round 6/6
+[10:48:32] [T59] ✓ Complete
+[10:48:33] [T56] ✓ Complete
+[10:48:33] [T60] ✓ Complete
+[10:48:34] [T57] ✓ Complete
+[10:48:35] [T58] ✓ Complete
+[10:48:35] [RUNNER] Batch complete. Cooling down 2s...
+[10:48:37] [RUNNER] Batch 13/20: tournaments 61–65
+[10:48:37] [T61] ▶ Starting simulation
+[10:48:37] [T62] ▶ Starting simulation
+[10:48:37] [T63] ▶ Starting simulation
+[10:48:37] [T64] ▶ Starting simulation
+[10:48:37] [T65] ▶ Starting simulation
+[10:48:38] [T65] Round 1/6
+[10:48:38] [T62] Round 1/6
+[10:48:38] [T64] Round 1/6
+[10:48:38] [T61] Round 1/6
+[10:48:38] [T63] Round 1/6
+[10:48:46] [T62] Round 2/6
+[10:48:46] [T61] Round 2/6
+[10:48:46] [T65] Round 2/6
+[10:48:46] [T63] Round 2/6
+[10:48:46] [T64] Round 2/6
+[10:48:53] [T62] Round 3/6
+[10:48:53] [T61] Round 3/6
+[10:48:54] [T63] Round 3/6
+[10:48:54] [T65] Round 3/6
+[10:48:54] [T64] Round 3/6
+[10:49:01] [T62] Round 4/6
+[10:49:01] [T61] Round 4/6
+[10:49:01] [T63] Round 4/6
+[10:49:01] [T65] Round 4/6
+[10:49:02] [T64] Round 4/6
+[10:49:08] [T62] Round 5/6
+[10:49:09] [T61] Round 5/6
+[10:49:09] [T65] Round 5/6
+[10:49:09] [T63] Round 5/6
+[10:49:09] [T64] Round 5/6
+[10:49:16] [T62] Round 6/6
+[10:49:16] [T65] Round 6/6
+[10:49:16] [T61] Round 6/6
+[10:49:17] [T63] Round 6/6
+[10:49:17] [T64] Round 6/6
+[10:49:24] [T62] ✓ Complete
+[10:49:24] [T65] ✓ Complete
+[10:49:25] [T61] ✓ Complete
+[10:49:25] [T63] ✓ Complete
+[10:49:25] [T64] ✓ Complete
+[10:49:25] [RUNNER] Batch complete. Cooling down 2s...
+[10:49:27] [RUNNER] Batch 14/20: tournaments 66–70
+[10:49:27] [T66] ▶ Starting simulation
+[10:49:27] [T67] ▶ Starting simulation
+[10:49:27] [T68] ▶ Starting simulation
+[10:49:27] [T69] ▶ Starting simulation
+[10:49:27] [T70] ▶ Starting simulation
+[10:49:28] [T66] Round 1/6
+[10:49:29] [T67] Round 1/6
+[10:49:29] [T70] Round 1/6
+[10:49:29] [T69] Round 1/6
+[10:49:29] [T68] Round 1/6
+[10:49:36] [T69] Round 2/6
+[10:49:36] [T66] Round 2/6
+[10:49:36] [T70] Round 2/6
+[10:49:36] [T68] Round 2/6
+[10:49:36] [T67] Round 2/6
+[10:49:43] [T69] Round 3/6
+[10:49:44] [T68] Round 3/6
+[10:49:44] [T70] Round 3/6
+[10:49:44] [T66] Round 3/6
+[10:49:44] [T67] Round 3/6
+[10:49:51] [T68] Round 4/6
+[10:49:52] [T70] Round 4/6
+[10:49:52] [T69] Round 4/6
+[10:49:52] [T66] Round 4/6
+[10:49:52] [T67] Round 4/6
+[10:49:59] [T68] Round 5/6
+[10:49:59] [T70] Round 5/6
+[10:49:59] [T67] Round 5/6
+[10:49:59] [T69] Round 5/6
+[10:49:59] [T66] Round 5/6
+[10:50:06] [T68] Round 6/6
+[10:50:06] [T70] Round 6/6
+[10:50:07] [T69] Round 6/6
+[10:50:07] [T66] Round 6/6
+[10:50:08] [T67] Round 6/6
+[10:50:14] [T68] ✓ Complete
+[10:50:15] [T70] ✓ Complete
+[10:50:15] [T66] ✓ Complete
+[10:50:15] [T69] ✓ Complete
+[10:50:17] [T67] ✓ Complete
+[10:50:17] [RUNNER] Batch complete. Cooling down 2s...
+[10:50:19] [RUNNER] Batch 15/20: tournaments 71–75
+[10:50:19] [T71] ▶ Starting simulation
+[10:50:19] [T72] ▶ Starting simulation
+[10:50:19] [T73] ▶ Starting simulation
+[10:50:19] [T74] ▶ Starting simulation
+[10:50:19] [T75] ▶ Starting simulation
+[10:50:20] [T74] Round 1/6
+[10:50:20] [T72] Round 1/6
+[10:50:20] [T71] Round 1/6
+[10:50:20] [T73] Round 1/6
+[10:50:20] [T75] Round 1/6
+[10:50:27] [T71] Round 2/6
+[10:50:28] [T72] Round 2/6
+[10:50:28] [T73] Round 2/6
+[10:50:28] [T75] Round 2/6
+[10:50:29] [T74] Round 2/6
+[10:50:35] [T71] Round 3/6
+[10:50:35] [T73] Round 3/6
+[10:50:36] [T72] Round 3/6
+[10:50:36] [T75] Round 3/6
+[10:50:37] [T74] Round 3/6
+[10:50:43] [T73] Round 4/6
+[10:50:43] [T71] Round 4/6
+[10:50:43] [T72] Round 4/6
+[10:50:44] [T74] Round 4/6
+[10:50:45] [T75] Round 4/6
+[10:50:51] [T73] Round 5/6
+[10:50:51] [T71] Round 5/6
+[10:50:52] [T72] Round 5/6
+[10:50:52] [T74] Round 5/6
+[10:50:52] [T75] Round 5/6
+[10:50:58] [T73] Round 6/6
+[10:50:59] [T71] Round 6/6
+[10:50:59] [T74] Round 6/6
+[10:50:59] [T72] Round 6/6
+[10:51:00] [T75] Round 6/6
+[10:51:06] [T73] ✓ Complete
+[10:51:07] [T71] ✓ Complete
+[10:51:07] [T74] ✓ Complete
+[10:51:08] [T72] ✓ Complete
+[10:51:08] [T75] ✓ Complete
+[10:51:08] [RUNNER] Batch complete. Cooling down 2s...
+[10:51:10] [RUNNER] Batch 16/20: tournaments 76–80
+[10:51:10] [T76] ▶ Starting simulation
+[10:51:10] [T77] ▶ Starting simulation
+[10:51:10] [T78] ▶ Starting simulation
+[10:51:10] [T79] ▶ Starting simulation
+[10:51:10] [T80] ▶ Starting simulation
+[10:51:11] [T77] Round 1/6
+[10:51:11] [T78] Round 1/6
+[10:51:11] [T80] Round 1/6
+[10:51:11] [T76] Round 1/6
+[10:51:11] [T79] Round 1/6
+[10:51:19] [T79] Round 2/6
+[10:51:19] [T76] Round 2/6
+[10:51:19] [T78] Round 2/6
+[10:51:19] [T80] Round 2/6
+[10:51:19] [T77] Round 2/6
+[10:51:26] [T76] Round 3/6
+[10:51:26] [T79] Round 3/6
+[10:51:26] [T78] Round 3/6
+[10:51:27] [T80] Round 3/6
+[10:51:28] [T77] Round 3/6
+[10:51:33] [T76] Round 4/6
+[10:51:34] [T79] Round 4/6
+[10:51:34] [T78] Round 4/6
+[10:51:35] [T80] Round 4/6
+[10:51:35] [T77] Round 4/6
+[10:51:40] [T76] Round 5/6
+[10:51:41] [T79] Round 5/6
+[10:51:42] [T78] Round 5/6
+[10:51:42] [T80] Round 5/6
+[10:51:43] [T77] Round 5/6
+[10:51:47] [T76] Round 6/6
+[10:51:49] [T79] Round 6/6
+[10:51:49] [T78] Round 6/6
+[10:51:50] [T77] Round 6/6
+[10:51:50] [T80] Round 6/6
+[10:51:56] [T76] ✓ Complete
+[10:51:57] [T79] ✓ Complete
+[10:51:58] [T77] ✓ Complete
+[10:51:58] [T78] ✓ Complete
+[10:51:59] [T80] ✓ Complete
+[10:51:59] [RUNNER] Batch complete. Cooling down 2s...
+[10:52:01] [RUNNER] Batch 17/20: tournaments 81–85
+[10:52:01] [T81] ▶ Starting simulation
+[10:52:01] [T82] ▶ Starting simulation
+[10:52:01] [T83] ▶ Starting simulation
+[10:52:01] [T84] ▶ Starting simulation
+[10:52:01] [T85] ▶ Starting simulation
+[10:52:02] [T82] Round 1/6
+[10:52:02] [T85] Round 1/6
+[10:52:02] [T81] Round 1/6
+[10:52:02] [T83] Round 1/6
+[10:52:02] [T84] Round 1/6
+[10:52:10] [T81] Round 2/6
+[10:52:10] [T85] Round 2/6
+[10:52:10] [T83] Round 2/6
+[10:52:10] [T84] Round 2/6
+[10:52:11] [T82] Round 2/6
+[10:52:17] [T81] Round 3/6
+[10:52:17] [T85] Round 3/6
+[10:52:17] [T83] Round 3/6
+[10:52:17] [T84] Round 3/6
+[10:52:20] [T82] Round 3/6
+[10:52:25] [T81] Round 4/6
+[10:52:25] [T85] Round 4/6
+[10:52:25] [T83] Round 4/6
+[10:52:25] [T84] Round 4/6
+[10:52:27] [T82] Round 4/6
+[10:52:32] [T85] Round 5/6
+[10:52:32] [T83] Round 5/6
+[10:52:32] [T81] Round 5/6
+[10:52:33] [T84] Round 5/6
+[10:52:35] [T82] Round 5/6
+[10:52:40] [T85] Round 6/6
+[10:52:40] [T83] Round 6/6
+[10:52:40] [T81] Round 6/6
+[10:52:40] [T84] Round 6/6
+[10:52:43] [T82] Round 6/6
+[10:52:47] [T85] ✓ Complete
+[10:52:48] [T81] ✓ Complete
+[10:52:48] [T83] ✓ Complete
+[10:52:48] [T84] ✓ Complete
+[10:52:50] [T82] ✓ Complete
+[10:52:50] [RUNNER] Batch complete. Cooling down 2s...
+[10:52:52] [RUNNER] Batch 18/20: tournaments 86–90
+[10:52:52] [T86] ▶ Starting simulation
+[10:52:52] [T87] ▶ Starting simulation
+[10:52:52] [T88] ▶ Starting simulation
+[10:52:52] [T89] ▶ Starting simulation
+[10:52:52] [T90] ▶ Starting simulation
+[10:52:53] [T89] Round 1/6
+[10:52:53] [T90] Round 1/6
+[10:52:53] [T88] Round 1/6
+[10:52:54] [T87] Round 1/6
+[10:52:54] [T86] Round 1/6
+[10:53:01] [T90] Round 2/6
+[10:53:01] [T89] Round 2/6
+[10:53:01] [T87] Round 2/6
+[10:53:01] [T88] Round 2/6
+[10:53:01] [T86] Round 2/6
+[10:53:09] [T87] Round 3/6
+[10:53:09] [T86] Round 3/6
+[10:53:09] [T88] Round 3/6
+[10:53:09] [T90] Round 3/6
+[10:53:09] [T89] Round 3/6
+[10:53:16] [T87] Round 4/6
+[10:53:16] [T88] Round 4/6
+[10:53:16] [T86] Round 4/6
+[10:53:16] [T90] Round 4/6
+[10:53:17] [T89] Round 4/6
+[10:53:23] [T87] Round 5/6
+[10:53:24] [T90] Round 5/6
+[10:53:24] [T88] Round 5/6
+[10:53:24] [T86] Round 5/6
+[10:53:24] [T89] Round 5/6
+[10:53:31] [T90] Round 6/6
+[10:53:31] [T87] Round 6/6
+[10:53:31] [T88] Round 6/6
+[10:53:32] [T86] Round 6/6
+[10:53:32] [T89] Round 6/6
+[10:53:39] [T90] ✓ Complete
+[10:53:39] [T88] ✓ Complete
+[10:53:39] [T86] ✓ Complete
+[10:53:40] [T89] ✓ Complete
+[10:53:40] [T87] ✓ Complete
+[10:53:40] [RUNNER] Batch complete. Cooling down 2s...
+[10:53:42] [RUNNER] Batch 19/20: tournaments 91–95
+[10:53:42] [T91] ▶ Starting simulation
+[10:53:42] [T92] ▶ Starting simulation
+[10:53:42] [T93] ▶ Starting simulation
+[10:53:42] [T94] ▶ Starting simulation
+[10:53:42] [T95] ▶ Starting simulation
+[10:53:43] [T92] Round 1/6
+[10:53:43] [T91] Round 1/6
+[10:53:43] [T93] Round 1/6
+[10:53:43] [T95] Round 1/6
+[10:53:44] [T94] Round 1/6
+[10:53:51] [T91] Round 2/6
+[10:53:51] [T92] Round 2/6
+[10:53:51] [T93] Round 2/6
+[10:53:51] [T95] Round 2/6
+[10:53:52] [T94] Round 2/6
+[10:53:59] [T92] Round 3/6
+[10:53:59] [T91] Round 3/6
+[10:53:59] [T94] Round 3/6
+[10:54:00] [T93] Round 3/6
+[10:54:00] [T95] Round 3/6
+[10:54:06] [T91] Round 4/6
+[10:54:06] [T92] Round 4/6
+[10:54:07] [T94] Round 4/6
+[10:54:07] [T93] Round 4/6
+[10:54:07] [T95] Round 4/6
+[10:54:13] [T92] Round 5/6
+[10:54:14] [T91] Round 5/6
+[10:54:15] [T93] Round 5/6
+[10:54:15] [T95] Round 5/6
+[10:54:15] [T94] Round 5/6
+[10:54:21] [T92] Round 6/6
+[10:54:21] [T91] Round 6/6
+[10:54:22] [T95] Round 6/6
+[10:54:22] [T93] Round 6/6
+[10:54:23] [T94] Round 6/6
+[10:54:29] [T95] ✓ Complete
+[10:54:29] [T92] ✓ Complete
+[10:54:30] [T91] ✓ Complete
+[10:54:30] [T93] ✓ Complete
+[10:54:30] [T94] ✓ Complete
+[10:54:30] [RUNNER] Batch complete. Cooling down 2s...
+[10:54:32] [RUNNER] Batch 20/20: tournaments 96–100
+[10:54:32] [T96] ▶ Starting simulation
+[10:54:32] [T97] ▶ Starting simulation
+[10:54:32] [T98] ▶ Starting simulation
+[10:54:32] [T99] ▶ Starting simulation
+[10:54:32] [T100] ▶ Starting simulation
+[10:54:34] [T97] Round 1/6
+[10:54:34] [T98] Round 1/6
+[10:54:34] [T96] Round 1/6
+[10:54:34] [T99] Round 1/6
+[10:54:34] [T100] Round 1/6
+[10:54:41] [T96] Round 2/6
+[10:54:42] [T100] Round 2/6
+[10:54:42] [T98] Round 2/6
+[10:54:42] [T99] Round 2/6
+[10:54:42] [T97] Round 2/6
+[10:54:49] [T98] Round 3/6
+[10:54:50] [T100] Round 3/6
+[10:54:50] [T97] Round 3/6
+[10:54:50] [T99] Round 3/6
+[10:54:51] [T96] Round 3/6
+[10:54:56] [T98] Round 4/6
+[10:54:57] [T100] Round 4/6
+[10:54:58] [T99] Round 4/6
+[10:54:58] [T97] Round 4/6
+[10:54:59] [T96] Round 4/6
+[10:55:04] [T98] Round 5/6
+[10:55:05] [T100] Round 5/6
+[10:55:06] [T97] Round 5/6
+[10:55:06] [T99] Round 5/6
+[10:55:06] [T96] Round 5/6
+[10:55:13] [T98] Round 6/6
+[10:55:13] [T100] Round 6/6
+[10:55:13] [T99] Round 6/6
+[10:55:14] [T97] Round 6/6
+[10:55:14] [T96] Round 6/6
+[10:55:20] [T100] ✓ Complete
+[10:55:21] [T98] ✓ Complete
+[10:55:21] [T97] ✓ Complete
+[10:55:22] [T99] ✓ Complete
+[10:55:22] [T96] ✓ Complete
+[10:55:22] [RUNNER] Batch complete. Cooling down 2s...
+[10:55:24] [CLEANUP] Deleting all test data...
+[10:55:24] [CLEANUP] ✓ Deleted 100 tournaments and all associated data
+
+════════════════════════════════════════════════════════════
+  SIMULATION COMPLETE
+════════════════════════════════════════════════════════════
+  Duration : 1011.6s
+  Tests    : 1600 total  ✓ 1600 passed  ✗ 0 failed
+════════════════════════════════════════════════════════════
+
+  PHASE BREAKDOWN:
+  ✓ create-tournament              100 passed, 0 failed
+  ✓ add-players                    100 passed, 0 failed
+  ✓ start-tournament               100 passed, 0 failed
+  ✓ rls-read-tournament            100 passed, 0 failed
+  ✓ rls-block-delete               100 passed, 0 failed
+  ✓ rls-read-players               100 passed, 0 failed
+  ✓ guest-claim                    100 passed, 0 failed
+  ✓ realtime                       100 passed, 0 failed
+  ✓ round                          600 passed, 0 failed
+  ✓ sync-standings                 100 passed, 0 failed
+  ✓ end-tournament                 100 passed, 0 failed
+════════════════════════════════════════════════════════════
+
+  [Pass 4] Script exited OK
+  Cooling down 5 minutes before next pass...
+
+──── PASS 5 / 5  [12:00:24] ────────────────────────────
+[dotenv@17.3.1] injecting env (3) from .env.local -- tip: ⚙️  write to custom object with { processEnv: myObject }
+════════════════════════════════════════════════════════════
+  Parego Tournament Simulation
+  100 tournaments × 24 players × 6 rounds
+  Batch size: 5 parallel tournaments
+════════════════════════════════════════════════════════════
+
+[11:00:25] [RUNNER] Batch 1/20: tournaments 1–5
+[11:00:25] [T1] ▶ Starting simulation
+[11:00:25] [T2] ▶ Starting simulation
+[11:00:25] [T3] ▶ Starting simulation
+[11:00:25] [T4] ▶ Starting simulation
+[11:00:25] [T5] ▶ Starting simulation
+[11:00:27] [T1] Round 1/6
+[11:00:27] [T4] Round 1/6
+[11:00:27] [T5] Round 1/6
+[11:00:27] [T2] Round 1/6
+[11:00:27] [T3] Round 1/6
+[11:00:34] [T2] Round 2/6
+[11:00:35] [T4] Round 2/6
+[11:00:35] [T1] Round 2/6
+[11:00:35] [T5] Round 2/6
+[11:00:35] [T3] Round 2/6
+[11:00:42] [T2] Round 3/6
+[11:00:42] [T4] Round 3/6
+[11:00:42] [T1] Round 3/6
+[11:00:43] [T5] Round 3/6
+[11:00:43] [T3] Round 3/6
+[11:00:49] [T2] Round 4/6
+[11:00:49] [T4] Round 4/6
+[11:00:50] [T1] Round 4/6
+[11:00:50] [T3] Round 4/6
+[11:00:51] [T5] Round 4/6
+[11:00:57] [T2] Round 5/6
+[11:00:57] [T4] Round 5/6
+[11:00:57] [T1] Round 5/6
+[11:00:58] [T3] Round 5/6
+[11:00:58] [T5] Round 5/6
+[11:01:04] [T2] Round 6/6
+[11:01:05] [T4] Round 6/6
+[11:01:05] [T1] Round 6/6
+[11:01:06] [T3] Round 6/6
+[11:01:06] [T5] Round 6/6
+[11:01:12] [T2] ✓ Complete
+[11:01:12] [T4] ✓ Complete
+[11:01:13] [T1] ✓ Complete
+[11:01:13] [T3] ✓ Complete
+[11:01:15] [T5] ✓ Complete
+[11:01:15] [RUNNER] Batch complete. Cooling down 2s...
+[11:01:17] [RUNNER] Batch 2/20: tournaments 6–10
+[11:01:17] [T6] ▶ Starting simulation
+[11:01:17] [T7] ▶ Starting simulation
+[11:01:17] [T8] ▶ Starting simulation
+[11:01:17] [T9] ▶ Starting simulation
+[11:01:17] [T10] ▶ Starting simulation
+[11:01:18] [T7] Round 1/6
+[11:01:18] [T6] Round 1/6
+[11:01:18] [T8] Round 1/6
+[11:01:19] [T10] Round 1/6
+[11:01:19] [T9] Round 1/6
+[11:01:26] [T7] Round 2/6
+[11:01:26] [T10] Round 2/6
+[11:01:26] [T6] Round 2/6
+[11:01:27] [T9] Round 2/6
+[11:01:27] [T8] Round 2/6
+[11:01:34] [T10] Round 3/6
+[11:01:34] [T6] Round 3/6
+[11:01:34] [T9] Round 3/6
+[11:01:35] [T8] Round 3/6
+[11:01:36] [T7] Round 3/6
+[11:01:41] [T10] Round 4/6
+[11:01:42] [T6] Round 4/6
+[11:01:42] [T9] Round 4/6
+[11:01:42] [T8] Round 4/6
+[11:01:44] [T7] Round 4/6
+[11:01:49] [T10] Round 5/6
+[11:01:49] [T6] Round 5/6
+[11:01:50] [T8] Round 5/6
+[11:01:50] [T9] Round 5/6
+[11:01:51] [T7] Round 5/6
+[11:01:57] [T10] Round 6/6
+[11:01:57] [T6] Round 6/6
+[11:01:57] [T9] Round 6/6
+[11:01:57] [T8] Round 6/6
+[11:01:59] [T7] Round 6/6
+[11:02:05] [T6] ✓ Complete
+[11:02:05] [T10] ✓ Complete
+[11:02:05] [T9] ✓ Complete
+[11:02:07] [T8] ✓ Complete
+[11:02:07] [T7] ✓ Complete
+[11:02:07] [RUNNER] Batch complete. Cooling down 2s...
+[11:02:09] [RUNNER] Batch 3/20: tournaments 11–15
+[11:02:09] [T11] ▶ Starting simulation
+[11:02:09] [T12] ▶ Starting simulation
+[11:02:09] [T13] ▶ Starting simulation
+[11:02:09] [T14] ▶ Starting simulation
+[11:02:09] [T15] ▶ Starting simulation
+[11:02:10] [T13] Round 1/6
+[11:02:10] [T11] Round 1/6
+[11:02:10] [T15] Round 1/6
+[11:02:10] [T12] Round 1/6
+[11:02:10] [T14] Round 1/6
+[11:02:18] [T13] Round 2/6
+[11:02:18] [T11] Round 2/6
+[11:02:18] [T14] Round 2/6
+[11:02:18] [T15] Round 2/6
+[11:02:18] [T12] Round 2/6
+[11:02:25] [T11] Round 3/6
+[11:02:25] [T15] Round 3/6
+[11:02:25] [T13] Round 3/6
+[11:02:25] [T14] Round 3/6
+[11:02:25] [T12] Round 3/6
+[11:02:33] [T13] Round 4/6
+[11:02:33] [T11] Round 4/6
+[11:02:33] [T12] Round 4/6
+[11:02:33] [T15] Round 4/6
+[11:02:33] [T14] Round 4/6
+[11:02:40] [T13] Round 5/6
+[11:02:40] [T11] Round 5/6
+[11:02:40] [T12] Round 5/6
+[11:02:41] [T15] Round 5/6
+[11:02:41] [T14] Round 5/6
+[11:02:47] [T13] Round 6/6
+[11:02:48] [T12] Round 6/6
+[11:02:48] [T15] Round 6/6
+[11:02:48] [T11] Round 6/6
+[11:02:49] [T14] Round 6/6
+[11:02:56] [T13] ✓ Complete
+[11:02:56] [T12] ✓ Complete
+[11:02:56] [T11] ✓ Complete
+[11:02:56] [T15] ✓ Complete
+[11:02:57] [T14] ✓ Complete
+[11:02:57] [RUNNER] Batch complete. Cooling down 2s...
+[11:02:59] [RUNNER] Batch 4/20: tournaments 16–20
+[11:02:59] [T16] ▶ Starting simulation
+[11:02:59] [T17] ▶ Starting simulation
+[11:02:59] [T18] ▶ Starting simulation
+[11:02:59] [T19] ▶ Starting simulation
+[11:02:59] [T20] ▶ Starting simulation
+[11:03:00] [T17] Round 1/6
+[11:03:00] [T19] Round 1/6
+[11:03:00] [T18] Round 1/6
+[11:03:00] [T16] Round 1/6
+[11:03:00] [T20] Round 1/6
+[11:03:08] [T16] Round 2/6
+[11:03:08] [T20] Round 2/6
+[11:03:08] [T18] Round 2/6
+[11:03:08] [T19] Round 2/6
+[11:03:08] [T17] Round 2/6
+[11:03:15] [T16] Round 3/6
+[11:03:15] [T18] Round 3/6
+[11:03:16] [T19] Round 3/6
+[11:03:16] [T17] Round 3/6
+[11:03:16] [T20] Round 3/6
+[11:03:23] [T16] Round 4/6
+[11:03:24] [T19] Round 4/6
+[11:03:24] [T17] Round 4/6
+[11:03:24] [T18] Round 4/6
+[11:03:24] [T20] Round 4/6
+[11:03:31] [T19] Round 5/6
+[11:03:31] [T16] Round 5/6
+[11:03:31] [T17] Round 5/6
+[11:03:31] [T18] Round 5/6
+[11:03:32] [T20] Round 5/6
+[11:03:38] [T19] Round 6/6
+[11:03:39] [T16] Round 6/6
+[11:03:39] [T17] Round 6/6
+[11:03:39] [T18] Round 6/6
+[11:03:39] [T20] Round 6/6
+[11:03:45] [T19] ✓ Complete
+[11:03:46] [T17] ❌ FAIL [verify-standings]: TypeError: fetch failed
+[11:03:47] [T17] ✓ Complete
+[11:03:47] [T18] ✓ Complete
+[11:03:47] [T20] ✓ Complete
+[11:03:47] [T16] ✓ Complete
+[11:03:47] [RUNNER] Batch complete. Cooling down 2s...
+[11:03:49] [RUNNER] Batch 5/20: tournaments 21–25
+[11:03:49] [T21] ▶ Starting simulation
+[11:03:49] [T22] ▶ Starting simulation
+[11:03:49] [T23] ▶ Starting simulation
+[11:03:49] [T24] ▶ Starting simulation
+[11:03:49] [T25] ▶ Starting simulation
+[11:03:51] [T24] Round 1/6
+[11:03:51] [T22] Round 1/6
+[11:03:51] [T21] Round 1/6
+[11:03:51] [T25] Round 1/6
+[11:03:51] [T23] Round 1/6
+[11:03:58] [T21] Round 2/6
+[11:03:58] [T22] Round 2/6
+[11:03:58] [T24] Round 2/6
+[11:03:58] [T23] Round 2/6
+[11:03:59] [T25] Round 2/6
+[11:04:05] [T22] Round 3/6
+[11:04:06] [T23] Round 3/6
+[11:04:06] [T25] Round 3/6
+[11:04:06] [T24] Round 3/6
+[11:04:07] [T21] Round 3/6
+[11:04:12] [T22] Round 4/6
+[11:04:13] [T25] Round 4/6
+[11:04:13] [T23] Round 4/6
+[11:04:13] [T24] Round 4/6
+[11:04:14] [T21] Round 4/6
+[11:04:20] [T22] Round 5/6
+[11:04:20] [T24] Round 5/6
+[11:04:21] [T25] Round 5/6
+[11:04:21] [T23] Round 5/6
+[11:04:21] [T21] Round 5/6
+[11:04:28] [T22] Round 6/6
+[11:04:28] [T24] Round 6/6
+[11:04:28] [T23] Round 6/6
+[11:04:28] [T25] Round 6/6
+[11:04:28] [T21] Round 6/6
+[11:04:35] [T23] ✓ Complete
+[11:04:36] [T25] ✓ Complete
+[11:04:36] [T24] ✓ Complete
+[11:04:36] [T21] ✓ Complete
+[11:04:36] [T22] ✓ Complete
+[11:04:36] [RUNNER] Batch complete. Cooling down 2s...
+[11:04:38] [RUNNER] Batch 6/20: tournaments 26–30
+[11:04:38] [T26] ▶ Starting simulation
+[11:04:38] [T27] ▶ Starting simulation
+[11:04:38] [T28] ▶ Starting simulation
+[11:04:38] [T29] ▶ Starting simulation
+[11:04:38] [T30] ▶ Starting simulation
+[11:04:40] [T27] Round 1/6
+[11:04:40] [T29] Round 1/6
+[11:04:40] [T28] Round 1/6
+[11:04:40] [T26] Round 1/6
+[11:04:40] [T30] Round 1/6
+[11:04:47] [T28] Round 2/6
+[11:04:47] [T30] Round 2/6
+[11:04:48] [T26] Round 2/6
+[11:04:48] [T29] Round 2/6
+[11:04:48] [T27] Round 2/6
+[11:04:55] [T28] Round 3/6
+[11:04:55] [T26] Round 3/6
+[11:04:55] [T30] Round 3/6
+[11:04:56] [T29] Round 3/6
+[11:04:56] [T27] Round 3/6
+[11:05:02] [T28] Round 4/6
+[11:05:02] [T26] Round 4/6
+[11:05:03] [T30] Round 4/6
+[11:05:04] [T29] Round 4/6
+[11:05:05] [T27] Round 4/6
+[11:05:10] [T28] Round 5/6
+[11:05:10] [T26] Round 5/6
+[11:05:10] [T30] Round 5/6
+[11:05:12] [T29] Round 5/6
+[11:05:13] [T27] Round 5/6
+[11:05:17] [T28] Round 6/6
+[11:05:18] [T30] Round 6/6
+[11:05:18] [T26] Round 6/6
+[11:05:20] [T29] Round 6/6
+[11:05:21] [T27] Round 6/6
+[11:05:26] [T28] ✓ Complete
+[11:05:26] [T30] ✓ Complete
+[11:05:26] [T26] ✓ Complete
+[11:05:28] [T29] ✓ Complete
+[11:05:29] [T27] ✓ Complete
+[11:05:29] [RUNNER] Batch complete. Cooling down 2s...
+[11:05:31] [RUNNER] Batch 7/20: tournaments 31–35
+[11:05:31] [T31] ▶ Starting simulation
+[11:05:31] [T32] ▶ Starting simulation
+[11:05:31] [T33] ▶ Starting simulation
+[11:05:31] [T34] ▶ Starting simulation
+[11:05:31] [T35] ▶ Starting simulation
+[11:05:33] [T35] Round 1/6
+[11:05:33] [T31] Round 1/6
+[11:05:33] [T34] Round 1/6
+[11:05:33] [T33] Round 1/6
+[11:05:33] [T32] Round 1/6
+[11:05:40] [T32] Round 2/6
+[11:05:40] [T34] Round 2/6
+[11:05:40] [T35] Round 2/6
+[11:05:40] [T31] Round 2/6
+[11:05:41] [T33] Round 2/6
+[11:05:47] [T32] Round 3/6
+[11:05:48] [T35] Round 3/6
+[11:05:48] [T34] Round 3/6
+[11:05:48] [T31] Round 3/6
+[11:05:49] [T33] Round 3/6
+[11:05:55] [T35] Round 4/6
+[11:05:55] [T32] Round 4/6
+[11:05:55] [T34] Round 4/6
+[11:05:56] [T33] Round 4/6
+[11:05:56] [T31] Round 4/6
+[11:06:03] [T35] Round 5/6
+[11:06:03] [T34] Round 5/6
+[11:06:04] [T32] Round 5/6
+[11:06:04] [T33] Round 5/6
+[11:06:04] [T31] Round 5/6
+[11:06:10] [T35] Round 6/6
+[11:06:11] [T34] Round 6/6
+[11:06:11] [T32] Round 6/6
+[11:06:12] [T33] Round 6/6
+[11:06:12] [T31] Round 6/6
+[11:06:18] [T35] ✓ Complete
+[11:06:19] [T34] ✓ Complete
+[11:06:19] [T33] ✓ Complete
+[11:06:19] [T32] ✓ Complete
+[11:06:21] [T31] ✓ Complete
+[11:06:21] [RUNNER] Batch complete. Cooling down 2s...
+[11:06:23] [RUNNER] Batch 8/20: tournaments 36–40
+[11:06:23] [T36] ▶ Starting simulation
+[11:06:23] [T37] ▶ Starting simulation
+[11:06:23] [T38] ▶ Starting simulation
+[11:06:23] [T39] ▶ Starting simulation
+[11:06:23] [T40] ▶ Starting simulation
+[11:06:24] [T38] Round 1/6
+[11:06:24] [T39] Round 1/6
+[11:06:24] [T37] Round 1/6
+[11:06:24] [T36] Round 1/6
+[11:06:24] [T40] Round 1/6
+[11:06:31] [T37] Round 2/6
+[11:06:31] [T39] Round 2/6
+[11:06:31] [T38] Round 2/6
+[11:06:32] [T40] Round 2/6
+[11:06:32] [T36] Round 2/6
+[11:06:39] [T38] Round 3/6
+[11:06:39] [T39] Round 3/6
+[11:06:39] [T40] Round 3/6
+[11:06:39] [T36] Round 3/6
+[11:06:39] [T37] Round 3/6
+[11:06:46] [T38] Round 4/6
+[11:06:46] [T40] Round 4/6
+[11:06:46] [T39] Round 4/6
+[11:06:47] [T37] Round 4/6
+[11:06:47] [T36] Round 4/6
+[11:06:54] [T40] Round 5/6
+[11:06:54] [T39] Round 5/6
+[11:06:54] [T38] Round 5/6
+[11:06:54] [T36] Round 5/6
+[11:06:54] [T37] Round 5/6
+[11:07:01] [T40] Round 6/6
+[11:07:01] [T39] Round 6/6
+[11:07:02] [T38] Round 6/6
+[11:07:02] [T36] Round 6/6
+[11:07:02] [T37] Round 6/6
+[11:07:09] [T40] ✓ Complete
+[11:07:09] [T39] ✓ Complete
+[11:07:10] [T38] ✓ Complete
+[11:07:10] [T36] ✓ Complete
+[11:07:10] [T37] ✓ Complete
+[11:07:10] [RUNNER] Batch complete. Cooling down 2s...
+[11:07:12] [RUNNER] Batch 9/20: tournaments 41–45
+[11:07:12] [T41] ▶ Starting simulation
+[11:07:12] [T42] ▶ Starting simulation
+[11:07:12] [T43] ▶ Starting simulation
+[11:07:12] [T44] ▶ Starting simulation
+[11:07:12] [T45] ▶ Starting simulation
+[11:07:14] [T43] Round 1/6
+[11:07:14] [T42] Round 1/6
+[11:07:14] [T41] Round 1/6
+[11:07:14] [T45] Round 1/6
+[11:07:14] [T44] Round 1/6
+[11:07:21] [T42] Round 2/6
+[11:07:21] [T43] Round 2/6
+[11:07:21] [T44] Round 2/6
+[11:07:21] [T41] Round 2/6
+[11:07:22] [T45] Round 2/6
+[11:07:28] [T44] Round 3/6
+[11:07:29] [T42] Round 3/6
+[11:07:29] [T41] Round 3/6
+[11:07:29] [T43] Round 3/6
+[11:07:29] [T45] Round 3/6
+[11:07:36] [T44] Round 4/6
+[11:07:36] [T42] Round 4/6
+[11:07:37] [T45] Round 4/6
+[11:07:37] [T41] Round 4/6
+[11:07:37] [T43] Round 4/6
+[11:07:44] [T44] Round 5/6
+[11:07:45] [T42] Round 5/6
+[11:07:45] [T45] Round 5/6
+[11:07:46] [T41] Round 5/6
+[11:07:46] [T43] Round 5/6
+[11:07:51] [T44] Round 6/6
+[11:07:52] [T42] Round 6/6
+[11:07:53] [T43] Round 6/6
+[11:07:53] [T41] Round 6/6
+[11:07:53] [T45] Round 6/6
+[11:07:59] [T44] ✓ Complete
+[11:08:00] [T42] ✓ Complete
+[11:08:01] [T41] ✓ Complete
+[11:08:01] [T43] ✓ Complete
+[11:08:01] [T45] ✓ Complete
+[11:08:01] [RUNNER] Batch complete. Cooling down 2s...
+[11:08:03] [RUNNER] Batch 10/20: tournaments 46–50
+[11:08:03] [T46] ▶ Starting simulation
+[11:08:03] [T47] ▶ Starting simulation
+[11:08:03] [T48] ▶ Starting simulation
+[11:08:03] [T49] ▶ Starting simulation
+[11:08:03] [T50] ▶ Starting simulation
+[11:08:04] [T49] Round 1/6
+[11:08:04] [T47] Round 1/6
+[11:08:04] [T46] Round 1/6
+[11:08:04] [T48] Round 1/6
+[11:08:04] [T50] Round 1/6
+[11:08:12] [T49] Round 2/6
+[11:08:12] [T47] Round 2/6
+[11:08:12] [T48] Round 2/6
+[11:08:12] [T46] Round 2/6
+[11:08:12] [T50] Round 2/6
+[11:08:19] [T48] Round 3/6
+[11:08:19] [T49] Round 3/6
+[11:08:19] [T46] Round 3/6
+[11:08:20] [T47] Round 3/6
+[11:08:20] [T50] Round 3/6
+[11:08:26] [T49] Round 4/6
+[11:08:26] [T48] Round 4/6
+[11:08:27] [T46] Round 4/6
+[11:08:27] [T47] Round 4/6
+[11:08:28] [T50] Round 4/6
+[11:08:33] [T49] Round 5/6
+[11:08:34] [T48] Round 5/6
+[11:08:35] [T46] Round 5/6
+[11:08:35] [T50] Round 5/6
+[11:08:36] [T47] Round 5/6
+[11:08:41] [T48] Round 6/6
+[11:08:42] [T49] Round 6/6
+[11:08:42] [T46] Round 6/6
+[11:08:43] [T50] Round 6/6
+[11:08:44] [T47] Round 6/6
+[11:08:49] [T48] ✓ Complete
+[11:08:49] [T49] ✓ Complete
+[11:08:50] [T46] ✓ Complete
+[11:08:50] [T50] ✓ Complete
+[11:08:52] [T47] ✓ Complete
+[11:08:52] [RUNNER] Batch complete. Cooling down 2s...
+[11:08:54] [RUNNER] Batch 11/20: tournaments 51–55
+[11:08:54] [T51] ▶ Starting simulation
+[11:08:54] [T52] ▶ Starting simulation
+[11:08:54] [T53] ▶ Starting simulation
+[11:08:54] [T54] ▶ Starting simulation
+[11:08:54] [T55] ▶ Starting simulation
+[11:08:55] [T51] Round 1/6
+[11:08:55] [T52] Round 1/6
+[11:08:55] [T53] Round 1/6
+[11:08:55] [T55] Round 1/6
+[11:08:55] [T54] Round 1/6
+[11:09:01] [T51] ❌ FAIL [round-1-confirm]: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head>
+
+<title> | 502: Bad gateway</title>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" />
+</head>
+<body>
+<div id="cf-wrapper">
+    <div id="cf-error-details" class="p-0">
+        <header class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-8">
+            <h1 class="inline-block sm:block sm:mb-2 font-light text-60 lg:text-4xl text-black-dark leading-tight mr-2">
+                <span class="inline-block">Bad gateway</span>
+                <span class="code-label">Error code 502</span>
+            </h1>
+            <div>
+                Visit <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">cloudflare.com</a> for more information.
+            </div>
+            <div class="mt-3">2026-03-10 11:09:01 UTC</div>
+        </header>
+        <div class="my-8 bg-gradient-gray">
+            <div class="w-240 lg:w-full mx-auto">
+                <div class="clearfix md:px-8">
+                    <div id="cf-browser-status" class=" relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    
+    <span class="cf-icon-browser block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-ok w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    
+  </div>
+  <span class="md:block w-full truncate">You</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  
+    Browser
+  
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-green-success">Working</span>
+  
+</div>
+                    <div id="cf-cloudflare-status" class=" relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&#38;utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">
+    <span class="cf-icon-cloud block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-ok w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    </a>
+  </div>
+  <span class="md:block w-full truncate">Madrid</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">
+    Cloudflare
+  </a>
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-green-success">Working</span>
+  
+</div>
+                    <div id="cf-host-status" class="cf-error-source relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    
+    <span class="cf-icon-server block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-error w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    
+  </div>
+  <span class="md:block w-full truncate">mwuoovdepfylavqveswe.supabase.co</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  
+    Host
+  
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-red-error">Error</span>
+  
+</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+            <div class="clearfix">
+                <div class="w-1/2 md:w-full float-left pr-6 md:pb-10 md:pr-0 leading-relaxed">
+                    <h2 class="text-3xl font-normal leading-1.3 mb-4">What happened?</h2>
+                    <p>The web server reported a bad gateway error.</p>
+                </div>
+                <div class="w-1/2 md:w-full float-left leading-relaxed">
+                    <h2 class="text-3xl font-normal leading-1.3 mb-4">What can I do?</h2>
+                    <p class="mb-6">Please try again in a few minutes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+    <p class="text-13">
+      <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">9da1dd631a2cf77b</strong></span>
+      <span class="cf-footer-separator sm:hidden">&bull;</span>
+      <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+        Your IP:
+        <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+        <span class="hidden" id="cf-footer-ip">84.126.128.103</span>
+        <span class="cf-footer-separator sm:hidden">&bull;</span>
+      </span>
+      <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&#38;utm_campaign=mwuoovdepfylavqveswe.supabase.co" id="brand_link" target="_blank">Cloudflare</a></span>
+      
+    </p>
+    <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+  </div><!-- /.error-footer -->
+
+    </div>
+</div>
+</body>
+</html>
+[11:09:03] [T54] Round 2/6
+[11:09:03] [T52] Round 2/6
+[11:09:03] [T51] Round 2/6
+[11:09:03] [T55] Round 2/6
+[11:09:03] [T53] Round 2/6
+[11:09:10] [T52] Round 3/6
+[11:09:10] [T54] Round 3/6
+[11:09:10] [T53] Round 3/6
+[11:09:11] [T55] Round 3/6
+[11:09:11] [T51] Round 3/6
+[11:09:17] [T54] Round 4/6
+[11:09:17] [T52] Round 4/6
+[11:09:18] [T51] Round 4/6
+[11:09:19] [T55] Round 4/6
+[11:09:19] [T53] Round 4/6
+[11:09:25] [T54] Round 5/6
+[11:09:25] [T52] Round 5/6
+[11:09:26] [T51] Round 5/6
+[11:09:26] [T55] Round 5/6
+[11:09:27] [T53] Round 5/6
+[11:09:32] [T54] Round 6/6
+[11:09:33] [T52] Round 6/6
+[11:09:33] [T51] Round 6/6
+[11:09:33] [T55] Round 6/6
+[11:09:34] [T53] Round 6/6
+[11:09:39] [T54] ✓ Complete
+[11:09:41] [T52] ✓ Complete
+[11:09:41] [T55] ✓ Complete
+[11:09:42] [T51] ✓ Complete
+[11:09:42] [T53] ✓ Complete
+[11:09:42] [RUNNER] Batch complete. Cooling down 2s...
+[11:09:44] [RUNNER] Batch 12/20: tournaments 56–60
+[11:09:44] [T56] ▶ Starting simulation
+[11:09:44] [T57] ▶ Starting simulation
+[11:09:44] [T58] ▶ Starting simulation
+[11:09:44] [T59] ▶ Starting simulation
+[11:09:44] [T60] ▶ Starting simulation
+[11:09:45] [T56] Round 1/6
+[11:09:45] [T59] Round 1/6
+[11:09:46] [T58] Round 1/6
+[11:09:46] [T60] Round 1/6
+[11:09:46] [T57] Round 1/6
+[11:09:53] [T56] Round 2/6
+[11:09:54] [T59] Round 2/6
+[11:09:54] [T57] Round 2/6
+[11:09:54] [T60] Round 2/6
+[11:09:55] [T58] Round 2/6
+[11:10:00] [T56] Round 3/6
+[11:10:02] [T59] Round 3/6
+[11:10:02] [T58] Round 3/6
+[11:10:02] [T57] Round 3/6
+[11:10:02] [T60] Round 3/6
+[11:10:09] [T56] Round 4/6
+[11:10:09] [T59] Round 4/6
+[11:10:10] [T58] Round 4/6
+[11:10:10] [T60] Round 4/6
+[11:10:11] [T57] Round 4/6
+[11:10:17] [T56] Round 5/6
+[11:10:17] [T59] Round 5/6
+[11:10:17] [T58] Round 5/6
+[11:10:18] [T60] Round 5/6
+[11:10:19] [T57] Round 5/6
+[11:10:24] [T56] Round 6/6
+[11:10:24] [T59] Round 6/6
+[11:10:25] [T58] Round 6/6
+[11:10:26] [T60] Round 6/6
+[11:10:27] [T57] Round 6/6
+[11:10:32] [T56] ✓ Complete
+[11:10:32] [T59] ✓ Complete
+[11:10:34] [T58] ✓ Complete
+[11:10:34] [T60] ✓ Complete
+[11:10:34] [T57] ✓ Complete
+[11:10:34] [RUNNER] Batch complete. Cooling down 2s...
+[11:10:36] [RUNNER] Batch 13/20: tournaments 61–65
+[11:10:36] [T61] ▶ Starting simulation
+[11:10:36] [T62] ▶ Starting simulation
+[11:10:36] [T63] ▶ Starting simulation
+[11:10:36] [T64] ▶ Starting simulation
+[11:10:36] [T65] ▶ Starting simulation
+[11:10:37] [T63] Round 1/6
+[11:10:37] [T62] Round 1/6
+[11:10:37] [T61] Round 1/6
+[11:10:38] [T64] Round 1/6
+[11:10:38] [T65] Round 1/6
+[11:10:45] [T63] Round 2/6
+[11:10:45] [T61] Round 2/6
+[11:10:45] [T65] Round 2/6
+[11:10:46] [T62] Round 2/6
+[11:10:46] [T64] Round 2/6
+[11:10:52] [T65] Round 3/6
+[11:10:53] [T63] Round 3/6
+[11:10:53] [T61] Round 3/6
+[11:10:53] [T62] Round 3/6
+[11:10:53] [T64] Round 3/6
+[11:11:00] [T65] Round 4/6
+[11:11:00] [T63] Round 4/6
+[11:11:00] [T61] Round 4/6
+[11:11:00] [T62] Round 4/6
+[11:11:01] [T64] Round 4/6
+[11:11:07] [T65] Round 5/6
+[11:11:07] [T63] Round 5/6
+[11:11:08] [T61] Round 5/6
+[11:11:08] [T62] Round 5/6
+[11:11:09] [T64] Round 5/6
+[11:11:14] [T65] Round 6/6
+[11:11:15] [T63] Round 6/6
+[11:11:15] [T61] Round 6/6
+[11:11:16] [T62] Round 6/6
+[11:11:17] [T64] Round 6/6
+[11:11:22] [T65] ✓ Complete
+[11:11:23] [T61] ✓ Complete
+[11:11:23] [T63] ✓ Complete
+[11:11:24] [T62] ✓ Complete
+[11:11:25] [T64] ✓ Complete
+[11:11:25] [RUNNER] Batch complete. Cooling down 2s...
+[11:11:27] [RUNNER] Batch 14/20: tournaments 66–70
+[11:11:27] [T66] ▶ Starting simulation
+[11:11:27] [T67] ▶ Starting simulation
+[11:11:27] [T68] ▶ Starting simulation
+[11:11:27] [T69] ▶ Starting simulation
+[11:11:27] [T70] ▶ Starting simulation
+[11:11:28] [T67] Round 1/6
+[11:11:28] [T68] Round 1/6
+[11:11:28] [T66] Round 1/6
+[11:11:28] [T70] Round 1/6
+[11:11:28] [T69] Round 1/6
+[11:11:36] [T70] Round 2/6
+[11:11:36] [T66] Round 2/6
+[11:11:36] [T67] Round 2/6
+[11:11:36] [T68] Round 2/6
+[11:11:36] [T69] Round 2/6
+[11:11:43] [T69] Round 3/6
+[11:11:43] [T70] Round 3/6
+[11:11:43] [T67] Round 3/6
+[11:11:43] [T66] Round 3/6
+[11:11:44] [T68] Round 3/6
+[11:11:50] [T69] Round 4/6
+[11:11:50] [T70] Round 4/6
+[11:11:51] [T66] Round 4/6
+[11:11:51] [T67] Round 4/6
+[11:11:51] [T68] Round 4/6
+[11:11:58] [T70] Round 5/6
+[11:11:58] [T66] Round 5/6
+[11:11:58] [T69] Round 5/6
+[11:11:58] [T67] Round 5/6
+[11:11:59] [T68] Round 5/6
+[11:12:05] [T66] Round 6/6
+[11:12:05] [T70] Round 6/6
+[11:12:06] [T69] Round 6/6
+[11:12:06] [T67] Round 6/6
+[11:12:06] [T68] Round 6/6
+[11:12:13] [T69] ✓ Complete
+[11:12:13] [T66] ✓ Complete
+[11:12:14] [T70] ✓ Complete
+[11:12:14] [T67] ✓ Complete
+[11:12:14] [T68] ✓ Complete
+[11:12:14] [RUNNER] Batch complete. Cooling down 2s...
+[11:12:16] [RUNNER] Batch 15/20: tournaments 71–75
+[11:12:16] [T71] ▶ Starting simulation
+[11:12:16] [T72] ▶ Starting simulation
+[11:12:16] [T73] ▶ Starting simulation
+[11:12:16] [T74] ▶ Starting simulation
+[11:12:16] [T75] ▶ Starting simulation
+[11:12:18] [T73] Round 1/6
+[11:12:18] [T72] Round 1/6
+[11:12:18] [T71] Round 1/6
+[11:12:18] [T74] Round 1/6
+[11:12:18] [T75] Round 1/6
+[11:12:25] [T73] Round 2/6
+[11:12:25] [T74] Round 2/6
+[11:12:25] [T71] Round 2/6
+[11:12:26] [T75] Round 2/6
+[11:12:26] [T72] Round 2/6
+[11:12:33] [T73] Round 3/6
+[11:12:33] [T74] Round 3/6
+[11:12:33] [T71] Round 3/6
+[11:12:33] [T75] Round 3/6
+[11:12:34] [T72] Round 3/6
+[11:12:40] [T74] Round 4/6
+[11:12:41] [T73] Round 4/6
+[11:12:41] [T71] Round 4/6
+[11:12:41] [T72] Round 4/6
+[11:12:41] [T75] Round 4/6
+[11:12:48] [T71] Round 5/6
+[11:12:48] [T74] Round 5/6
+[11:12:48] [T73] Round 5/6
+[11:12:48] [T72] Round 5/6
+[11:12:49] [T75] Round 5/6
+[11:12:55] [T71] Round 6/6
+[11:12:55] [T74] Round 6/6
+[11:12:56] [T73] Round 6/6
+[11:12:56] [T72] Round 6/6
+[11:12:57] [T75] Round 6/6
+[11:13:02] [T71] ✓ Complete
+[11:13:03] [T74] ✓ Complete
+[11:13:03] [T73] ✓ Complete
+[11:13:04] [T72] ✓ Complete
+[11:13:05] [T75] ✓ Complete
+[11:13:05] [RUNNER] Batch complete. Cooling down 2s...
+[11:13:07] [RUNNER] Batch 16/20: tournaments 76–80
+[11:13:07] [T76] ▶ Starting simulation
+[11:13:07] [T77] ▶ Starting simulation
+[11:13:07] [T78] ▶ Starting simulation
+[11:13:07] [T79] ▶ Starting simulation
+[11:13:07] [T80] ▶ Starting simulation
+[11:13:08] [T78] Round 1/6
+[11:13:08] [T76] Round 1/6
+[11:13:08] [T80] Round 1/6
+[11:13:08] [T79] Round 1/6
+[11:13:09] [T77] Round 1/6
+[11:13:16] [T80] Round 2/6
+[11:13:16] [T79] Round 2/6
+[11:13:16] [T76] Round 2/6
+[11:13:16] [T78] Round 2/6
+[11:13:16] [T77] Round 2/6
+[11:13:24] [T78] Round 3/6
+[11:13:24] [T76] Round 3/6
+[11:13:24] [T79] Round 3/6
+[11:13:24] [T80] Round 3/6
+[11:13:25] [T77] Round 3/6
+[11:13:31] [T78] Round 4/6
+[11:13:31] [T76] Round 4/6
+[11:13:32] [T79] Round 4/6
+[11:13:32] [T80] Round 4/6
+[11:13:32] [T77] Round 4/6
+[11:13:38] [T76] Round 5/6
+[11:13:39] [T80] Round 5/6
+[11:13:39] [T78] Round 5/6
+[11:13:39] [T79] Round 5/6
+[11:13:40] [T77] Round 5/6
+[11:13:46] [T76] Round 6/6
+[11:13:46] [T78] Round 6/6
+[11:13:46] [T80] Round 6/6
+[11:13:47] [T77] Round 6/6
+[11:13:47] [T79] Round 6/6
+[11:13:53] [T76] ✓ Complete
+[11:13:54] [T78] ✓ Complete
+[11:13:54] [T77] ✓ Complete
+[11:13:55] [T80] ✓ Complete
+[11:13:55] [T79] ✓ Complete
+[11:13:55] [RUNNER] Batch complete. Cooling down 2s...
+[11:13:57] [RUNNER] Batch 17/20: tournaments 81–85
+[11:13:57] [T81] ▶ Starting simulation
+[11:13:57] [T82] ▶ Starting simulation
+[11:13:57] [T83] ▶ Starting simulation
+[11:13:57] [T84] ▶ Starting simulation
+[11:13:57] [T85] ▶ Starting simulation
+[11:13:59] [T83] Round 1/6
+[11:13:59] [T85] Round 1/6
+[11:13:59] [T84] Round 1/6
+[11:13:59] [T82] Round 1/6
+[11:13:59] [T81] Round 1/6
+[11:14:06] [T85] Round 2/6
+[11:14:06] [T83] Round 2/6
+[11:14:06] [T82] Round 2/6
+[11:14:06] [T84] Round 2/6
+[11:14:06] [T81] Round 2/6
+[11:14:13] [T82] Round 3/6
+[11:14:13] [T84] Round 3/6
+[11:14:13] [T85] Round 3/6
+[11:14:14] [T81] Round 3/6
+[11:14:14] [T83] Round 3/6
+[11:14:21] [T81] Round 4/6
+[11:14:21] [T82] Round 4/6
+[11:14:21] [T85] Round 4/6
+[11:14:21] [T84] Round 4/6
+[11:14:22] [T83] Round 4/6
+[11:14:28] [T85] Round 5/6
+[11:14:28] [T84] Round 5/6
+[11:14:28] [T81] Round 5/6
+[11:14:29] [T82] Round 5/6
+[11:14:29] [T83] Round 5/6
+[11:14:36] [T84] Round 6/6
+[11:14:36] [T81] Round 6/6
+[11:14:36] [T85] Round 6/6
+[11:14:36] [T82] Round 6/6
+[11:14:37] [T83] Round 6/6
+[11:14:43] [T84] ✓ Complete
+[11:14:44] [T81] ✓ Complete
+[11:14:45] [T85] ✓ Complete
+[11:14:45] [T83] ✓ Complete
+[11:14:45] [T82] ✓ Complete
+[11:14:45] [RUNNER] Batch complete. Cooling down 2s...
+[11:14:47] [RUNNER] Batch 18/20: tournaments 86–90
+[11:14:47] [T86] ▶ Starting simulation
+[11:14:47] [T87] ▶ Starting simulation
+[11:14:47] [T88] ▶ Starting simulation
+[11:14:47] [T89] ▶ Starting simulation
+[11:14:47] [T90] ▶ Starting simulation
+[11:14:48] [T87] Round 1/6
+[11:14:48] [T89] Round 1/6
+[11:14:49] [T90] Round 1/6
+[11:14:49] [T88] Round 1/6
+[11:14:49] [T86] Round 1/6
+[11:14:56] [T87] Round 2/6
+[11:14:56] [T89] Round 2/6
+[11:14:56] [T90] Round 2/6
+[11:14:56] [T86] Round 2/6
+[11:14:56] [T88] Round 2/6
+[11:15:03] [T87] Round 3/6
+[11:15:03] [T89] Round 3/6
+[11:15:03] [T86] Round 3/6
+[11:15:03] [T90] Round 3/6
+[11:15:04] [T88] Round 3/6
+[11:15:10] [T89] Round 4/6
+[11:15:11] [T90] Round 4/6
+[11:15:11] [T86] Round 4/6
+[11:15:11] [T87] Round 4/6
+[11:15:12] [T88] Round 4/6
+[11:15:18] [T89] Round 5/6
+[11:15:18] [T86] Round 5/6
+[11:15:18] [T90] Round 5/6
+[11:15:18] [T87] Round 5/6
+[11:15:19] [T88] Round 5/6
+[11:15:25] [T89] Round 6/6
+[11:15:26] [T87] Round 6/6
+[11:15:26] [T90] Round 6/6
+[11:15:26] [T88] Round 6/6
+[11:15:27] [T86] Round 6/6
+[11:15:33] [T89] ✓ Complete
+[11:15:34] [T88] ✓ Complete
+[11:15:34] [T90] ✓ Complete
+[11:15:35] [T87] ✓ Complete
+[11:15:36] [T86] ✓ Complete
+[11:15:36] [RUNNER] Batch complete. Cooling down 2s...
+[11:15:38] [RUNNER] Batch 19/20: tournaments 91–95
+[11:15:38] [T91] ▶ Starting simulation
+[11:15:38] [T92] ▶ Starting simulation
+[11:15:38] [T93] ▶ Starting simulation
+[11:15:38] [T94] ▶ Starting simulation
+[11:15:38] [T95] ▶ Starting simulation
+[11:15:39] [T93] Round 1/6
+[11:15:39] [T91] Round 1/6
+[11:15:39] [T92] Round 1/6
+[11:15:39] [T95] Round 1/6
+[11:15:39] [T94] Round 1/6
+[11:15:47] [T93] Round 2/6
+[11:15:47] [T94] Round 2/6
+[11:15:47] [T95] Round 2/6
+[11:15:47] [T92] Round 2/6
+[11:15:47] [T91] Round 2/6
+[11:15:54] [T93] Round 3/6
+[11:15:54] [T92] Round 3/6
+[11:15:55] [T91] Round 3/6
+[11:15:55] [T95] Round 3/6
+[11:15:55] [T94] Round 3/6
+[11:16:02] [T93] Round 4/6
+[11:16:02] [T95] Round 4/6
+[11:16:02] [T92] Round 4/6
+[11:16:03] [T94] Round 4/6
+[11:16:03] [T91] Round 4/6
+[11:16:10] [T93] Round 5/6
+[11:16:10] [T94] Round 5/6
+[11:16:10] [T92] Round 5/6
+[11:16:10] [T91] Round 5/6
+[11:16:11] [T95] Round 5/6
+[11:16:17] [T91] Round 6/6
+[11:16:17] [T94] Round 6/6
+[11:16:18] [T93] Round 6/6
+[11:16:18] [T92] Round 6/6
+[11:16:19] [T95] Round 6/6
+[11:16:25] [T91] ✓ Complete
+[11:16:25] [T93] ✓ Complete
+[11:16:26] [T92] ✓ Complete
+[11:16:26] [T95] ✓ Complete
+[11:16:26] [T94] ✓ Complete
+[11:16:26] [RUNNER] Batch complete. Cooling down 2s...
+[11:16:28] [RUNNER] Batch 20/20: tournaments 96–100
+[11:16:28] [T96] ▶ Starting simulation
+[11:16:28] [T97] ▶ Starting simulation
+[11:16:28] [T98] ▶ Starting simulation
+[11:16:28] [T99] ▶ Starting simulation
+[11:16:28] [T100] ▶ Starting simulation
+[11:16:29] [T99] Round 1/6
+[11:16:29] [T98] Round 1/6
+[11:16:29] [T97] Round 1/6
+[11:16:29] [T100] Round 1/6
+[11:16:30] [T96] Round 1/6
+[11:16:37] [T97] Round 2/6
+[11:16:37] [T100] Round 2/6
+[11:16:37] [T96] Round 2/6
+[11:16:37] [T98] Round 2/6
+[11:16:38] [T99] Round 2/6
+[11:16:44] [T97] Round 3/6
+[11:16:45] [T100] Round 3/6
+[11:16:45] [T98] Round 3/6
+[11:16:45] [T96] Round 3/6
+[11:16:45] [T99] Round 3/6
+[11:16:52] [T100] Round 4/6
+[11:16:53] [T98] Round 4/6
+[11:16:53] [T97] Round 4/6
+[11:16:53] [T99] Round 4/6
+[11:16:53] [T96] Round 4/6
+[11:17:00] [T100] Round 5/6
+[11:17:00] [T97] Round 5/6
+[11:17:00] [T98] Round 5/6
+[11:17:00] [T99] Round 5/6
+[11:17:01] [T96] Round 5/6
+[11:17:08] [T98] Round 6/6
+[11:17:08] [T100] Round 6/6
+[11:17:08] [T97] Round 6/6
+[11:17:08] [T99] Round 6/6
+[11:17:08] [T96] Round 6/6
+[11:17:15] [T99] ✓ Complete
+[11:17:16] [T98] ✓ Complete
+[11:17:16] [T100] ✓ Complete
+[11:17:16] [T97] ✓ Complete
+[11:17:16] [T96] ✓ Complete
+[11:17:16] [RUNNER] Batch complete. Cooling down 2s...
+[11:17:18] [CLEANUP] Deleting all test data...
+[11:17:18] [CLEANUP] ✓ Deleted 100 tournaments and all associated data
+
+════════════════════════════════════════════════════════════
+  SIMULATION COMPLETE
+════════════════════════════════════════════════════════════
+  Duration : 1013.1s
+  Tests    : 1601 total  ✓ 1599 passed  ✗ 2 failed
+════════════════════════════════════════════════════════════
+
+  FAILURES:
+  ✗ [T17] verify-standings: TypeError: fetch failed
+  ✗ [T51] round-1-confirm: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head>
+
+<title> | 502: Bad gateway</title>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" />
+</head>
+<body>
+<div id="cf-wrapper">
+    <div id="cf-error-details" class="p-0">
+        <header class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-8">
+            <h1 class="inline-block sm:block sm:mb-2 font-light text-60 lg:text-4xl text-black-dark leading-tight mr-2">
+                <span class="inline-block">Bad gateway</span>
+                <span class="code-label">Error code 502</span>
+            </h1>
+            <div>
+                Visit <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">cloudflare.com</a> for more information.
+            </div>
+            <div class="mt-3">2026-03-10 11:09:01 UTC</div>
+        </header>
+        <div class="my-8 bg-gradient-gray">
+            <div class="w-240 lg:w-full mx-auto">
+                <div class="clearfix md:px-8">
+                    <div id="cf-browser-status" class=" relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    
+    <span class="cf-icon-browser block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-ok w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    
+  </div>
+  <span class="md:block w-full truncate">You</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  
+    Browser
+  
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-green-success">Working</span>
+  
+</div>
+                    <div id="cf-cloudflare-status" class=" relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&#38;utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">
+    <span class="cf-icon-cloud block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-ok w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    </a>
+  </div>
+  <span class="md:block w-full truncate">Madrid</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&utm_campaign=mwuoovdepfylavqveswe.supabase.co" target="_blank" rel="noopener noreferrer">
+    Cloudflare
+  </a>
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-green-success">Working</span>
+  
+</div>
+                    <div id="cf-host-status" class="cf-error-source relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    
+    <span class="cf-icon-server block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-error w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    
+  </div>
+  <span class="md:block w-full truncate">mwuoovdepfylavqveswe.supabase.co</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+  
+    Host
+  
+  </h3>
+  
+  <span class="leading-1.3 text-2xl text-red-error">Error</span>
+  
+</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+            <div class="clearfix">
+                <div class="w-1/2 md:w-full float-left pr-6 md:pb-10 md:pr-0 leading-relaxed">
+                    <h2 class="text-3xl font-normal leading-1.3 mb-4">What happened?</h2>
+                    <p>The web server reported a bad gateway error.</p>
+                </div>
+                <div class="w-1/2 md:w-full float-left leading-relaxed">
+                    <h2 class="text-3xl font-normal leading-1.3 mb-4">What can I do?</h2>
+                    <p class="mb-6">Please try again in a few minutes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+    <p class="text-13">
+      <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">9da1dd631a2cf77b</strong></span>
+      <span class="cf-footer-separator sm:hidden">&bull;</span>
+      <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+        Your IP:
+        <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+        <span class="hidden" id="cf-footer-ip">84.126.128.103</span>
+        <span class="cf-footer-separator sm:hidden">&bull;</span>
+      </span>
+      <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&#38;utm_campaign=mwuoovdepfylavqveswe.supabase.co" id="brand_link" target="_blank">Cloudflare</a></span>
+      
+    </p>
+    <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+  </div><!-- /.error-footer -->
+
+    </div>
+</div>
+</body>
+</html>
+
+  PHASE BREAKDOWN:
+  ✓ create-tournament              100 passed, 0 failed
+  ✓ add-players                    100 passed, 0 failed
+  ✓ start-tournament               100 passed, 0 failed
+  ✓ rls-read-tournament            100 passed, 0 failed
+  ✓ rls-block-delete               100 passed, 0 failed
+  ✓ rls-read-players               100 passed, 0 failed
+  ✓ guest-claim                    100 passed, 0 failed
+  ✓ realtime                       100 passed, 0 failed
+  ✓ round                          600 passed, 0 failed
+  ✓ sync-standings                 99 passed, 0 failed
+  ✓ end-tournament                 100 passed, 0 failed
+  ✗ verify-standings               0 passed, 1 failed
+  ✗ round-N-confirm                0 passed, 1 failed
+════════════════════════════════════════════════════════════
+
+  [Pass 5] Script exited OK
+
+════════════════════════════════════════════════════════════
+  OVERNIGHT RUN COMPLETE — Tue Mar 10 12:17:18 CET 2026
+  Passes: 5 OK  0 failed
+  Full results saved to: scripts/overnight-results.log
+════════════════════════════════════════════════════════════

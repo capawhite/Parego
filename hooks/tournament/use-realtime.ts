@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { loadPlayers, loadMatches } from "@/lib/database/tournament-db"
-import type { ArenaState, Match } from "@/lib/types"
+import type { ArenaState, Match, Player } from "@/lib/types"
 
 const DEBUG = process.env.NODE_ENV === "development"
 
@@ -96,9 +96,11 @@ export function useRealtime({
           try {
             const players = await loadPlayers(tournamentId)
             setArenaState((prev) => {
-              const prevIds = prev.players.map((p) => `${p.id}:${p.name}:${p.score}:${p.paused}`).join(",")
-              const newIds = players.map((p) => `${p.id}:${p.name}:${p.score}:${p.paused}`).join(",")
-              if (prevIds === newIds && prev.players.length === players.length) {
+              const playerFp = (p: Player) =>
+                `${p.id}:${p.name}:${p.score}:${p.paused}:${p.gamesPlayed}:${(p.pieceColors ?? []).join(",")}:${(p.opponentIds ?? []).length}`
+              const prevFp = prev.players.map(playerFp).join("|")
+              const newFp = players.map(playerFp).join("|")
+              if (prevFp === newFp && prev.players.length === players.length) {
                 if (DEBUG) console.log("[realtime] players unchanged — skipping state update")
                 return prev
               }

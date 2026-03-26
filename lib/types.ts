@@ -96,6 +96,18 @@ export interface TournamentSettings {
 
   // All vs All: allow rematches when needed to avoid long waits (organizer toggle)
   allowRematchToReduceWait?: boolean
+
+  /** If set (>0), require at least this many idle players before pairing; otherwise use max(2, floor(n/3)). */
+  minIdlePlayersBeforePairing?: number
+
+  /**
+   * If set (>0), pairing conditions must stay true for this many milliseconds before new games are created.
+   * Helps stragglers finish before a batch pairs. Arena also uses ARENACHESS T1 per player.
+   */
+  pairingStabilizationMs?: number
+
+  /** Arena T1 cap profile used to bound post-game cool-down. */
+  t1CapPreset?: "fast" | "balanced" | "strict"
 }
 
 export const DEFAULT_SETTINGS: TournamentSettings = {
@@ -115,6 +127,7 @@ export const DEFAULT_SETTINGS: TournamentSettings = {
   completionThreshold: 95,
   pairingAlgorithm: "all-vs-all", // Default to All vs All
   allowRematchToReduceWait: false,
+  t1CapPreset: "balanced",
 }
 
 export interface ArenaState {

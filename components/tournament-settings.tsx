@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { X } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
@@ -216,15 +217,70 @@ export function TournamentSettingsPanel({
                 </div>
               )}
 
-              <div className="space-y-1 max-w-xs">
-                <p className="text-sm font-medium">{t("settings.colorBalanceLabel")}</p>
+              <div className="space-y-1.5 max-w-xs">
+                <Label htmlFor="colorBalancePriority" className="text-sm">
+                  {t("settings.colorBalanceLabel")}
+                </Label>
+                <Select
+                  value={settings.colorBalancePriority}
+                  onValueChange={(v) =>
+                    updateSetting("colorBalancePriority", v as TournamentSettings["colorBalancePriority"])
+                  }
+                >
+                  <SelectTrigger id="colorBalancePriority" className="h-8 text-sm w-full max-w-[220px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">{t("settings.colorBalanceHigh")}</SelectItem>
+                    <SelectItem value="medium">{t("settings.colorBalanceMedium")}</SelectItem>
+                    <SelectItem value="low">{t("settings.colorBalanceLow")}</SelectItem>
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">{t("settings.colorBalanceHelp")}</p>
               </div>
 
-              <div className="space-y-1 max-w-xs">
-                <p className="text-sm font-medium">{t("settings.scoreMatchingLabel")}</p>
-                <p className="text-xs text-muted-foreground">{t("settings.scoreMatchingComingSoon")}</p>
+              <div className="space-y-1.5 max-w-xs">
+                <Label htmlFor="scoreMatchingStrictness" className="text-sm">
+                  {t("settings.scoreMatchingLabel")}
+                </Label>
+                <Select
+                  value={settings.scoreMatchingStrictness}
+                  onValueChange={(v) =>
+                    updateSetting("scoreMatchingStrictness", v as TournamentSettings["scoreMatchingStrictness"])
+                  }
+                >
+                  <SelectTrigger id="scoreMatchingStrictness" className="h-8 text-sm w-full max-w-[220px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="loose">{t("settings.scoreMatchingLoose")}</SelectItem>
+                    <SelectItem value="normal">{t("settings.scoreMatchingNormal")}</SelectItem>
+                    <SelectItem value="strict">{t("settings.scoreMatchingStrict")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{t("settings.scoreMatchingHelp")}</p>
               </div>
+
+              <div className="space-y-1.5 max-w-[260px]">
+                <Label htmlFor="t1CapPreset" className="text-sm">
+                  {t("settings.t1CapPresetLabel")}
+                </Label>
+                <Select
+                  value={settings.t1CapPreset ?? "balanced"}
+                  onValueChange={(v) => updateSetting("t1CapPreset", v as TournamentSettings["t1CapPreset"])}
+                >
+                  <SelectTrigger id="t1CapPreset" className="h-8 text-sm w-full max-w-[240px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fast">{t("settings.t1CapPresetFast")}</SelectItem>
+                    <SelectItem value="balanced">{t("settings.t1CapPresetBalanced")}</SelectItem>
+                    <SelectItem value="strict">{t("settings.t1CapPresetStrict")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{t("settings.t1CapPresetHelp")}</p>
+              </div>
+
             </div>
 
             {/* Tournament Settings */}
@@ -301,6 +357,7 @@ export function TournamentSettingsPanel({
                       avoidRecentRematches: 3,
                       colorBalancePriority: "high",
                       scoreMatchingStrictness: "normal",
+                      t1CapPreset: "balanced",
                       tableCount: settings.tableCount,
                       autoEndAtCompletion: false,
                       completionThreshold: 95,

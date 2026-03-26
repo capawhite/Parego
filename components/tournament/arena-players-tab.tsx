@@ -97,35 +97,41 @@ export function ArenaPlayersTab({
               <CardTitle className="text-base">{t("arena.setupTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex flex-wrap gap-3 items-end">
-                <div className="flex-1 min-w-[120px] space-y-1.5">
-                  <Label htmlFor="tables" className="text-sm">
-                    {t("arena.setupTables")}
-                  </Label>
-                  <Input
-                    id="tables"
-                    type="number"
-                    placeholder={t("arena.setupTablesPlaceholder")}
-                    value={tableCountInput}
-                    onChange={(e) => onTableCountChange(e.target.value)}
-                    className="w-20 h-8 text-sm"
-                  />
-                </div>
-                <div className="flex-1 min-w-[120px] space-y-1.5">
-                  <Label htmlFor="duration" className="text-sm">
-                    {t("arena.setupDuration")}
-                  </Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    placeholder={t("arena.setupDurationPlaceholder")}
-                    value={tournamentDurationInput}
-                    onChange={(e) => onDurationChange(e.target.value)}
-                    className="w-20 h-8 text-sm"
-                  />
+              <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+                <div className="flex flex-wrap gap-3 items-end">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tables" className="text-sm">
+                      {t("arena.setupTables")}
+                    </Label>
+                    <Input
+                      id="tables"
+                      type="number"
+                      placeholder={t("arena.setupTablesPlaceholder")}
+                      value={tableCountInput}
+                      onChange={(e) => onTableCountChange(e.target.value)}
+                      className="h-9 w-20 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="duration" className="text-sm">
+                      {t("arena.setupDuration")}
+                    </Label>
+                    <Input
+                      id="duration"
+                      type="number"
+                      placeholder={t("arena.setupDurationPlaceholder")}
+                      value={tournamentDurationInput}
+                      onChange={(e) => onDurationChange(e.target.value)}
+                      className="h-9 w-20 text-sm"
+                    />
+                  </div>
                 </div>
                 {canStartTournament && (
-                  <Button onClick={onStartTournament} className="w-full h-8 text-sm" size="sm">
+                  <Button
+                    type="button"
+                    onClick={onStartTournament}
+                    className="h-10 w-fit rounded-full px-6 text-sm font-semibold shadow-md transition-[box-shadow,transform] hover:shadow-lg active:scale-[0.98]"
+                  >
                     {t("arena.setupStartTournament")}
                   </Button>
                 )}

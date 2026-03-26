@@ -1,5 +1,14 @@
 import type { Player, Match, TournamentSettings } from "@/lib/types"
 import type { PairingAlgorithm } from "./types"
+import type { ColorBalancePriority } from "./color-utils"
+import { minIdlePlayersBeforePairing } from "./idle-threshold"
+import { longestWaitingPlayerIds } from "./idle-wait"
+import { bestOrientationForPair } from "./color-consecutive-cap"
+import {
+  arenaWaitClockStartMs,
+  filterArenaT1EligiblePlayers,
+  lastCompletedMatchForPlayer,
+} from "./arena-t1"
 
 /**
  * Balanced Strength Arena Algorithm
@@ -9,9 +18,11 @@ import type { PairingAlgorithm } from "./types"
  *
  * Strategy:
  * - Players are assigned to table ranges based on their ranking
- * - Pairs immediately when 2 players waiting for same table
- * - Table ranges expand progressively with wait time
- * - Rewards longer games, penalizes quick games with wait time
+ * - Pairs when enough idle players (default ~n/3, configurable) and 2+ at a table
+ * - Among rematch-legal pairs, prefers better white/black balance and fewer same-color streaks
+ * - Table ranges expand progressively with wait time (T2 step clamped for UX; full-table fallback if no pairs)
+ * - ARENACHESS T1: real freeze after each game (eligible only after endTime + T1); wait clock for T2 starts then
+ * - Rewards longer games, penalizes quick games via shorter T1 after quick games
  */
 
 interface PlayerWithWaitData extends Player {
@@ -20,6 +31,88 @@ interface PlayerWithWaitData extends Player {
   lastMatchResult?: "W" | "D" | "L" // Result of last match
   tableRange: number[] // Current range of tables player is waiting for
   optimalTable: number // Mo - optimal table for this player
+}
+
+/** PDF T2 can be many minutes with long clocks; clamp so table bands overlap within tens of seconds, not hours. */
+function clampT2StepMs(rawT2: number): number {
+  const minStep = 8_000
+  const maxStep = 35_000
+  if (!Number.isFinite(rawT2) || rawT2 <= 0) return maxStep
+  return Math.min(maxStep, Math.max(minStep, rawT2))
+}
+
+function greedyTablePairingsFromWaitData(
+  playersWithWaitData: PlayerWithWaitData[],
+  eligiblePlayers: Player[],
+  M: number,
+  maxMatches: number | undefined,
+  rematchAvoidCount: number,
+  colorPriority: ColorBalancePriority,
+  longestWaitIds: Set<string>,
+): Match[] {
+  const avgGamesPlayed =
+    eligiblePlayers.reduce((s, p) => s + p.gameResults.length, 0) / Math.max(1, eligiblePlayers.length)
+
+  const tableWaitingLists: Map<number, PlayerWithWaitData[]> = new Map()
+  for (let table = 1; table <= M; table++) {
+    tableWaitingLists.set(table, [])
+  }
+
+  for (const player of playersWithWaitData) {
+    for (const table of player.tableRange) {
+      const list = tableWaitingLists.get(table) || []
+      list.push(player)
+      tableWaitingLists.set(table, list)
+    }
+  }
+
+  const matches: Match[] = []
+  const pairedPlayerIds = new Set<string>()
+  const usedTables = new Set<number>()
+
+  for (let table = 1; table <= M; table++) {
+    if (usedTables.has(table)) continue
+    if (maxMatches && matches.length >= maxMatches) break
+
+    const waitingList = (tableWaitingLists.get(table) || [])
+      .filter((p) => !pairedPlayerIds.has(p.id))
+      .sort((a, b) => {
+        const aGames = a.gameResults.length
+        const bGames = b.gameResults.length
+        if (aGames !== bGames) return aGames - bGames
+        return a.waitingSince - b.waitingSince
+      })
+
+    if (waitingList.length >= 2) {
+      const oriented = selectOrientedPairWithRematchRule(
+        waitingList,
+        rematchAvoidCount,
+        colorPriority,
+        longestWaitIds,
+        avgGamesPlayed,
+      )
+      if (!oriented) continue
+
+      const { whitePlayer, blackPlayer } = oriented
+
+      matches.push({
+        id: `${whitePlayer.id}-${blackPlayer.id}-${Date.now()}`,
+        player1: whitePlayer,
+        player2: blackPlayer,
+        tableNumber: table,
+        startTime: Date.now(),
+      })
+
+      pairedPlayerIds.add(whitePlayer.id)
+      pairedPlayerIds.add(blackPlayer.id)
+      usedTables.add(table)
+
+      if (process.env.NODE_ENV === "development")
+        console.log("[v0] Paired at table", table, ":", whitePlayer.name, "vs", blackPlayer.name)
+    }
+  }
+
+  return matches
 }
 
 export const balancedStrengthAlgorithm: PairingAlgorithm = {
@@ -33,11 +126,13 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
     settings: TournamentSettings,
     maxMatches?: number,
     totalPlayers?: number,
+    options?: { skipT1?: boolean },
   ): Match[] {
     const totalActive = totalPlayers ?? availablePlayers.length
-    const rematchAvoidCount = getRematchAvoidCount(totalActive)
+    const rematchAvoidCount = rematchAvoidCountFromSettings(totalActive, settings.avoidRecentRematches)
+    const colorPriority: ColorBalancePriority = settings.colorBalancePriority ?? "high"
 
-    const J = availablePlayers.length + allHistoricalMatches.filter((m) => !m.result?.completed).length // Total players
+    const J = Math.max(1, totalActive) // Total players in tournament (PDF J)
     const M = settings.tableCount || 1 // Number of tables
 
     // Time controls with defaults
@@ -55,156 +150,107 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
       Tp,
     })
 
-    if (availablePlayers.length === 1) {
+    const now = Date.now()
+    const eligiblePlayers = options?.skipT1
+      ? availablePlayers
+      : filterArenaT1EligiblePlayers(availablePlayers, allHistoricalMatches, settings, now)
+
+    if (eligiblePlayers.length === 1) {
       if (process.env.NODE_ENV === "development")
-        console.log("[v0] Single player waiting - will be paired immediately when next player finishes")
+        console.log("[v0] Single T1-eligible player waiting - others still in T1 freeze or in games")
       return []
     }
 
-    if (availablePlayers.length < 2) {
+    if (eligiblePlayers.length < 2) {
       return []
     }
 
     // Calculate P (table-to-player ratio)
     const P = (2 * M) / J
 
-    const now = Date.now()
+    const longestWaitIds = longestWaitingPlayerIds(eligiblePlayers, allHistoricalMatches, now)
 
-    // Rank players by their current standing
-    const rankedPlayers = rankPlayers(availablePlayers)
+    const rankedPlayers = rankPlayers(eligiblePlayers)
 
-    // Calculate wait data for each player
-    const playersWithWaitData: PlayerWithWaitData[] = rankedPlayers.map((player, index) => {
-      const C = index + 1 // Ranking position (1-based)
-      const Mo = (C / 2) * P // Optimal table
+    const buildWaitData = (fullTableRangeOnly: boolean): PlayerWithWaitData[] =>
+      rankedPlayers.map((player, index) => {
+        const C = index + 1
+        const Mo = (C / 2) * P
 
-      // Get last match duration
-      const lastMatch = allHistoricalMatches
-        .filter((m) => (m.player1.id === player.id || m.player2.id === player.id) && m.result?.completed)
-        .sort((a, b) => (b.endTime || 0) - (a.endTime || 0))[0]
-
-      let waitingSince: number
-
-      if (!lastMatch) {
-        // Player has never played a match - they've been waiting since they joined
-        waitingSince = player.joinedAt
-      } else {
-        // Player finished a match - calculate T1 wait time
-        const Dp = lastMatch.startTime && lastMatch.endTime ? lastMatch.endTime - lastMatch.startTime : Tp
+        const lastMatch = lastCompletedMatchForPlayer(player.id, allHistoricalMatches)
+        const waitingSince = arenaWaitClockStartMs(player, allHistoricalMatches, settings)
         const lastResult = player.gameResults[player.gameResults.length - 1]
+        const Dp =
+          lastMatch?.startTime != null && lastMatch?.endTime != null
+            ? lastMatch.endTime - lastMatch.startTime
+            : Tp
 
-        // Calculate T1 (initial wait time)
-        let T1 = (Tp / 20) * (Tp / Dp)
-        if (lastResult === "D") {
-          T1 = T1 * (Tp / Dp) // Reward long draws, penalize short draws
+        const rawT2 = (Tp * J) / (M * M) / (1 + C / J)
+        const t2Step = clampT2StepMs(rawT2)
+        const timeSinceAvailable = now - waitingSince
+        const rangeExpansions = fullTableRangeOnly ? 0 : Math.floor(timeSinceAvailable / t2Step)
+
+        let minTable: number
+        let maxTable: number
+        if (fullTableRangeOnly) {
+          minTable = 1
+          maxTable = M
+        } else {
+          minTable = Math.max(1, Math.floor(Mo - P - rangeExpansions * P))
+          maxTable = Math.min(M, Math.ceil(Mo + P + rangeExpansions * P))
         }
-        if (T1 > Tp) T1 = Tp // Cap at max game time
 
-        waitingSince = now - T1 // Backdate to account for T1
-      }
+        const tableRange: number[] = []
+        for (let t = minTable; t <= maxTable; t++) {
+          tableRange.push(t)
+        }
 
-      const lastResult = player.gameResults[player.gameResults.length - 1]
-      const Dp = lastMatch?.startTime && lastMatch?.endTime ? lastMatch.endTime - lastMatch.startTime : Tp
+        return {
+          ...player,
+          waitingSince,
+          lastMatchDuration: Dp,
+          lastMatchResult: lastResult,
+          tableRange,
+          optimalTable: Math.round(Mo),
+        }
+      })
 
-      // Calculate T2 (time interval to expand range)
-      const T2 = (Tp * J) / (M * M) / (1 + C / J)
-
-      // Calculate how much time has passed since player became available
-      const timeSinceAvailable = now - waitingSince
-      const rangeExpansions = Math.floor(timeSinceAvailable / T2)
-
-      // Initial range: [Mo - P, Mo + P], then expand by P each T2 interval.
-      // Range expands over wait time so players are not permanently restricted to one strength band.
-      const minTable = Math.max(1, Math.floor(Mo - P - rangeExpansions * P))
-      const maxTable = Math.min(M, Math.ceil(Mo + P + rangeExpansions * P))
-
-      const tableRange: number[] = []
-      for (let t = minTable; t <= maxTable; t++) {
-        tableRange.push(t)
-      }
-
-      return {
-        ...player,
-        waitingSince,
-        lastMatchDuration: Dp,
-        lastMatchResult: lastResult,
-        tableRange,
-        optimalTable: Math.round(Mo),
-      }
-    })
+    let playersWithWaitData = buildWaitData(false)
 
     if (process.env.NODE_ENV === "development")
       console.log(
         "[v0] Players with wait data:",
-      playersWithWaitData.map((p) => ({
-        name: p.name,
-        rank: rankedPlayers.indexOf(p) + 1,
-        optimalTable: p.optimalTable,
-        tableRange: p.tableRange,
-      })),
+        playersWithWaitData.map((p) => ({
+          name: p.name,
+          rank: rankedPlayers.indexOf(p) + 1,
+          optimalTable: p.optimalTable,
+          tableRange: p.tableRange,
+        })),
+      )
+
+    let matches = greedyTablePairingsFromWaitData(
+      playersWithWaitData,
+      eligiblePlayers,
+      M,
+      maxMatches,
+      rematchAvoidCount,
+      colorPriority,
+      longestWaitIds,
     )
 
-    // Build table waiting lists
-    const tableWaitingLists: Map<number, PlayerWithWaitData[]> = new Map()
-    for (let table = 1; table <= M; table++) {
-      tableWaitingLists.set(table, [])
-    }
-
-    // Add players to their table waiting lists
-    for (const player of playersWithWaitData) {
-      for (const table of player.tableRange) {
-        const list = tableWaitingLists.get(table) || []
-        list.push(player)
-        tableWaitingLists.set(table, list)
-      }
-    }
-
-    // Create pairings: when 2+ players waiting for same table, pair them
-    const matches: Match[] = []
-    const pairedPlayerIds = new Set<string>()
-    const usedTables = new Set<number>()
-
-    // Process tables in order (lower tables = higher ranked players)
-    for (let table = 1; table <= M; table++) {
-      if (usedTables.has(table)) continue
-      if (maxMatches && matches.length >= maxMatches) break
-
-      const waitingList = (tableWaitingLists.get(table) || [])
-        .filter((p) => !pairedPlayerIds.has(p.id))
-        .sort((a, b) => {
-          // First priority: fewest games played
-          const aGames = a.gameResults.length
-          const bGames = b.gameResults.length
-          if (aGames !== bGames) return aGames - bGames
-
-          // Second priority: who waited longest
-          return a.waitingSince - b.waitingSince
-        })
-
-      if (waitingList.length >= 2) {
-        const pair = selectPairWithRematchRule(waitingList, rematchAvoidCount)
-        if (!pair) continue
-
-        const [player1, player2] = pair
-
-        // Determine colors based on balance
-        const { whitePlayer, blackPlayer } = assignColors(player1, player2, allHistoricalMatches)
-
-        matches.push({
-          id: `${whitePlayer.id}-${blackPlayer.id}-${Date.now()}`,
-          player1: whitePlayer,
-          player2: blackPlayer,
-          tableNumber: table,
-          startTime: Date.now(), // Record match start time
-        })
-
-        pairedPlayerIds.add(player1.id)
-        pairedPlayerIds.add(player2.id)
-        usedTables.add(table)
-
-        if (process.env.NODE_ENV === "development")
-          console.log("[v0] Paired at table", table, ":", whitePlayer.name, "vs", blackPlayer.name)
-      }
+    if (matches.length === 0 && eligiblePlayers.length >= 2) {
+      playersWithWaitData = buildWaitData(true)
+      if (process.env.NODE_ENV === "development")
+        console.log("[v0] Balanced Strength: fallback full table range (no pairs in banded pass)")
+      matches = greedyTablePairingsFromWaitData(
+        playersWithWaitData,
+        eligiblePlayers,
+        M,
+        maxMatches,
+        rematchAvoidCount,
+        colorPriority,
+        longestWaitIds,
+      )
     }
 
     if (process.env.NODE_ENV === "development")
@@ -217,10 +263,24 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
     activeMatches: Match[],
     totalPlayers: number,
     availableTables: number,
+    settings: TournamentSettings,
+    allHistoricalMatches: Match[],
   ): boolean {
-    // Pair immediately when 2+ players are available
-    // No need to check table availability - completed matches free up tables dynamically
-    return availablePlayers.length >= 2
+    const SMALL_FIELD_MAX = 4
+    if (totalPlayers <= SMALL_FIELD_MAX && activeMatches.length > 0) return false
+
+    const threshold = minIdlePlayersBeforePairing(totalPlayers, settings)
+    const now = Date.now()
+    /** Min idle count applies to T1-eligible players (idle on UI but still in freeze do not count). */
+    const eligible = filterArenaT1EligiblePlayers(availablePlayers, allHistoricalMatches, settings, now)
+
+    /** While some games are still going, never require more T1-eligible idlers than are actually idle. */
+    const effectiveThreshold =
+      activeMatches.length > 0
+        ? Math.min(threshold, Math.max(2, availablePlayers.length))
+        : threshold
+
+    return eligible.length >= effectiveThreshold && availableTables > 0
   },
 
   getPollingInterval(): number {
@@ -229,14 +289,12 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
 }
 
 /**
- * Rematch avoidance by active player count:
- * 16+ → avoid last 3 opponents; 10–15 → 2; 6–9 → 1; 2–5 → allow rematches but prefer avoiding immediate.
+ * Uses organizer `avoidRecentRematches` (capped) for fields with 6+ players; small fields use 0 so we only prefer non-immediate rematches.
  */
-function getRematchAvoidCount(totalActive: number): number {
-  if (totalActive >= 16) return 3
-  if (totalActive >= 10) return 2
-  if (totalActive >= 6) return 1
-  return 0
+function rematchAvoidCountFromSettings(totalActive: number, avoidRecentRematches: number | undefined): number {
+  if (totalActive <= 5) return 0
+  const n = avoidRecentRematches ?? 3
+  return Math.max(0, Math.min(10, Math.floor(n)))
 }
 
 /** Set of opponent IDs from the last n games (order: most recent last). */
@@ -247,14 +305,15 @@ function getLastNOpponents(player: Player, n: number): Set<string> {
 }
 
 /**
- * Pick the best pair from waitingList that satisfies rematch rules.
- * avoidCount >= 1: only allow pairs that are not in each other's last N opponents; skip if none.
- * avoidCount === 0 (2–5 players): prefer non–immediate rematch; allow rematch if no alternative.
+ * Pick the best pair from waitingList that satisfies rematch rules; progressive color cap (strict → relaxed → none).
  */
-function selectPairWithRematchRule(
+function selectOrientedPairWithRematchRule(
   waitingList: PlayerWithWaitData[],
   avoidCount: number,
-): [PlayerWithWaitData, PlayerWithWaitData] | null {
+  colorPriority: ColorBalancePriority,
+  longestWaitIds: Set<string>,
+  avgGamesPlayed: number,
+): { whitePlayer: PlayerWithWaitData; blackPlayer: PlayerWithWaitData } | null {
   if (waitingList.length < 2) return null
 
   const avoidSets = new Map<string, Set<string>>()
@@ -265,7 +324,6 @@ function selectPairWithRematchRule(
   const isDisallowed = (a: PlayerWithWaitData, b: PlayerWithWaitData) =>
     avoidSets.get(a.id)?.has(b.id) || avoidSets.get(b.id)?.has(a.id)
 
-  // Valid pairs: not in each other's avoid set (for avoidCount >= 1) or any pair (for avoidCount === 0)
   const validPairs: [PlayerWithWaitData, PlayerWithWaitData][] = []
   for (let i = 0; i < waitingList.length; i++) {
     for (let j = i + 1; j < waitingList.length; j++) {
@@ -280,13 +338,92 @@ function selectPairWithRematchRule(
   }
 
   if (avoidCount >= 1) {
-    if (validPairs.length === 0) return null
-    return validPairs[0]
+    if (validPairs.length === 0) {
+      const allPairs: [PlayerWithWaitData, PlayerWithWaitData][] = []
+      for (let i = 0; i < waitingList.length; i++) {
+        for (let j = i + 1; j < waitingList.length; j++) {
+          allPairs.push([waitingList[i], waitingList[j]])
+        }
+      }
+      if (allPairs.length === 0) return null
+      return pickBestOrientedPairFromPool(allPairs, colorPriority, longestWaitIds, avgGamesPlayed)
+    }
+    return pickBestOrientedPairFromPool(validPairs, colorPriority, longestWaitIds, avgGamesPlayed)
   }
 
-  // 2–5 players: prefer pair that is not an immediate rematch
-  const nonRematch = validPairs.find(([a, b]) => !isDisallowed(a, b))
-  return nonRematch ?? validPairs[0]
+  const nonImmediate = validPairs.filter(([a, b]) => !isDisallowed(a, b))
+  const pool = nonImmediate.length > 0 ? nonImmediate : validPairs
+  return pickBestOrientedPairFromPool(pool, colorPriority, longestWaitIds, avgGamesPlayed)
+}
+
+function stablePairKey(a: Player, b: Player): string {
+  return a.id <= b.id ? `${a.id}\0${b.id}` : `${b.id}\0${a.id}`
+}
+
+function pickBestOrientedPairFromPool(
+  pairs: [PlayerWithWaitData, PlayerWithWaitData][],
+  colorPriority: ColorBalancePriority,
+  longestWaitIds: Set<string>,
+  avgGamesPlayed: number,
+): { whitePlayer: PlayerWithWaitData; blackPlayer: PlayerWithWaitData } | null {
+  if (pairs.length === 0) return null
+
+  for (const mode of ["strict", "relaxed", "none"] as const) {
+    let best: {
+      whitePlayer: PlayerWithWaitData
+      blackPlayer: PlayerWithWaitData
+      cost: number
+      waitSum: number
+      maxGames: number
+      gamesDeficit: number
+      key: string
+    } | null = null
+
+    for (const [a, b] of pairs) {
+      const o = bestOrientationForPair(a, b, colorPriority, mode, longestWaitIds)
+      if (!o) continue
+      const waitSum = a.waitingSince + b.waitingSince
+      const key = stablePairKey(a, b)
+      const ga = a.gameResults.length
+      const gb = b.gameResults.length
+      const maxGames = Math.max(ga, gb)
+      const gamesDeficit =
+        Math.max(0, avgGamesPlayed - ga) + Math.max(0, avgGamesPlayed - gb)
+      if (
+        !best ||
+        o.cost < best.cost ||
+        (o.cost === best.cost && waitSum < best.waitSum) ||
+        (o.cost === best.cost &&
+          waitSum === best.waitSum &&
+          maxGames < best.maxGames) ||
+        (o.cost === best.cost &&
+          waitSum === best.waitSum &&
+          maxGames === best.maxGames &&
+          gamesDeficit > best.gamesDeficit) ||
+        (o.cost === best.cost &&
+          waitSum === best.waitSum &&
+          maxGames === best.maxGames &&
+          gamesDeficit === best.gamesDeficit &&
+          key < best.key)
+      ) {
+        best = {
+          whitePlayer: o.whitePlayer as PlayerWithWaitData,
+          blackPlayer: o.blackPlayer as PlayerWithWaitData,
+          cost: o.cost,
+          waitSum,
+          maxGames,
+          gamesDeficit,
+          key,
+        }
+      }
+    }
+
+    if (best) {
+      return { whitePlayer: best.whitePlayer, blackPlayer: best.blackPlayer }
+    }
+  }
+
+  return null
 }
 
 /**
@@ -312,39 +449,3 @@ function rankPlayers(players: Player[]): Player[] {
   })
 }
 
-/**
- * Assign colors based on color balance and recent history
- */
-function assignColors(
-  player1: Player,
-  player2: Player,
-  allMatches: Match[],
-): { whitePlayer: Player; blackPlayer: Player } {
-  // Calculate color balance (whites - blacks)
-  const p1Balance =
-    player1.pieceColors.filter((c) => c === "white").length - player1.pieceColors.filter((c) => c === "black").length
-  const p2Balance =
-    player2.pieceColors.filter((c) => c === "white").length - player2.pieceColors.filter((c) => c === "black").length
-
-  // If different balances, give white to the one with lower balance
-  if (p1Balance < p2Balance) {
-    return { whitePlayer: player1, blackPlayer: player2 }
-  } else if (p2Balance < p1Balance) {
-    return { whitePlayer: player2, blackPlayer: player1 }
-  }
-
-  // Same balance - check recent history
-  const p1Recent = player1.pieceColors[player1.pieceColors.length - 1]
-  const p2Recent = player2.pieceColors[player2.pieceColors.length - 1]
-
-  if (p1Recent === "black" && p2Recent !== "black") {
-    return { whitePlayer: player1, blackPlayer: player2 }
-  } else if (p2Recent === "black" && p1Recent !== "black") {
-    return { whitePlayer: player2, blackPlayer: player1 }
-  }
-
-  // If still tied, random
-  return Math.random() < 0.5
-    ? { whitePlayer: player1, blackPlayer: player2 }
-    : { whitePlayer: player2, blackPlayer: player1 }
-}

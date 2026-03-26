@@ -1,5 +1,13 @@
 import type { Player, Match, TournamentSettings } from "@/lib/types"
 import type { PairingAlgorithm } from "./types"
+import {
+  colorCostScoreMultiplier,
+  scoreMatchingMultiplier,
+  type ColorBalancePriority,
+} from "./color-utils"
+import { minIdlePlayersBeforePairing } from "./idle-threshold"
+import { longestWaitingPlayerIds } from "./idle-wait"
+import { bestOrientationForPair, type ConsecutiveColorCapMode } from "./color-consecutive-cap"
 
 interface PairingScore {
   pairing: [Player, Player]
@@ -35,6 +43,7 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
     settings: TournamentSettings,
     maxMatches?: number,
     _totalPlayers?: number,
+    _options?: { skipT1?: boolean },
   ): Match[] {
     if (process.env.NODE_ENV === "development")
       console.log("[v0] All vs All: Creating pairings", {
@@ -97,29 +106,42 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
       }
     })
 
-    const possiblePairings = generatePairingScores(availablePlayers, allOpponents, recentOpponents, veryRecentOpponents)
+    const nowMs = Date.now()
+    const longestWaitIds = longestWaitingPlayerIds(availablePlayers, allHistoricalMatches, nowMs)
 
-    let pairingsToUse: PairingScore[]
-
-    if (isSaturated) {
-      pairingsToUse = possiblePairings
-    } else {
-      pairingsToUse = possiblePairings.filter((p) => p.rematchLevel === "none")
-
-      if (pairingsToUse.length === 0) {
-        pairingsToUse = possiblePairings.filter((p) => p.rematchLevel !== "very-recent")
+    const buildForRematchFilter = (capMode: ConsecutiveColorCapMode) => {
+      const raw = generatePairingScores(
+        availablePlayers,
+        allOpponents,
+        recentOpponents,
+        veryRecentOpponents,
+        settings,
+        capMode,
+        longestWaitIds,
+      )
+      if (isSaturated) return raw
+      let filtered = raw.filter((p) => p.rematchLevel === "none")
+      if (filtered.length === 0) {
+        filtered = raw.filter((p) => p.rematchLevel !== "very-recent")
       }
-
-      if (pairingsToUse.length === 0) {
-        if (settings.allowRematchToReduceWait) {
-          pairingsToUse = possiblePairings
-        }
+      if (filtered.length === 0 && settings.allowRematchToReduceWait) {
+        filtered = raw
       }
+      return filtered
     }
 
-    if (pairingsToUse.length === 0) return []
+    let pairingsToUse = buildForRematchFilter("strict")
+    let bestMatches = findBestPairingSubset(pairingsToUse, maxMatches)
 
-    const bestMatches = findBestPairingSubset(pairingsToUse, maxMatches)
+    if (bestMatches.length === 0 && availablePlayers.length >= 2) {
+      pairingsToUse = buildForRematchFilter("relaxed")
+      bestMatches = findBestPairingSubset(pairingsToUse, maxMatches)
+    }
+
+    if (bestMatches.length === 0 && availablePlayers.length >= 2) {
+      pairingsToUse = buildForRematchFilter("none")
+      bestMatches = findBestPairingSubset(pairingsToUse, maxMatches)
+    }
 
     return bestMatches
   },
@@ -129,12 +151,14 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
     activeMatches: Match[],
     totalPlayers: number,
     availableTables: number,
+    settings: TournamentSettings,
+    _allHistoricalMatches: Match[],
   ): boolean {
     // Small field: only pair when no games in progress so we can avoid immediate rematches
     const SMALL_FIELD_MAX = 4
     if (totalPlayers <= SMALL_FIELD_MAX && activeMatches.length > 0) return false
 
-    const dynamicThreshold = Math.max(2, Math.floor(totalPlayers / 3))
+    const dynamicThreshold = minIdlePlayersBeforePairing(totalPlayers, settings)
     const hasEnoughPlayers = availablePlayers.length >= dynamicThreshold
     const hasAvailableTables = availableTables > 0
 
@@ -206,10 +230,16 @@ function generatePairingScores(
   allOpponents: Map<string, Set<string>>,
   recentOpponents: Map<string, Map<string, number>>,
   veryRecentOpponents: Map<string, Map<string, number>>,
+  settings: TournamentSettings,
+  capMode: ConsecutiveColorCapMode,
+  longestWaitIds: Set<string>,
 ): PairingScore[] {
   const pairings: PairingScore[] = []
 
   const avgGamesPlayed = players.reduce((sum, p) => sum + p.gamesPlayed, 0) / players.length
+  const colorPriority: ColorBalancePriority = settings.colorBalancePriority ?? "high"
+  const colorMult = colorCostScoreMultiplier(colorPriority)
+  const strictMult = scoreMatchingMultiplier(settings.scoreMatchingStrictness ?? "normal")
 
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
@@ -245,43 +275,30 @@ function generatePairingScores(
         rematchPenalty = 0
       }
 
-      const p1ColorBalance = calculateColorBalance(p1)
-      const p2ColorBalance = calculateColorBalance(p2)
+      const oriented = bestOrientationForPair(p1, p2, colorPriority, capMode, longestWaitIds)
+      if (!oriented) continue
 
-      const colorImbalanceAfterMatch = Math.abs(p1ColorBalance + 1) + Math.abs(p2ColorBalance - 1)
-      const colorImbalanceReversed = Math.abs(p1ColorBalance - 1) + Math.abs(p2ColorBalance + 1)
-
-      const bestColorImbalance = Math.min(colorImbalanceAfterMatch, colorImbalanceReversed)
-      const shouldReverse = colorImbalanceReversed < colorImbalanceAfterMatch
+      const { cost: colorCost, whitePlayer, blackPlayer } = oriented
 
       const p1Deficit = Math.max(0, avgGamesPlayed - p1.gamesPlayed)
       const p2Deficit = Math.max(0, avgGamesPlayed - p2.gamesPlayed)
       const totalDeficit = p1Deficit + p2Deficit
 
-      let score = scoreDiff * 2
+      let score = scoreDiff * strictMult
       score += rematchPenalty
-      score += bestColorImbalance * 10
+      score += colorCost * colorMult
       score -= totalDeficit * 20
 
       pairings.push({
-        pairing: shouldReverse ? [p2, p1] : [p1, p2],
+        pairing: [whitePlayer, blackPlayer],
         score,
         scoreDiff,
         recentRematch: hasPlayedBefore,
         rematchLevel,
-        colorImbalance: bestColorImbalance,
+        colorImbalance: colorCost,
       })
     }
   }
 
   return pairings.sort((a, b) => a.score - b.score)
-}
-
-function calculateColorBalance(player: Player): number {
-  if (!player.pieceColors || player.pieceColors.length === 0) return 0
-
-  const whites = player.pieceColors.filter((c) => c === "white").length
-  const blacks = player.pieceColors.filter((c) => c === "black").length
-
-  return whites - blacks
 }

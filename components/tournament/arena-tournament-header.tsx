@@ -7,6 +7,7 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Match } from "@/lib/types"
 import {
   Award,
+  ClipboardList,
   Clock,
   Home,
   LogIn,
@@ -47,6 +48,8 @@ export interface ArenaTournamentHeaderProps {
   completionRatio: number
   canEndTournament: boolean
   canAccessSettings: boolean
+  /** Organizer-only tab while the arena clock is running */
+  showPairingStatusTab?: boolean
   onEndTournament: () => void
   onOpenDeleteDialog: () => void
   onOpenSettings: () => void
@@ -69,11 +72,19 @@ export function ArenaTournamentHeader({
   completionRatio,
   canEndTournament,
   canAccessSettings,
+  showPairingStatusTab = false,
   onEndTournament,
   onOpenDeleteDialog,
   onOpenSettings,
 }: ArenaTournamentHeaderProps) {
   const { t } = useI18n()
+
+  const tabCount =
+    tournamentStatus === "completed"
+      ? 3
+      : showPairingStatusTab
+        ? 5
+        : 4
 
   const pairingsConflict = hasSubmissionConflict(pairedMatches)
   const resultsConflict = pairingsConflict
@@ -82,23 +93,31 @@ export function ArenaTournamentHeader({
   )
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 sm:gap-3 mb-1">
-          <h1 className="text-xl sm:text-2xl font-bold truncate">{displayName}</h1>
-          {tournamentId && !isCurrentUserInTournament && (
-            <Button variant="default" size="sm" className="shrink-0 h-9 gap-1.5" asChild>
-              <Link href={`/join/${tournamentId}`}>
-                <LogIn className="h-4 w-4" />
-                {t("tournamentHeader.joinButton")}
-              </Link>
-            </Button>
-          )}
-          <Link href="/">
-            <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8 shrink-0">
-              <Home className="h-4 w-4" />
-            </Button>
-          </Link>
+    <div className="sticky top-0 z-40 -mx-4 px-4 py-3 mb-4 bg-background/95 backdrop-blur-md border-b border-border supports-[backdrop-filter]:bg-background/85 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex-1 min-w-0 basis-full sm:basis-0 sm:min-w-[12rem]">
+        <div className="flex items-start sm:items-center gap-2 sm:gap-3 mb-1">
+          <h1
+            className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight line-clamp-2 sm:line-clamp-2 min-w-0 flex-1"
+            title={displayName}
+          >
+            {displayName}
+          </h1>
+          <div className="flex items-center gap-1 shrink-0 pt-0.5 sm:pt-0">
+            {tournamentId && tournamentStatus !== "completed" && !isCurrentUserInTournament && (
+              <Button variant="default" size="sm" className="shrink-0 h-9 gap-1.5" asChild>
+                <Link href={`/join/${tournamentId}`}>
+                  <LogIn className="h-4 w-4" />
+                  {t("tournamentHeader.joinButton")}
+                </Link>
+              </Button>
+            )}
+            <Link href="/">
+              <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8 shrink-0">
+                <Home className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-1">
           <Badge variant="secondary" className="font-normal">
@@ -133,7 +152,11 @@ export function ArenaTournamentHeader({
 
       <TabsList
         className={`grid h-auto w-full sm:w-auto min-h-[44px] ${
-          tournamentStatus === "completed" ? "grid-cols-3" : "grid-cols-4"
+          tabCount === 3
+            ? "grid-cols-3"
+            : tabCount === 5
+              ? "grid-cols-2 sm:grid-cols-5"
+              : "grid-cols-2 sm:grid-cols-4"
         }`}
       >
         <TabsTrigger value="players" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
@@ -147,6 +170,12 @@ export function ArenaTournamentHeader({
             <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
           )}
         </TabsTrigger>
+        {showPairingStatusTab && tournamentStatus !== "completed" && (
+          <TabsTrigger value="pairingStatus" className="text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
+            <ClipboardList className="h-4 w-4 mr-1 shrink-0" />
+            {t("tournamentHeader.pairingStatusTab")}
+          </TabsTrigger>
+        )}
         {tournamentStatus !== "completed" && (
           <TabsTrigger value="results" className="relative text-xs sm:text-sm min-h-[44px] px-2 sm:px-3">
             <Trophy className="h-4 w-4 mr-1" />
@@ -185,7 +214,7 @@ export function ArenaTournamentHeader({
           )}
           {tournamentStatus === "active" && canEndTournament && (
             <Button variant="destructive" size="sm" onClick={onEndTournament}>
-              {t("arena.endTournamentButton")}
+              {t("tournamentHeader.endTournamentButton")}
             </Button>
           )}
         </div>
@@ -213,6 +242,7 @@ export function ArenaTournamentHeader({
           </Button>
         </>
       )}
+      </div>
     </div>
   )
 }

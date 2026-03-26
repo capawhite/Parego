@@ -29,12 +29,24 @@ export interface PairingAlgorithm {
     settings: TournamentSettings,
     maxMatches?: number,
     totalPlayers?: number,
+    options?: {
+      /** Arena override used by organizer force-pair action. */
+      skipT1?: boolean
+    },
   ): Match[]
 
   /**
-   * Determine if auto-pairing should trigger
+   * Determine if auto-pairing should trigger.
+   * @param allHistoricalMatches - Used by Arena for T1 eligibility; other algorithms may ignore.
    */
-  shouldPair(availablePlayers: Player[], activeMatches: Match[], totalPlayers: number, availableTables: number): boolean
+  shouldPair(
+    availablePlayers: Player[],
+    activeMatches: Match[],
+    totalPlayers: number,
+    availableTables: number,
+    settings: TournamentSettings,
+    allHistoricalMatches: Match[],
+  ): boolean
 
   /**
    * Get polling interval in milliseconds

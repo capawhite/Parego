@@ -1,0 +1,29 @@
+{
+  "name": "pairing-algorithms",
+  "version": "1.0.0",
+  "description": "Local copy of tournament pairing algorithms",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest --passWithNoTests",
+    "start": "ts-node src/index.ts"
+  },
+  "keywords": [
+    "tournament",
+    "pairing",
+    "chess",
+    "arena",
+    "swiss",
+    "elimination"
+  ],
+  "author": "Local Development",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^24.8.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
