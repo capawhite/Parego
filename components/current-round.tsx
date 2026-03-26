@@ -211,13 +211,13 @@ export function CurrentRound({
                         <div className="flex items-center gap-1 min-w-0 flex-1">
                           <div
                             className="w-3 h-3 bg-white border-2 border-gray-400 rounded-sm flex-shrink-0"
-                            title="White"
+                            title={t("currentRound.white")}
                           />
                           <span className="font-medium text-sm truncate">{match.player1.name}</span>
-                          <span className="text-muted-foreground text-xs flex-shrink-0">vs</span>
+                          <span className="text-muted-foreground text-xs flex-shrink-0">{t("currentRound.vs")}</span>
                           <div
                             className="w-3 h-3 bg-gray-900 border-2 border-gray-600 rounded-sm flex-shrink-0"
-                            title="Black"
+                            title={t("currentRound.black")}
                           />
                           <span className="font-medium text-sm truncate">{match.player2.name}</span>
                         </div>
@@ -229,7 +229,7 @@ export function CurrentRound({
                       <div className="mt-1.5 px-2 py-1.5 bg-red-100 dark:bg-red-900/30 rounded text-xs space-y-0.5">
                         <div className="flex items-center gap-1 font-semibold text-red-700 dark:text-red-400">
                           <AlertCircle className="h-3.5 w-3.5" />
-                          Result conflict — please resolve
+                          {t("currentRound.resultConflictResolve")}
                         </div>
                         <div className="text-red-600 dark:text-red-400">
                           {match.player1.name}: <strong>{resultLabel(p1Sub.result)}</strong>
@@ -316,7 +316,7 @@ export function CurrentRound({
                           >
                             {match.player1.name}
                           </span>
-                          <span className="text-muted-foreground text-xs flex-shrink-0">vs</span>
+                          <span className="text-muted-foreground text-xs flex-shrink-0">{t("currentRound.vs")}</span>
                           <div
                             className="w-3 h-3 bg-gray-900 border-2 border-gray-600 rounded-sm flex-shrink-0"
                             title={t("currentRound.black")}

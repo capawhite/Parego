@@ -13,6 +13,7 @@ import { QrCode, Copy, Check, Share2 } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 import { generateQRCode } from "@/lib/qr-utils"
+import { useI18n } from "@/components/i18n-provider"
 
 interface QRShareDialogProps {
   tournamentId: string
@@ -21,6 +22,7 @@ interface QRShareDialogProps {
 
 export function QRShareDialog({ tournamentId, tournamentName }: QRShareDialogProps) {
   const [copied, setCopied] = useState(false)
+  const { t } = useI18n()
 
   const joinUrl =
     typeof window !== "undefined" ? `${window.location.origin}/join/${tournamentId}` : `/join/${tournamentId}`
@@ -42,7 +44,7 @@ export function QRShareDialog({ tournamentId, tournamentName }: QRShareDialogPro
       try {
         await navigator.share({
           title: tournamentName,
-          text: `Join ${tournamentName} chess tournament!`,
+          text: t("qrShare.shareText", { tournament: tournamentName }),
           url: joinUrl,
         })
       } catch (err) {
@@ -58,13 +60,13 @@ export function QRShareDialog({ tournamentId, tournamentName }: QRShareDialogPro
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="bg-transparent">
           <QrCode className="h-4 w-4 mr-2" />
-          Share
+          {t("qrShare.shareButton")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Share Tournament</DialogTitle>
-          <DialogDescription>Let players join by scanning the QR code or using the link below.</DialogDescription>
+          <DialogTitle>{t("qrShare.title")}</DialogTitle>
+          <DialogDescription>{t("qrShare.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4 py-4">
@@ -72,7 +74,7 @@ export function QRShareDialog({ tournamentId, tournamentName }: QRShareDialogPro
           <div className="bg-white p-4 rounded-lg shadow-sm">
             <Image
               src={qrCodeUrl || "/placeholder.svg"}
-              alt="Tournament QR Code"
+              alt={t("qrShare.qrAlt")}
               width={192}
               height={192}
               className="h-48 w-48"
@@ -82,7 +84,7 @@ export function QRShareDialog({ tournamentId, tournamentName }: QRShareDialogPro
 
           {/* Tournament Code */}
           <div className="text-center">
-            <p className="text-sm text-muted-foreground">Tournament Code</p>
+            <p className="text-sm text-muted-foreground">{t("qrShare.tournamentCode")}</p>
             <p className="text-3xl font-mono font-bold tracking-widest">{tournamentId}</p>
           </div>
 
@@ -98,7 +100,7 @@ export function QRShareDialog({ tournamentId, tournamentName }: QRShareDialogPro
             {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
               <Button variant="outline" className="w-full bg-transparent" onClick={handleShare}>
                 <Share2 className="h-4 w-4 mr-2" />
-                Share via...
+                {t("qrShare.shareVia")}
               </Button>
             )}
           </div>

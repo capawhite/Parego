@@ -342,8 +342,8 @@ export default function Home() {
             <CardContent className="p-6 flex flex-col items-center gap-3 text-center">
               <Compass className="h-10 w-10 text-primary animate-pulse" />
               <div>
-                <p className="font-medium">Getting your location...</p>
-                <p className="text-sm text-muted-foreground">We use it only to show nearby tournaments. Allow access to see what’s happening around you.</p>
+                <p className="font-medium">{t("home.gettingLocation")}</p>
+                <p className="text-sm text-muted-foreground">{t("home.gettingLocationHint")}</p>
               </div>
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </CardContent>

@@ -303,13 +303,13 @@ export default function JoinTournamentPage() {
 
         if (insertError) {
           if (insertError.code === "23505") {
-            setError("You've already joined this tournament from this device.")
+            setError(t("join.errorAlreadyJoinedFromDevice"))
             setAlreadyJoined(true)
             setJoining(false)
             return
           }
           console.error("[v0] Error joining tournament:", insertError)
-          setError("Failed to join tournament. Please try again.")
+          setError(t("join.errorFailedToJoinTryAgain"))
           return
         }
 
@@ -346,7 +346,7 @@ export default function JoinTournamentPage() {
         }, 2000)
       } catch (err) {
         console.error("[v0] Error joining tournament:", err)
-        setError("Failed to join tournament")
+        setError(t("join.errorFailedToJoin"))
       } finally {
         setJoining(false)
         setVerifyingLocation(false)
@@ -366,12 +366,11 @@ export default function JoinTournamentPage() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md p-6 text-center">
           <Trophy className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h1 className="text-2xl font-bold mb-2">Tournament Not Found</h1>
+          <h1 className="text-2xl font-bold mb-2">{t("join.notFoundTitle")}</h1>
           <p className="text-muted-foreground mb-4">
-            The tournament code <span className="font-mono">{code}</span> is invalid or the tournament has been
-            deleted.
+            {t("join.notFoundDescription", { code })}
           </p>
-          <Button onClick={() => router.push("/")}>Go to Homepage</Button>
+          <Button onClick={() => router.push("/")}>{t("join.goHome")}</Button>
         </Card>
       </div>
     )
@@ -384,12 +383,12 @@ export default function JoinTournamentPage() {
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Trophy className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Already Joined</h1>
+          <h1 className="text-2xl font-bold mb-2">{t("join.alreadyJoinedTitle")}</h1>
           <p className="text-muted-foreground mb-4">
-            You have already joined <span className="font-semibold">{tournament?.name}</span>
+            {t("join.alreadyJoinedDescription", { name: tournament?.name ?? "" })}
           </p>
           <Button onClick={() => router.push(`/tournament/${code}`)} className="w-full" size="lg">
-            Go to Tournament
+            {t("join.goToTournament")}
           </Button>
         </Card>
       </div>
@@ -403,11 +402,11 @@ export default function JoinTournamentPage() {
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Trophy className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Successfully Joined!</h1>
+          <h1 className="text-2xl font-bold mb-2">{t("join.successTitle")}</h1>
           <p className="text-muted-foreground mb-4">
-            Welcome to <span className="font-semibold">{tournament?.name}</span>
+            {t("join.successWelcome", { name: tournament?.name ?? "" })}
           </p>
-          <p className="text-sm text-muted-foreground">Redirecting to tournament...</p>
+          <p className="text-sm text-muted-foreground">{t("join.redirectingToTournament")}</p>
         </Card>
       </div>
     )
@@ -418,20 +417,20 @@ export default function JoinTournamentPage() {
       <Card className="w-full max-w-md p-6">
         <div className="text-center mb-6">
           <Trophy className="h-12 w-12 mx-auto mb-4 text-primary" />
-          <h1 className="text-2xl font-bold mb-2">Join Tournament</h1>
+          <h1 className="text-2xl font-bold mb-2">{t("join.title")}</h1>
           <p className="text-lg font-semibold text-foreground">{tournament?.name}</p>
           <div className="flex items-center justify-center gap-2 mt-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
-            <span>{playerCount} players joined</span>
+            <span>{t("join.playersJoined", { count: playerCount })}</span>
           </div>
-          {isRegistered && <div className="mt-2 text-xs text-primary flex items-center justify-center gap-1"><Check className="h-3 w-3" /> Joining as registered user</div>}
+          {isRegistered && <div className="mt-2 text-xs text-primary flex items-center justify-center gap-1"><Check className="h-3 w-3" /> {t("join.joiningAsRegistered")}</div>}
           {!isRegistered && (
             <div className="mt-2 text-xs text-muted-foreground">
-              Joining as guest •{" "}
+              {t("join.joiningAsGuest")} •{" "}
               <Link href="/auth/signup" className="underline">
-                Register
+                {t("join.register")}
               </Link>{" "}
-              to track your progress
+              {t("join.toTrackProgress")}
             </div>
           )}
         </div>
@@ -440,12 +439,12 @@ export default function JoinTournamentPage() {
           {isRegistered && (
             <div>
               <label htmlFor="playerName" className="text-sm font-medium mb-2 block">
-                Your Name
+                {t("join.yourNameLabel")}
               </label>
               <Input
                 id="playerName"
                 type="text"
-                placeholder="Enter your name"
+                placeholder={t("join.enterYourNamePlaceholder")}
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 onKeyDown={(e) => {

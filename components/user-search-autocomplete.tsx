@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Search, X, UserPlus } from "lucide-react"
+import { useI18n } from "@/components/i18n-provider"
 
 interface User {
   id: string
@@ -21,8 +22,9 @@ interface UserSearchAutocompleteProps {
 
 export function UserSearchAutocomplete({
   onSelectUser,
-  placeholder = "Search for registered players...",
+  placeholder,
 }: UserSearchAutocompleteProps) {
+  const { t } = useI18n()
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<User[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -81,7 +83,7 @@ export function UserSearchAutocomplete({
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder={placeholder}
+          placeholder={placeholder ?? t("userSearch.placeholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setShowResults(true)}
@@ -118,7 +120,7 @@ export function UserSearchAutocomplete({
                   <div className="flex-1 text-left">
                     <div className="font-medium text-sm">{user.name}</div>
                     <div className="text-xs text-muted-foreground flex items-center gap-2">
-                      {user.rating && <span>Rating: {user.rating}</span>}
+                      {user.rating && <span>{t("userSearch.rating", { rating: user.rating })}</span>}
                       {user.country && <span>{user.country}</span>}
                     </div>
                   </div>
@@ -131,7 +133,7 @@ export function UserSearchAutocomplete({
 
       {showResults && query.length >= 2 && results.length === 0 && !isSearching && (
         <Card className="absolute z-50 w-full mt-1 p-3">
-          <p className="text-sm text-muted-foreground text-center">No registered users found</p>
+          <p className="text-sm text-muted-foreground text-center">{t("userSearch.noUsersFound")}</p>
         </Card>
       )}
     </div>

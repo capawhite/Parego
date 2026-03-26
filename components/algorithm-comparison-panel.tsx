@@ -111,7 +111,7 @@ export function AlgorithmComparisonPanel({
             table: m.tableNumber ?? 0,
           })),
           diverged,
-          divergenceNote: diverged ? "Algorithms produced different pairings" : "Algorithms matched",
+          divergenceNote: diverged ? t("algorithmComparison.algorithmsDiverged") : t("algorithmComparison.algorithmsMatched"),
         })
 
         // Apply the actual results from this round to both states
@@ -173,7 +173,7 @@ export function AlgorithmComparisonPanel({
   return (
     <Card className="mb-4">
       <CardHeader>
-        <CardTitle className="text-sm">Algorithm Comparison Tool</CardTitle>
+        <CardTitle className="text-sm">{t("algorithmComparison.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-xs text-muted-foreground">
@@ -187,22 +187,22 @@ export function AlgorithmComparisonPanel({
           size="sm"
           className="w-full bg-transparent"
         >
-          {comparing ? "Comparing..." : "Run Algorithm Comparison"}
+          {comparing ? t("algorithmComparison.comparing") : t("algorithmComparison.runButton")}
         </Button>
 
         {results.length > 0 && (
           <div className="space-y-3 mt-4">
-            <h3 className="text-xs font-semibold">Comparison Results:</h3>
+            <h3 className="text-xs font-semibold">{t("algorithmComparison.resultsTitle")}</h3>
 
             {results.map((result) => (
               <Card key={result.round} className={result.diverged ? "border-orange-500" : "border-green-500/50"}>
                 <CardHeader className="p-3">
                   <CardTitle className="text-xs flex items-center justify-between">
-                    <span>Round {result.round}</span>
+                    <span>{t("algorithmComparison.round", { round: result.round })}</span>
                     {result.diverged ? (
-                      <span className="text-orange-500 text-[10px]">⚠ Diverged</span>
+                      <span className="text-orange-500 text-[10px]">{t("algorithmComparison.divergedBadge")}</span>
                     ) : (
-                      <span className="text-green-500 text-[10px]">✓ Matched</span>
+                      <span className="text-green-500 text-[10px]">{t("algorithmComparison.matchedBadge")}</span>
                     )}
                   </CardTitle>
                 </CardHeader>
@@ -219,7 +219,7 @@ export function AlgorithmComparisonPanel({
                       <div className="space-y-0.5">
                         {result.allVsAllPairings.map((pair, idx) => (
                           <div key={idx} className="text-[9px] text-muted-foreground">
-                            T{pair.table}: {pair.player1} vs {pair.player2}
+                            T{pair.table}: {pair.player1} {t("algorithmComparison.vs")} {pair.player2}
                           </div>
                         ))}
                       </div>
@@ -232,7 +232,7 @@ export function AlgorithmComparisonPanel({
                       <div className="space-y-0.5">
                         {result.balancedStrengthPairings.map((pair, idx) => (
                           <div key={idx} className="text-[9px] text-muted-foreground">
-                            T{pair.table}: {pair.player1} vs {pair.player2}
+                            T{pair.table}: {pair.player1} {t("algorithmComparison.vs")} {pair.player2}
                           </div>
                         ))}
                       </div>
@@ -243,15 +243,16 @@ export function AlgorithmComparisonPanel({
             ))}
 
             <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-              <p className="text-xs font-semibold mb-1">Summary:</p>
+              <p className="text-xs font-semibold mb-1">{t("algorithmComparison.summaryTitle")}</p>
               <p className="text-[10px] text-muted-foreground">
-                Divergence occurred in{" "}
-                <span className="font-semibold text-orange-500">{results.filter((r) => r.diverged).length}</span> out of{" "}
-                {results.length} rounds
+                {t("algorithmComparison.divergenceCount", {
+                  diverged: results.filter((r) => r.diverged).length,
+                  total: results.length,
+                })}{" "}
               </p>
               {results.some((r) => r.diverged) && (
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  First divergence in Round {results.find((r) => r.diverged)?.round}
+                  {t("algorithmComparison.firstDivergenceRound", { round: results.find((r) => r.diverged)?.round ?? 0 })}
                 </p>
               )}
             </div>

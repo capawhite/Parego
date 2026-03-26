@@ -146,15 +146,15 @@ export default function NearbyPage() {
   }, [refreshNearby, userLocation])
 
   const formatStartTime = (startTime?: string) => {
-    if (!startTime) return "Start time TBD"
+    if (!startTime) return t("nearby.startTimeTbd")
     const date = new Date(startTime)
     const now = new Date()
     const diffMs = date.getTime() - now.getTime()
     const diffMins = Math.floor(diffMs / 60000)
 
-    if (diffMins < 0) return "Started"
-    if (diffMins < 60) return `Starts in ${diffMins} min`
-    if (diffMins < 1440) return `Starts in ${Math.floor(diffMins / 60)} hr`
+    if (diffMins < 0) return t("nearby.startTimeStarted")
+    if (diffMins < 60) return t("nearby.startTimeInMinutes", { minutes: diffMins })
+    if (diffMins < 1440) return t("nearby.startTimeInHours", { hours: Math.floor(diffMins / 60) })
     return date.toLocaleDateString()
   }
 
@@ -173,8 +173,14 @@ export default function NearbyPage() {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     const distance = R * c
 
-    if (distance < 1) return `${Math.round(distance * 1000)} m`
-    return `${distance.toFixed(1)} km`
+    if (distance < 1) return t("nearby.distanceMeters", { meters: Math.round(distance * 1000) })
+    return t("nearby.distanceKilometers", { kilometers: distance.toFixed(1) })
+  }
+
+  const statusLabel = (status: TournamentData["status"]) => {
+    if (status === "active") return t("nearby.statusLive")
+    if (status === "setup") return t("nearby.statusUpcoming")
+    return t("nearby.statusCompleted")
   }
 
   return (
@@ -186,11 +192,11 @@ export default function NearbyPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold">Find Nearby</h1>
+            <h1 className="text-xl font-bold">{t("nearby.title")}</h1>
             <p className="text-sm text-muted-foreground">
-              Tournaments within {radius} km
-              {locationSource === "registered" && " (using registered location)"}
-              {locationSource === "gps" && " (using GPS)"}
+              {t("nearby.withinKm", { km: radius })}
+              {locationSource === "registered" && ` ${t("nearby.usingRegisteredLocation")}`}
+              {locationSource === "gps" && ` ${t("nearby.usingGps")}`}
             </p>
           </div>
           {userLocation && (
@@ -211,7 +217,7 @@ export default function NearbyPage() {
           <CardContent className="p-3 space-y-3">
             {/* Radius */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Distance</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("nearby.distanceLabel")}</label>
               <div className="flex gap-1.5 flex-wrap">
                 {([5, 10, 25, 50] as RadiusOption[]).map((r) => (
                   <Button
@@ -221,7 +227,7 @@ export default function NearbyPage() {
                     className={`flex-1 min-w-0 min-h-10 touch-manipulation sm:flex-initial ${radius !== r ? "bg-transparent" : ""}`}
                     onClick={() => setRadius(r)}
                   >
-                    {r} km
+                    {t("nearby.distanceKilometers", { kilometers: r })}
                   </Button>
                 ))}
               </div>
@@ -229,17 +235,17 @@ export default function NearbyPage() {
 
             {/* Time window */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Starting within</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("nearby.startingWithinLabel")}</label>
               <div className="flex gap-1.5">
-                {([12, 24] as TimeOption[]).map((t) => (
+                {([12, 24] as TimeOption[]).map((windowHours) => (
                   <Button
-                    key={t}
-                    variant={timeWindow === t ? "default" : "outline"}
+                    key={windowHours}
+                    variant={timeWindow === windowHours ? "default" : "outline"}
                     size="sm"
-                    className={`flex-1 min-h-10 touch-manipulation ${timeWindow !== t ? "bg-transparent" : ""}`}
-                    onClick={() => setTimeWindow(t)}
+                    className={`flex-1 min-h-10 touch-manipulation ${timeWindow !== windowHours ? "bg-transparent" : ""}`}
+                    onClick={() => setTimeWindow(windowHours)}
                   >
-                    {t} hours
+                    {t("nearby.hoursLabel", { hours: windowHours })}
                   </Button>
                 ))}
               </div>
@@ -253,8 +259,8 @@ export default function NearbyPage() {
             <CardContent className="p-4 flex items-center gap-3">
               <Navigation className="h-5 w-5 text-primary animate-pulse" />
               <div>
-                <p className="font-medium">Getting your location...</p>
-                <p className="text-sm text-muted-foreground">Please allow location access</p>
+                <p className="font-medium">{t("nearby.gettingLocation")}</p>
+                <p className="text-sm text-muted-foreground">{t("nearby.allowLocationAccess")}</p>
               </div>
             </CardContent>
           </Card>
@@ -265,7 +271,7 @@ export default function NearbyPage() {
             <CardContent className="p-4 flex items-center gap-3">
               <AlertCircle className="h-5 w-5 text-destructive" />
               <div>
-                <p className="font-medium text-destructive">Location Required</p>
+                <p className="font-medium text-destructive">{t("nearby.locationRequired")}</p>
                 <p className="text-sm text-muted-foreground">{locationError}</p>
               </div>
             </CardContent>
@@ -278,7 +284,7 @@ export default function NearbyPage() {
             {loading ? (
               <Card>
                 <CardContent className="p-8 text-center">
-                  <p className="text-muted-foreground">Searching nearby...</p>
+                  <p className="text-muted-foreground">{t("nearby.searchingNearby")}</p>
                 </CardContent>
               </Card>
             ) : error ? (
@@ -292,8 +298,8 @@ export default function NearbyPage() {
                 <CardContent className="p-8 text-center space-y-3">
                   <MapPinOff className="h-10 w-10 mx-auto text-muted-foreground" />
                   <div>
-                    <p className="font-medium">No tournaments found</p>
-                    <p className="text-sm text-muted-foreground">Try increasing the distance or time window</p>
+                    <p className="font-medium">{t("nearby.noTournamentsFound")}</p>
+                    <p className="text-sm text-muted-foreground">{t("nearby.tryIncreaseDistanceTime")}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -323,7 +329,9 @@ export default function NearbyPage() {
                           </div>
                           {(playerCounts[tournament.id] ?? 0) > 0 && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              {playerCounts[tournament.id]} {playerCounts[tournament.id] === 1 ? "player" : "players"}
+                              {playerCounts[tournament.id] === 1
+                                ? t("nearby.playersCountSingle", { count: playerCounts[tournament.id] })
+                                : t("nearby.playersCountMultiple", { count: playerCounts[tournament.id] })}
                               {(playerPreviews[tournament.id] ?? []).length > 0 && (
                                 <span> — {(playerPreviews[tournament.id] ?? []).slice(0, 4).join(", ")}
                                   {(playerCounts[tournament.id] ?? 0) > 4 ? " …" : ""}
@@ -340,13 +348,13 @@ export default function NearbyPage() {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
-                              Get directions
+                              {t("nearby.getDirections")}
                             </a>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className="text-sm font-medium text-primary">{formatDistance(tournament)}</div>
-                          <div className="text-xs text-muted-foreground capitalize">{tournament.status}</div>
+                          <div className="text-xs text-muted-foreground capitalize">{statusLabel(tournament.status)}</div>
                         </div>
                       </div>
                     </CardContent>
