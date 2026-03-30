@@ -9,13 +9,12 @@ const DEBUG = process.env.NODE_ENV === "development"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { matchId, result, confirmed, playerId } = body as {
+    const { matchId, result, confirmed } = body as {
       matchId?: string
       result?: ResultType
       confirmed?: boolean
-      playerId?: string
     }
-    if (DEBUG) console.log("[api/submit] POST body:", { matchId, result, confirmed, playerId })
+    if (DEBUG) console.log("[api/submit] POST body:", { matchId, result, confirmed })
 
     if (!matchId || result == null || confirmed == null) {
       const body: SubmitResultResponse = {
@@ -28,14 +27,13 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user && !playerId) {
+    if (!user) {
       const body: SubmitResultResponse = {
         success: false,
-        error:
-          "Guest players must send playerId. Rejoin the tournament from the join link if you don't see your session.",
-        errorCode: "BAD_REQUEST_GUEST_NO_PLAYER_ID",
+        error: "Sign in to submit a match result.",
+        errorCode: "SIGN_IN_REQUIRED_TO_SUBMIT",
       }
-      return NextResponse.json(body, { status: 400 })
+      return NextResponse.json(body, { status: 401 })
     }
 
     const validResults: ResultType[] = ["player1-win", "draw", "player2-win"]
@@ -49,8 +47,7 @@ export async function POST(request: Request) {
     }
 
     const res: SubmitResultResponse = await submitMatchResultImpl(matchId, result, !!confirmed, {
-      playerId: playerId ?? undefined,
-      userId: user?.id,
+      userId: user.id,
     })
     if (DEBUG) console.log("[api/submit] submitMatchResultImpl result:", res.success, "matchCompleted:", res.matchCompleted, "error:", res.error)
 

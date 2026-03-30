@@ -98,7 +98,7 @@ export interface TournamentSettings {
   // All vs All: allow rematches when needed to avoid long waits (organizer toggle)
   allowRematchToReduceWait?: boolean
 
-  /** If set (>0), require at least this many idle players before pairing; otherwise use max(2, floor(n/3)). */
+  /** If set (>0), require at least this many idle players before pairing; otherwise use max(4, floor(n/4)), capped by field size. */
   minIdlePlayersBeforePairing?: number
 
   /**

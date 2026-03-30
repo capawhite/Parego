@@ -13,6 +13,8 @@
   },
   "submitErrors": {
     "MISSING_AUTH": "You must be logged in or provide a player ID to submit results.",
+    "SIGN_IN_REQUIRED_TO_SUBMIT": "Sign in to submit a match result. Guest players: ask the tournament director to enter the result.",
+    "GUEST_PLAYER_CANNOT_SUBMIT": "Guest players cannot submit results. Ask the tournament director to enter the result.",
     "MISSING_SUPABASE_URL": "Server configuration error: Supabase is not configured.",
     "SERVER_MISCONFIGURED_NO_SERVICE_ROLE": "Server misconfiguration: the service role key is missing. Match results cannot be saved.",
     "MATCH_NOT_FOUND": "Match not found.",
@@ -290,6 +292,7 @@
     "toastRetryingInSeconds": "Retrying in 2 seconds…",
     "toastLocationUnavailableStillJoin": "Location unavailable. You can still join; the organizer will confirm you at the venue.",
     "toastNotAtVenueYet": "You're not at the venue yet. You can still join; the organizer will confirm you when you arrive.",
+    "guestCannotSubmitResults": "Only signed-in players can submit results here. Ask the tournament director to enter the result for this game.",
     "submitMatchResult": "Submit Match Result",
     "whiteVsBlack": "{player1} (White) vs {player2} (Black)",
     "resultConflict": "Result Conflict!",

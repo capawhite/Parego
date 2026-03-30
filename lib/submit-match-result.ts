@@ -6,7 +6,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js"
-import { getSubmissionSide, parsePlayerData, type ResultType } from "@/lib/result-utils"
+import { getSubmissionSide, type ResultType } from "@/lib/result-utils"
 import { calculatePointsFromSettings } from "@/lib/points"
 import { parseTournamentSettings } from "@/lib/tournament-settings"
 import type { SubmitErrorCode } from "@/lib/submit-error-codes"
@@ -35,11 +35,11 @@ export async function submitMatchResultImpl(
   confirmed: boolean,
   options: { playerId?: string; userId?: string },
 ): Promise<SubmitResultResponse> {
-  const { playerId, userId } = options
-  if (!userId && !playerId) {
+  const { userId } = options
+  if (!userId) {
     return reject(
-      "MISSING_AUTH",
-      "You must be logged in or provide a player ID to submit results",
+      "SIGN_IN_REQUIRED_TO_SUBMIT",
+      "Sign in to submit a match result. Guest players: ask the tournament director to enter the result.",
     )
   }
 
@@ -100,28 +100,42 @@ export async function submitMatchResultImpl(
   }
 
   const DEBUG = process.env.NODE_ENV === "development"
-  if (DEBUG) console.log("[submit-match-result] Resolving side:", { playerId, userId, player1_id: match.player1_id, player2_id: match.player2_id })
+  if (DEBUG) console.log("[submit-match-result] Resolving side:", { userId, player1_id: match.player1_id, player2_id: match.player2_id })
 
-  let side: "player1" | "player2" | null = null
-  if (userId) {
-    side = getSubmissionSide(userId, match.player1_data, match.player2_data)
-  }
-  if (!side && playerId) {
-    if (match.player1_id === playerId) side = "player1"
-    else if (match.player2_id === playerId) side = "player2"
-    else {
-      const p1 = parsePlayerData(match.player1_data)
-      const p2 = parsePlayerData(match.player2_data)
-      if ((p1 as any)?.id === playerId) side = "player1"
-      else if ((p2 as any)?.id === playerId) side = "player2"
-    }
-  }
+  const side = getSubmissionSide(userId, match.player1_data, match.player2_data)
 
   if (!side) {
-    if (DEBUG) console.warn("[submit-match-result] Side not resolved — playerId/userId did not match match players")
+    if (DEBUG) console.warn("[submit-match-result] Side not resolved — userId did not match match players")
     return reject(
       "NOT_A_PLAYER_IN_MATCH",
-      "You are not a player in this match. If you joined as a guest, try refreshing and rejoining from the join link.",
+      "You are not a player in this match.",
+    )
+  }
+
+  const submittingPlayerId = side === "player1" ? match.player1_id : match.player2_id
+  const { data: submittingPlayer, error: submittingPlayerErr } = await adminClient
+    .from("players")
+    .select("is_guest, user_id")
+    .eq("id", submittingPlayerId)
+    .eq("tournament_id", match.tournament_id)
+    .single()
+
+  if (submittingPlayerErr || !submittingPlayer) {
+    console.error("[submit-match-result] Could not load submitting player:", submittingPlayerErr)
+    return reject("NOT_A_PLAYER_IN_MATCH", "Could not verify player for this match.")
+  }
+
+  if (submittingPlayer.is_guest) {
+    return reject(
+      "GUEST_PLAYER_CANNOT_SUBMIT",
+      "Guest players cannot submit results. Ask the tournament director to enter the result.",
+    )
+  }
+
+  if (!submittingPlayer.user_id || submittingPlayer.user_id !== userId) {
+    return reject(
+      "NOT_A_PLAYER_IN_MATCH",
+      "Your account is not linked to this player seat. Sign in with the account you used to join.",
     )
   }
 

@@ -13,6 +13,8 @@
   },
   "submitErrors": {
     "MISSING_AUTH": "Debes iniciar sesión o enviar un ID de jugador para enviar resultados.",
+    "SIGN_IN_REQUIRED_TO_SUBMIT": "Inicia sesión para enviar el resultado. Si eres invitado, pide al director que lo introduzca.",
+    "GUEST_PLAYER_CANNOT_SUBMIT": "Los jugadores invitados no pueden enviar resultados. Pide al director del torneo que lo introduzca.",
     "MISSING_SUPABASE_URL": "Error de configuración del servidor: Supabase no está configurado.",
     "SERVER_MISCONFIGURED_NO_SERVICE_ROLE": "Error de configuración: falta la clave de rol de servicio. No se pueden guardar los resultados.",
     "MATCH_NOT_FOUND": "Partida no encontrada.",
@@ -290,6 +292,7 @@
     "toastRetryingInSeconds": "Reintentando en 2 segundos…",
     "toastLocationUnavailableStillJoin": "Ubicación no disponible. Aún puedes unirte; el organizador te confirmará en el lugar.",
     "toastNotAtVenueYet": "Aún no estás en el lugar. Puedes unirte igual; el organizador te confirmará al llegar.",
+    "guestCannotSubmitResults": "Solo los jugadores con cuenta pueden enviar resultados aquí. Pide al director del torneo que introduzca el resultado de esta partida.",
     "submitMatchResult": "Enviar resultado de la partida",
     "whiteVsBlack": "{player1} (Blancas) vs {player2} (Negras)",
     "resultConflict": "¡Conflicto de resultado!",

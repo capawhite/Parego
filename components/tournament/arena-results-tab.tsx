@@ -15,6 +15,8 @@ export interface ArenaResultsTabProps {
   showSimulator: boolean
   playerSession?: { playerId: string; role: "player" | "organizer" }
   canRecordResults: boolean
+  /** Signed-in players linked to a seat may submit; guests may not */
+  canSubmitOwnResult?: boolean
   onRecordResult: (matchId: string, winnerId?: string, isDraw?: boolean) => void
   onPlayerSubmit: (matchId: string, result: "player1-win" | "draw" | "player2-win") => void
   onPlayerConfirm: (matchId: string, result?: "player1-win" | "draw" | "player2-win") => void
@@ -30,6 +32,7 @@ export function ArenaResultsTab({
   showSimulator,
   playerSession,
   canRecordResults,
+  canSubmitOwnResult = true,
   onRecordResult,
   onPlayerSubmit,
   onPlayerConfirm,
@@ -56,6 +59,7 @@ export function ArenaResultsTab({
     onPlayerConfirm,
     onPlayerCancel,
     canRecordResults,
+    canSubmitOwnResult,
     allPlayers: players,
   } as const
 

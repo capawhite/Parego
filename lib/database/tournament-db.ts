@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/client"
 import { haversineKm } from "@/lib/geo"
-import type { Player, Match, TournamentSettings } from "@/lib/types"
+import { pointsEarnedFromGameResults } from "@/lib/points"
+import { parseTournamentSettings } from "@/lib/tournament-settings"
+import { DEFAULT_SETTINGS, type Player, type Match, type TournamentSettings } from "@/lib/types"
 
 /** Extract readable message from Supabase/PostgrestError (whose props may be non-enumerable). */
 export function formatSupabaseError(error: unknown): string {
@@ -128,8 +130,14 @@ export async function listTournaments(
 }
 
 // Save players to database
-export async function savePlayers(tournamentId: string, players: Player[]) {
+export async function savePlayers(tournamentId: string, players: Player[], settings?: TournamentSettings) {
   const supabase = createClient()
+
+  let scoringSettings: TournamentSettings = settings ?? { ...DEFAULT_SETTINGS }
+  if (!settings) {
+    const row = await loadTournament(tournamentId)
+    scoringSettings = row ? parseTournamentSettings(row) : { ...DEFAULT_SETTINGS }
+  }
 
   const dbPlayers = players.map((player) => ({
     id: player.id,
@@ -151,7 +159,8 @@ export async function savePlayers(tournamentId: string, players: Player[]) {
     opponents: player.opponentIds, // Map opponentIds to opponents
     results: player.gameResults,
     colors: player.pieceColors,
-    points_earned: player.pointsEarned ?? player.gameResults.map((r) => (r === "W" ? 2 : r === "D" ? 1 : 0)),
+    points_earned:
+      player.pointsEarned ?? pointsEarnedFromGameResults(player.gameResults, scoringSettings),
     table_numbers: player.tableNumbers || [],
     checked_in_at: player.checkedInAt != null ? new Date(player.checkedInAt).toISOString() : null,
     presence_source: player.presenceSource ?? null,

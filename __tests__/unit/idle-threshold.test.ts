@@ -12,9 +12,10 @@ describe("minIdlePlayersBeforePairing", () => {
     expect(minIdlePlayersBeforePairing(21, s)).toBe(5)
   })
 
-  it("ignores deprecated organizer override and uses default rule", () => {
+  it("uses organizer setting when minIdlePlayersBeforePairing is set", () => {
     const s: TournamentSettings = { ...DEFAULT_SETTINGS, minIdlePlayersBeforePairing: 10 }
-    expect(minIdlePlayersBeforePairing(21, s)).toBe(5)
-    expect(minIdlePlayersBeforePairing(6, s)).toBe(4)
+    expect(minIdlePlayersBeforePairing(21, s)).toBe(10)
+    expect(minIdlePlayersBeforePairing(6, s)).toBe(6)
+    expect(minIdlePlayersBeforePairing(3, s)).toBe(3)
   })
 })

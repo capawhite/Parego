@@ -249,7 +249,9 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     canStartTournament: userRole === "organizer",
     canEndTournament: userRole === "organizer",
     canRecordAnyResult: userRole === "organizer",
-    canSubmitOwnResult: ["organizer", "registered-player", "guest-player"].includes(userRole),
+    // Signed-in players with a seat may submit; guests may not. Organizers who also have a player seat can submit their own games.
+    canSubmitOwnResult:
+      userRole === "registered-player" || (isOrganizer && isCurrentUserInTournament),
     canEditSettings: userRole === "organizer",
     canAddPlayers: userRole === "organizer",
     canRemoveAnyPlayer: userRole === "organizer",
@@ -509,7 +511,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           tournamentMetadata?.visibility ?? "public",
           startTimeIso,
         )
-        await savePlayers(tournamentId, arenaState.players)
+        await savePlayers(tournamentId, arenaState.players, arenaState.settings)
         if (DEBUG) console.log("[v0] Tournament auto-saved to database")
       } catch (error) {
         console.error("[v0] Error auto-saving tournament:", error)
@@ -1612,7 +1614,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       })
 
       if (tournamentId && isOrganizer && !skipDbWrite) {
-        savePlayers(tournamentId, newPlayers).catch((err) => {
+        savePlayers(tournamentId, newPlayers, prev.settings).catch((err) => {
           console.error("[v0] Error saving players after match completion:", formatSupabaseError(err))
         })
         saveMatches(tournamentId, mergeMatchesForSave(newPairedMatches, newAllTimeMatches)).catch((err) => {
@@ -1835,7 +1837,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           matchId,
           result: effectiveResult,
           confirmed: true,
-          playerId: playerSession.playerId,
         }),
       })
 
@@ -2064,7 +2065,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       })
 
       if (tournamentId) {
-        savePlayers(tournamentId, updatedPlayers).catch((err) => {
+        savePlayers(tournamentId, updatedPlayers, prev.settings).catch((err) => {
           console.error("[v0] Error saving players after override:", formatSupabaseError(err))
         })
       }
@@ -2118,7 +2119,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
       // Save updated player and match states (organizer only — players lack RLS write access)
       if (tournamentId && isOrganizer) {
-        savePlayers(tournamentId, updated.players).catch((err) => {
+        savePlayers(tournamentId, updated.players, updated.settings).catch((err) => {
           console.error("[v0] Error saving players after match completion:", formatSupabaseError(err))
         })
         saveMatches(tournamentId, mergeMatchesForSave(updated.pairedMatches, updated.allTimeMatches)).catch((err) => {
@@ -2388,6 +2389,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                   : undefined
               }
               canRecordResults={permissions.canRecordAnyResult}
+              canSubmitOwnResult={permissions.canSubmitOwnResult}
               onRecordResult={(id, winner, isDraw) => recordResult(id, winner, isDraw ?? false)}
               onPlayerSubmit={handlePlayerSubmit}
               onPlayerConfirm={handlePlayerConfirm}

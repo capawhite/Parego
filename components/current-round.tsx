@@ -15,6 +15,8 @@ interface CurrentRoundProps {
   onPlayerCancel?: (matchId: string) => void
   playerSession?: { playerId: string; role: "player" | "organizer" }
   canRecordResults?: boolean
+  /** When false (e.g. guest), show notice instead of submit UI */
+  canSubmitOwnResult?: boolean
   allPlayers?: Player[]
 }
 
@@ -118,6 +120,7 @@ export function CurrentRound({
   onPlayerCancel,
   playerSession,
   canRecordResults = false,
+  canSubmitOwnResult = true,
   allPlayers = [],
 }: CurrentRoundProps) {
   const { t } = useI18n()
@@ -162,7 +165,17 @@ export function CurrentRound({
               const mySubmission = isPlayer1 ? match.player1Submission : match.player2Submission
               const opponentSubmission = isPlayer1 ? match.player2Submission : match.player1Submission
 
-              // Only show submission form if player is IN this match
+              // Only show submission form if player is IN this match and may submit (signed-in seat)
+              if (isPlayer && isPlayerInMatch && !canSubmitOwnResult) {
+                return (
+                  <Card key={match.id}>
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-muted-foreground text-center">{t("arena.guestCannotSubmitResults")}</p>
+                    </CardContent>
+                  </Card>
+                )
+              }
+
               if (isPlayer && isPlayerInMatch) {
                 return (
                   <MatchResultSubmitter

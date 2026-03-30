@@ -92,8 +92,8 @@ describe("submitMatchResult (integration: player submits from device)", () => {
     const { submitMatchResult } = await import("@/app/actions/submit-result")
     const out = await submitMatchResult(matchId, "player1-win", true)
     expect(out.success).toBe(false)
-    expect(out.errorCode).toBe("MISSING_AUTH")
-    expect(out.error).toContain("logged in")
+    expect(out.errorCode).toBe("SIGN_IN_REQUIRED_TO_SUBMIT")
+    expect(out.error).toMatch(/sign in/i)
   })
 
   it("returns error when match not found", async () => {
