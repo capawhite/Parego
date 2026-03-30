@@ -29,7 +29,7 @@ export interface ArenaPairingStatusPanelProps {
   tournamentMetadata: { latitude?: number | null; longitude?: number | null } | null
   isActive: boolean
   waitingForFinalResults: boolean
-  onForcePairing?: () => void
+  onReduceWaitOneMinute?: () => void
 }
 
 function formatWaitLabel(ms: number | null, t: (key: string, params?: Record<string, string | number>) => string): string {
@@ -75,7 +75,7 @@ export function ArenaPairingStatusPanel({
   tournamentMetadata,
   isActive,
   waitingForFinalResults,
-  onForcePairing,
+  onReduceWaitOneMinute,
 }: ArenaPairingStatusPanelProps) {
   const { t } = useI18n()
   const [open, setOpen] = useState(true)
@@ -137,11 +137,10 @@ export function ArenaPairingStatusPanel({
       : arenaState.settings.t1CapPreset === "strict"
         ? { minSec: 120, maxSec: 300 }
         : { minSec: 90, maxSec: 180 }
-  const canForcePairing =
-    !!onForcePairing &&
+  const canReduceWait =
+    !!onReduceWaitOneMinute &&
     insights.algorithmId === "balanced-strength" &&
-    insights.availableTables > 0 &&
-    insights.idleForPairingCount >= 2 &&
+    insights.players.some((p) => p.status === "t1_wait") &&
     isActive &&
     !waitingForFinalResults
 
@@ -231,23 +230,25 @@ export function ArenaPairingStatusPanel({
             <div className="pt-1">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button size="sm" variant="outline" disabled={!canForcePairing}>
-                    {t("arena.forcePairingButton")}
+                  <Button size="sm" variant="outline" disabled={!canReduceWait}>
+                    {t("arena.reduceWaitButton")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>{t("arena.forcePairingConfirmTitle")}</AlertDialogTitle>
-                    <AlertDialogDescription>{t("arena.forcePairingConfirmDescription")}</AlertDialogDescription>
+                    <AlertDialogTitle>{t("arena.reduceWaitConfirmTitle")}</AlertDialogTitle>
+                    <AlertDialogDescription>{t("arena.reduceWaitConfirmDescription")}</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onForcePairing?.()}>{t("arena.forcePairingConfirmAction")}</AlertDialogAction>
+                    <AlertDialogAction onClick={() => onReduceWaitOneMinute?.()}>
+                      {t("arena.reduceWaitConfirmAction")}
+                    </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-              {!canForcePairing ? (
-                <p className="text-xs text-muted-foreground mt-1">{t("arena.forcePairingDisabledHelp")}</p>
+              {!canReduceWait ? (
+                <p className="text-xs text-muted-foreground mt-1">{t("arena.reduceWaitDisabledHelp")}</p>
               ) : null}
             </div>
           ) : null}

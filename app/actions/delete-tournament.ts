@@ -24,6 +24,20 @@ export async function deleteTournament(tournamentId: string): Promise<DeleteTour
     return { success: false, error: "Authentication required" }
   }
 
+  const { data: tournament, error: fetchError } = await supabase
+    .from("tournaments")
+    .select("organizer_id")
+    .eq("id", tournamentId)
+    .maybeSingle()
+
+  if (fetchError || !tournament) {
+    return { success: false, error: "Tournament not found" }
+  }
+
+  if (tournament.organizer_id !== user.id) {
+    return { success: false, error: "Only the tournament organizer can delete this tournament" }
+  }
+
   const { error } = await supabase.from("tournaments").delete().eq("id", tournamentId)
 
   if (error) {

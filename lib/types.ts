@@ -12,6 +12,7 @@ export interface Player {
   opponentIds: string[] // list of opponent IDs in order played
   gameResults: ("W" | "D" | "L")[] // W = win, D = draw, L = loss in order played
   pieceColors: ("white" | "black")[] // piece color for each game
+  pointsEarned?: number[] // actual points awarded per game (accounts for streak/settings)
   tableNumbers?: number[] // table number for each game
   markedForRemoval?: boolean // player will be removed after their current match result is entered
   hasLeft?: boolean // player was removed mid-tournament (for leaderboard display)

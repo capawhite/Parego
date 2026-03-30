@@ -1,5 +1,22 @@
 import type { Match, Player, TournamentSettings } from "@/lib/types"
+import type { PlayerMatchCacheEntry } from "./pairing-cache"
 export type T1CapPreset = NonNullable<TournamentSettings["t1CapPreset"]>
+
+/**
+ * Organizer-side temporary cooldown reductions, keyed by player ID.
+ * This is intentionally in-memory (session-scoped) and reset by the panel.
+ */
+let cooldownReductionMsByPlayerId: Record<string, number> = {}
+
+export function setArenaCooldownReductions(byPlayerId: Record<string, number>): void {
+  cooldownReductionMsByPlayerId = byPlayerId
+}
+
+function cooldownReductionForPlayerMs(playerId: string): number {
+  const value = cooldownReductionMsByPlayerId[playerId]
+  if (!Number.isFinite(value) || value <= 0) return 0
+  return Math.floor(value)
+}
 
 /**
  * ARENACHESS T1: "tiempo congelado antes de emparejar" — players who just finished
@@ -90,7 +107,9 @@ export function arenaPairingEligibleAtMs(
   const baseEnd = endMs ?? startMs
   if (baseEnd == null) return 0
 
-  return baseEnd + t1Ms
+  const reductionMs = cooldownReductionForPlayerMs(player.id)
+  const reducedT1Ms = Math.max(0, t1Ms - reductionMs)
+  return baseEnd + reducedT1Ms
 }
 
 export function isArenaT1Eligible(
@@ -118,4 +137,32 @@ export function arenaWaitClockStartMs(
   settings: TournamentSettings,
 ): number {
   return arenaPairingEligibleAtMs(player, allHistoricalMatches, settings)
+}
+
+/**
+ * Cached variant of {@link arenaPairingEligibleAtMs} that uses a pre-computed cache entry
+ * instead of scanning all matches. O(1) per player instead of O(M log M).
+ */
+export function arenaPairingEligibleAtMsCached(
+  player: Player,
+  entry: PlayerMatchCacheEntry,
+  settings: TournamentSettings,
+): number {
+  const lastMatch = entry.lastCompletedMatch
+  if (!lastMatch) return player.joinedAt
+
+  const tpMs = tpMsFromSettings(settings)
+  const endMs = matchEffectiveEndMs(lastMatch)
+  const startMs = lastMatch.startTime
+  const dpMs = startMs != null && endMs != null ? Math.max(1, endMs - startMs) : tpMs
+
+  const lastResult = player.gameResults[player.gameResults.length - 1]
+  const t1Ms = t1MsFromLastGame(lastResult, dpMs, tpMs, t1PresetFromSettings(settings))
+
+  const baseEnd = endMs ?? startMs
+  if (baseEnd == null) return 0
+
+  const reductionMs = cooldownReductionForPlayerMs(player.id)
+  const reducedT1Ms = Math.max(0, t1Ms - reductionMs)
+  return baseEnd + reducedT1Ms
 }

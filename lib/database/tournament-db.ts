@@ -1,5 +1,16 @@
 import { createClient } from "@/lib/supabase/client"
+import { haversineKm } from "@/lib/geo"
 import type { Player, Match, TournamentSettings } from "@/lib/types"
+
+/** Extract readable message from Supabase/PostgrestError (whose props may be non-enumerable). */
+export function formatSupabaseError(error: unknown): string {
+  const err = error as Record<string, unknown>
+  const msg = (err.message as string) ?? (error instanceof Error ? error.message : String(error))
+  const code = (err.code as string) ?? ""
+  const details = (err.details as string) ?? ""
+  const hint = (err.hint as string) ?? ""
+  return [msg, code ? `(${code})` : "", details || hint || ""].filter(Boolean).join(" ")
+}
 
 export interface TournamentData {
   id: string
@@ -56,13 +67,7 @@ export async function saveTournament(
     .select()
 
   if (error) {
-    // Supabase/PostgrestError can log as {} - extract fields explicitly (they may be non-enumerable)
-    const err = error as unknown as Record<string, unknown>
-    const msg = (err.message as string) ?? (error instanceof Error ? error.message : String(error))
-    const code = (err.code as string) ?? ""
-    const details = (err.details as string) ?? ""
-    const hint = (err.hint as string) ?? ""
-    console.error("[v0] Error saving tournament:", msg, code ? `(${code})` : "", details || hint || "")
+    console.error("[v0] Error saving tournament:", formatSupabaseError(error))
     throw error
   }
 
@@ -76,7 +81,7 @@ export async function loadTournament(tournamentId: string) {
   const { data, error } = await supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle() // Improved error handling for tournament loading
 
   if (error) {
-    console.error("[v0] Error loading tournament:", error)
+    console.error("[v0] Error loading tournament:", formatSupabaseError(error))
     return null
   }
 
@@ -115,7 +120,7 @@ export async function listTournaments(
   const { data, error } = await query.order("created_at", { ascending: false }).limit(limit)
 
   if (error) {
-    console.error("[v0] Error listing tournaments:", error)
+    console.error("[v0] Error listing tournaments:", formatSupabaseError(error))
     return []
   }
 
@@ -146,7 +151,7 @@ export async function savePlayers(tournamentId: string, players: Player[]) {
     opponents: player.opponentIds, // Map opponentIds to opponents
     results: player.gameResults,
     colors: player.pieceColors,
-    points_earned: player.gameResults.map((r) => (r === "W" ? 2 : r === "D" ? 1 : 0)),
+    points_earned: player.pointsEarned ?? player.gameResults.map((r) => (r === "W" ? 2 : r === "D" ? 1 : 0)),
     table_numbers: player.tableNumbers || [],
     checked_in_at: player.checkedInAt != null ? new Date(player.checkedInAt).toISOString() : null,
     presence_source: player.presenceSource ?? null,
@@ -156,57 +161,7 @@ export async function savePlayers(tournamentId: string, players: Player[]) {
   const { error } = await supabase.from("players").upsert(dbPlayers)
 
   if (error) {
-    console.error("[v0] Error saving players:", error)
-    throw error
-  }
-}
-
-export interface InsertPlayerData {
-  id: string
-  name: string
-  userId?: string | null
-  isGuest?: boolean
-  rating?: number | null
-  country?: string | null
-  checkedInAt?: number | null
-  presenceSource?: "gps" | "qr" | "override" | null
-}
-
-/** Insert a single new player row into the DB. Used by addPlayer and joinAsSelf. */
-export async function insertPlayer(tournamentId: string, player: InsertPlayerData) {
-  const supabase = createClient()
-  const { error } = await supabase.from("players").insert({
-    id: player.id,
-    tournament_id: tournamentId,
-    name: player.name,
-    user_id: player.userId ?? null,
-    is_guest: player.isGuest ?? false,
-    points: 0,
-    wins: 0,
-    draws: 0,
-    losses: 0,
-    games_played: 0,
-    white_count: 0,
-    black_count: 0,
-    current_streak: 0,
-    on_streak: false,
-    paused: false,
-    game_history: [],
-    opponents: [],
-    results: [],
-    colors: [],
-    points_earned: [],
-    table_numbers: [],
-    rating: player.rating ?? null,
-    buchholz: 0,
-    sonneborn_berger: 0,
-    is_paused: false,
-    is_removed: false,
-    checked_in_at: player.checkedInAt != null ? new Date(player.checkedInAt).toISOString() : null,
-    presence_source: player.presenceSource ?? null,
-  })
-  if (error) {
-    console.error("[arena] Error inserting player:", error)
+    console.error("[v0] Error saving players:", formatSupabaseError(error))
     throw error
   }
 }
@@ -229,7 +184,7 @@ export async function loadPlayers(tournamentId: string): Promise<Player[]> {
   const { data, error } = await supabase.from("players").select("*").eq("tournament_id", tournamentId)
 
   if (error) {
-    console.error("[v0] Error loading players:", error)
+    console.error("[v0] Error loading players:", formatSupabaseError(error))
     return []
   }
 
@@ -249,6 +204,7 @@ export async function loadPlayers(tournamentId: string): Promise<Player[]> {
     opponentIds: Array.isArray(p.opponents) ? p.opponents : [],
     gameResults: Array.isArray(p.results) ? p.results : [],
     pieceColors: Array.isArray(p.colors) ? p.colors : [],
+    pointsEarned: Array.isArray(p.points_earned) ? p.points_earned : [],
     tableNumbers: Array.isArray(p.table_numbers) ? p.table_numbers : [],
     userId: p.user_id ?? null,
     isGuest: p.is_guest ?? false,
@@ -287,7 +243,7 @@ export async function saveMatches(tournamentId: string, matches: Match[]) {
   const { error } = await supabase.from("matches").upsert(dbMatches)
 
   if (error) {
-    console.error("[v0] Error saving matches:", error)
+    console.error("[v0] Error saving matches:", formatSupabaseError(error))
     throw error
   }
 }
@@ -303,7 +259,7 @@ export async function loadMatches(tournamentId: string): Promise<Match[]> {
     .order("created_at", { ascending: true })
 
   if (error) {
-    console.error("[v0] Error loading matches:", error)
+    console.error("[v0] Error loading matches:", formatSupabaseError(error))
     return []
   }
 
@@ -367,103 +323,6 @@ export async function loadMatches(tournamentId: string): Promise<Match[]> {
   })
 }
 
-// Add a single player to an existing tournament
-export async function addPlayerToTournament(tournamentId: string, playerName: string): Promise<Player | null> {
-  const supabase = createClient()
-
-  // First check if tournament exists and is active
-  const tournament = await loadTournament(tournamentId)
-  if (!tournament) {
-    console.error("[v0] Tournament not found:", tournamentId)
-    return null
-  }
-
-  // Create new player
-  const newPlayer: Player = {
-    id: globalThis.crypto.randomUUID(),
-    name: playerName,
-    score: 0,
-    gamesPlayed: 0,
-    streak: 0,
-    performance: 0, // Calculated field, not stored
-    active: true,
-    paused: false,
-    joinedAt: Date.now(),
-    opponentIds: [],
-    gameResults: [],
-    pieceColors: [],
-    tableNumbers: [],
-  }
-
-  // Save to database
-  const { error } = await supabase.from("players").insert({
-    id: newPlayer.id,
-    tournament_id: tournamentId,
-    name: newPlayer.name,
-    points: 0,
-    wins: 0,
-    draws: 0,
-    losses: 0,
-    games_played: 0,
-    white_count: 0,
-    black_count: 0,
-    current_streak: 0,
-    on_streak: false,
-    paused: false,
-    game_history: [],
-    opponents: [], // Initialize as empty array
-    results: [],
-    colors: [],
-    points_earned: [],
-    table_numbers: [],
-  })
-
-  if (error) {
-    console.error("[v0] Error adding player:", error)
-    return null
-  }
-
-  return newPlayer
-}
-
-export async function updateMatchSubmission(
-  matchId: string,
-  playerId: string,
-  result: "player1-win" | "draw" | "player2-win",
-  confirmed: boolean,
-) {
-  const supabase = createClient()
-
-  const { data: match, error: fetchError } = await supabase.from("matches").select("*").eq("id", matchId).single()
-
-  if (fetchError || !match) {
-    console.error("[v0] Error fetching match:", fetchError)
-    return null
-  }
-
-  const isPlayer1 = match.player1_id === playerId
-  const submissionField = isPlayer1 ? "player1_submission" : "player2_submission"
-  const timestampField = isPlayer1 ? "player1_submission_time" : "player2_submission_time"
-
-  const { error } = await supabase
-    .from("matches")
-    .update({
-      [submissionField]: confirmed ? result : null,
-      [timestampField]: confirmed ? new Date().toISOString() : null,
-    })
-    .eq("id", matchId)
-
-  if (error) {
-    console.error("[v0] Error updating match submission:", error)
-    return null
-  }
-
-  // Check if both players have submitted
-  const { data: updatedMatch } = await supabase.from("matches").select("*").eq("id", matchId).single()
-
-  return updatedMatch
-}
-
 export async function listNearbyTournaments(
   latitude: number,
   longitude: number,
@@ -498,14 +357,14 @@ export async function listNearbyTournaments(
     .limit(limit)
 
   if (error) {
-    console.error("[v0] Error listing nearby tournaments:", error)
+    console.error("[v0] Error listing nearby tournaments:", formatSupabaseError(error))
     return []
   }
 
   // Filter by actual distance (the SQL query uses a bounding box, this refines it to a circle)
   const filtered = (data as TournamentData[]).filter((t) => {
     if (!t.latitude || !t.longitude) return false
-    const distance = haversineDistance(latitude, longitude, t.latitude, t.longitude)
+    const distance = haversineKm(latitude, longitude, t.latitude, t.longitude)
     return distance <= radiusKm
   })
 
@@ -519,22 +378,10 @@ export async function listNearbyTournaments(
     if (a.start_time && b.start_time) {
       return new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
     }
-    const distA = haversineDistance(latitude, longitude, a.latitude!, a.longitude!)
-    const distB = haversineDistance(latitude, longitude, b.latitude!, b.longitude!)
+    const distA = haversineKm(latitude, longitude, a.latitude!, a.longitude!)
+    const distB = haversineKm(latitude, longitude, b.latitude!, b.longitude!)
     return distA - distB
   })
-}
-
-// Haversine formula to calculate distance between two points
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371 // Earth's radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLon = ((lon2 - lon1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
 }
 
 /** Batch: player count per tournament id */

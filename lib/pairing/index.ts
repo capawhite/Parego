@@ -24,12 +24,5 @@ export function getPairingAlgorithm(algorithmId: string): PairingAlgorithm {
   return algorithm
 }
 
-/**
- * Get list of all algorithms for selection UI
- */
-export function getAvailableAlgorithms(): PairingAlgorithm[] {
-  return Object.values(pairingAlgorithms)
-}
-
 // Re-export types
 export type { PairingAlgorithm } from "./types"

@@ -4,17 +4,20 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
-import type { Player } from "@/lib/types"
+import type { Player, TournamentSettings } from "@/lib/types"
+import { DEFAULT_SETTINGS } from "@/lib/types"
 import { calculatePerformance, sortPlayersByStandings } from "@/lib/standings"
+import { calculatePointsFromSettings } from "@/lib/points"
 import { useI18n } from "@/components/i18n-provider"
 
 interface LeaderboardProps {
   players: Player[]
   isPlayerView?: boolean
   onOverrideResult?: (playerId: string, gameIndex: number, newResult: "W" | "D" | "L") => void
+  settings?: TournamentSettings
 }
 
-export function Leaderboard({ players, isPlayerView = false, onOverrideResult }: LeaderboardProps) {
+export function Leaderboard({ players, isPlayerView = false, onOverrideResult, settings = DEFAULT_SETTINGS }: LeaderboardProps) {
   const { t } = useI18n()
   const [viewMode, setViewMode] = useState<"points" | "performance">("points")
   const sorted = sortPlayersByStandings(players, viewMode)
@@ -31,27 +34,22 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult }:
           const opponentName = opponent?.name || "Unknown"
           const tableNumber = player.tableNumbers?.[i]
 
-          let playerPoints = 0
-          let hasDoublePointStreak = false
-
-          let consecutiveWinsBeforeThisGame = 0
+          let streakBeforeThisGame = 0
           for (let j = i - 1; j >= 0; j--) {
             if (player.gameResults[j] === "W") {
-              consecutiveWinsBeforeThisGame++
+              streakBeforeThisGame++
             } else {
               break
             }
           }
 
-          hasDoublePointStreak = consecutiveWinsBeforeThisGame >= 2
-
-          if (result === "W") {
-            playerPoints = hasDoublePointStreak ? 4 : 2
-          } else if (result === "D") {
-            playerPoints = hasDoublePointStreak ? 2 : 1
-          } else {
-            playerPoints = 0
-          }
+          const hasDoublePointStreak = settings.streakEnabled && streakBeforeThisGame >= 2
+          const playerPoints = player.pointsEarned?.[i] ?? calculatePointsFromSettings(
+            result === "W",
+            result === "D",
+            streakBeforeThisGame,
+            settings,
+          )
 
           const resultBadge = (
             <span

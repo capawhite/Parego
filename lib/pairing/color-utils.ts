@@ -70,38 +70,6 @@ export function fixedOrientationCost(whiteP: Player, blackP: Player, priority: C
   )
 }
 
-/**
- * Best white/black assignment for two players; cost is the minimized orientation penalty.
- */
-export function orientationCostForPair(
-  a: Player,
-  b: Player,
-  priority: ColorBalancePriority,
-): { cost: number; whitePlayer: Player; blackPlayer: Player } {
-  const { streakWeight, balanceWeight } = priorityWeights(priority)
-  const ac = (a.pieceColors ?? []) as PieceColor[]
-  const bc = (b.pieceColors ?? []) as PieceColor[]
-  const costAB = pairingOrientationCost(ac, bc, streakWeight, balanceWeight)
-  const costBA = pairingOrientationCost(bc, ac, streakWeight, balanceWeight)
-  if (costAB < costBA) {
-    return { cost: costAB, whitePlayer: a, blackPlayer: b }
-  }
-  if (costBA < costAB) {
-    return { cost: costBA, whitePlayer: b, blackPlayer: a }
-  }
-  // Equal cost: give white to whoever has lower balance (more blacks historically / needs white)
-  const balA = colorBalance(ac)
-  const balB = colorBalance(bc)
-  if (balA !== balB) {
-    return balA < balB
-      ? { cost: costAB, whitePlayer: a, blackPlayer: b }
-      : { cost: costAB, whitePlayer: b, blackPlayer: a }
-  }
-  return a.id <= b.id
-    ? { cost: costAB, whitePlayer: a, blackPlayer: b }
-    : { cost: costAB, whitePlayer: b, blackPlayer: a }
-}
-
 /** Scalar weight for adding orientation cost into All vs All pairing scores. */
 export function colorCostScoreMultiplier(priority: ColorBalancePriority): number {
   const mult = priority === "high" ? 1.5 : priority === "medium" ? 1 : 0.5

@@ -29,10 +29,6 @@ export interface PairingAlgorithm {
     settings: TournamentSettings,
     maxMatches?: number,
     totalPlayers?: number,
-    options?: {
-      /** Arena override used by organizer force-pair action. */
-      skipT1?: boolean
-    },
   ): Match[]
 
   /**
@@ -57,11 +53,4 @@ export interface PairingAlgorithm {
    * Validate settings for this algorithm
    */
   validateSettings?(settings: TournamentSettings): { valid: boolean; errors: string[] }
-}
-
-/**
- * Algorithm-specific state that can be stored in ArenaState
- */
-export interface AlgorithmState {
-  [key: string]: any
 }

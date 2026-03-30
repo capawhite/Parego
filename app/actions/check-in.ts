@@ -1,28 +1,9 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { haversineMeters } from "@/lib/geo"
 
 const DEFAULT_PRESENCE_RADIUS_M = 150
-
-/** Distance in meters between two points (Haversine). */
-function haversineMeters(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6_371_000 // Earth radius in meters
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLon = ((lon2 - lon1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
-}
 
 export interface ProximityResult {
   ok: boolean
@@ -38,6 +19,10 @@ export async function checkVenueProximity(
   latitude: number,
   longitude: number,
 ): Promise<ProximityResult> {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return { ok: false, error: "Invalid coordinates" }
+  }
+
   const supabase = await createClient()
   const { data: tournament, error: tError } = await supabase
     .from("tournaments")
@@ -80,6 +65,10 @@ export async function verifyAndCheckIn(
   latitude: number,
   longitude: number,
 ): Promise<VerifyAndCheckInResult> {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return { ok: false, error: "Invalid coordinates" }
+  }
+
   const supabase = await createClient()
   const {
     data: { user },

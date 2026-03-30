@@ -67,20 +67,6 @@ export function getGuestSessionHistory(): GuestSessionEntry[] {
 }
 
 /**
- * Check if this device has any past guest sessions (for repeat-play detection).
- */
-export function hasPastGuestSessions(): boolean {
-  return getGuestSessionHistory().length > 0
-}
-
-/**
- * Check if this device has played in this specific tournament as a guest.
- */
-export function hasPlayedInTournamentAsGuest(tournamentId: string): boolean {
-  return getGuestSessionHistory().some((e) => e.tournamentId === tournamentId)
-}
-
-/**
  * Clear all guest session history from this device.
  * Call after a successful claim so the entries are not re-submitted on next sign-in.
  */

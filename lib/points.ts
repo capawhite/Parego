@@ -24,13 +24,3 @@ export function calculatePointsFromSettings(
   return basePoints
 }
 
-/**
- * Point change for a single result (W/D/L) with optional streak multiplier.
- * Default scoring: W=2, D=1, L=0; streak >= 2 doubles points.
- */
-export function calculatePointChange(result: "W" | "D" | "L", streakBefore: number, streakMultiplier = 2): number {
-  const hasStreak = streakBefore >= 2
-  if (result === "W") return hasStreak ? 4 : 2
-  if (result === "D") return hasStreak ? 2 : 1
-  return 0
-}

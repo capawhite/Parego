@@ -2,13 +2,9 @@ import type { Player, Match, TournamentSettings } from "@/lib/types"
 import type { PairingAlgorithm } from "./types"
 import type { ColorBalancePriority } from "./color-utils"
 import { minIdlePlayersBeforePairing } from "./idle-threshold"
-import { longestWaitingPlayerIds } from "./idle-wait"
 import { bestOrientationForPair } from "./color-consecutive-cap"
-import {
-  arenaWaitClockStartMs,
-  filterArenaT1EligiblePlayers,
-  lastCompletedMatchForPlayer,
-} from "./arena-t1"
+import { arenaPairingEligibleAtMsCached, filterArenaT1EligiblePlayers } from "./arena-t1"
+import { buildPlayerMatchCache, getCacheEntry, type PlayerMatchCache } from "./pairing-cache"
 
 /**
  * Balanced Strength Arena Algorithm
@@ -20,6 +16,7 @@ import {
  * - Players are assigned to table ranges based on their ranking
  * - Pairs when enough idle players (default ~n/3, configurable) and 2+ at a table
  * - Among rematch-legal pairs, prefers better white/black balance and fewer same-color streaks
+ * - When someone must sit out (odd idle count), prefers pairing longest wall-clock idle first (see idleWaitStartMsForFairPairing)
  * - Table ranges expand progressively with wait time (T2 step clamped for UX; full-table fallback if no pairs)
  * - ARENACHESS T1: real freeze after each game (eligible only after endTime + T1); wait clock for T2 starts then
  * - Rewards longer games, penalizes quick games via shorter T1 after quick games
@@ -27,6 +24,8 @@ import {
 
 interface PlayerWithWaitData extends Player {
   waitingSince: number // When player became available
+  /** Wall-clock ms since last completed game (or join); used for fairness when someone must sit out. */
+  idleDurationMs: number
   lastMatchDuration?: number // Duration of last match in ms
   lastMatchResult?: "W" | "D" | "L" // Result of last match
   tableRange: number[] // Current range of tables player is waiting for
@@ -41,6 +40,21 @@ function clampT2StepMs(rawT2: number): number {
   return Math.min(maxStep, Math.max(minStep, rawT2))
 }
 
+function sortWaitingListForTable(a: PlayerWithWaitData, b: PlayerWithWaitData): number {
+  const aIdle = a.idleDurationMs
+  const bIdle = b.idleDurationMs
+  if (bIdle !== aIdle) return bIdle - aIdle
+  const aGames = a.gameResults.length
+  const bGames = b.gameResults.length
+  if (aGames !== bGames) return aGames - bGames
+  return a.waitingSince - b.waitingSince
+}
+
+/**
+ * Greedy pairing: each step picks the table whose unpaired waiting list has the highest
+ * max idle duration, so the player who has been unpaired longest is not repeatedly skipped
+ * when odd player counts force a sit-out.
+ */
 function greedyTablePairingsFromWaitData(
   playersWithWaitData: PlayerWithWaitData[],
   eligiblePlayers: Player[],
@@ -70,46 +84,67 @@ function greedyTablePairingsFromWaitData(
   const pairedPlayerIds = new Set<string>()
   const usedTables = new Set<number>()
 
-  for (let table = 1; table <= M; table++) {
-    if (usedTables.has(table)) continue
+  while (true) {
     if (maxMatches && matches.length >= maxMatches) break
 
+    let bestTable: number | null = null
+    let bestMaxIdle = -1
+
+    for (let table = 1; table <= M; table++) {
+      if (usedTables.has(table)) continue
+
+      const waitingList = (tableWaitingLists.get(table) || [])
+        .filter((p) => !pairedPlayerIds.has(p.id))
+        .sort(sortWaitingListForTable)
+
+      if (waitingList.length < 2) continue
+
+      const maxIdleAtTable = Math.max(...waitingList.map((p) => p.idleDurationMs))
+      const better =
+        maxIdleAtTable > bestMaxIdle ||
+        (maxIdleAtTable === bestMaxIdle && bestTable !== null && table < bestTable) ||
+        (maxIdleAtTable === bestMaxIdle && bestTable === null)
+      if (better) {
+        bestMaxIdle = maxIdleAtTable
+        bestTable = table
+      }
+    }
+
+    if (bestTable === null) break
+
+    const table = bestTable
     const waitingList = (tableWaitingLists.get(table) || [])
       .filter((p) => !pairedPlayerIds.has(p.id))
-      .sort((a, b) => {
-        const aGames = a.gameResults.length
-        const bGames = b.gameResults.length
-        if (aGames !== bGames) return aGames - bGames
-        return a.waitingSince - b.waitingSince
-      })
+      .sort(sortWaitingListForTable)
 
-    if (waitingList.length >= 2) {
-      const oriented = selectOrientedPairWithRematchRule(
-        waitingList,
-        rematchAvoidCount,
-        colorPriority,
-        longestWaitIds,
-        avgGamesPlayed,
-      )
-      if (!oriented) continue
-
-      const { whitePlayer, blackPlayer } = oriented
-
-      matches.push({
-        id: `${whitePlayer.id}-${blackPlayer.id}-${Date.now()}`,
-        player1: whitePlayer,
-        player2: blackPlayer,
-        tableNumber: table,
-        startTime: Date.now(),
-      })
-
-      pairedPlayerIds.add(whitePlayer.id)
-      pairedPlayerIds.add(blackPlayer.id)
+    const oriented = selectOrientedPairWithRematchRule(
+      waitingList,
+      rematchAvoidCount,
+      colorPriority,
+      longestWaitIds,
+      avgGamesPlayed,
+    )
+    if (!oriented) {
       usedTables.add(table)
-
-      if (process.env.NODE_ENV === "development")
-        console.log("[v0] Paired at table", table, ":", whitePlayer.name, "vs", blackPlayer.name)
+      continue
     }
+
+    const { whitePlayer, blackPlayer } = oriented
+
+    matches.push({
+      id: `${whitePlayer.id}-${blackPlayer.id}-${Date.now()}`,
+      player1: whitePlayer,
+      player2: blackPlayer,
+      tableNumber: table,
+      startTime: Date.now(),
+    })
+
+    pairedPlayerIds.add(whitePlayer.id)
+    pairedPlayerIds.add(blackPlayer.id)
+    usedTables.add(table)
+
+    if (process.env.NODE_ENV === "development")
+      console.log("[v0] Paired at table", table, ":", whitePlayer.name, "vs", blackPlayer.name)
   }
 
   return matches
@@ -126,7 +161,6 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
     settings: TournamentSettings,
     maxMatches?: number,
     totalPlayers?: number,
-    options?: { skipT1?: boolean },
   ): Match[] {
     const totalActive = totalPlayers ?? availablePlayers.length
     const rematchAvoidCount = rematchAvoidCountFromSettings(totalActive, settings.avoidRecentRematches)
@@ -151,9 +185,11 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
     })
 
     const now = Date.now()
-    const eligiblePlayers = options?.skipT1
-      ? availablePlayers
-      : filterArenaT1EligiblePlayers(availablePlayers, allHistoricalMatches, settings, now)
+    const cache = buildPlayerMatchCache(allHistoricalMatches)
+
+    const eligiblePlayers = availablePlayers.filter(
+      (p) => now >= arenaPairingEligibleAtMsCached(p, getCacheEntry(cache, p.id), settings),
+    )
 
     if (eligiblePlayers.length === 1) {
       if (process.env.NODE_ENV === "development")
@@ -168,7 +204,21 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
     // Calculate P (table-to-player ratio)
     const P = (2 * M) / J
 
-    const longestWaitIds = longestWaitingPlayerIds(eligiblePlayers, allHistoricalMatches, now)
+    const poolMinJoinedAt = Math.min(...eligiblePlayers.map((p) => p.joinedAt))
+
+    const idleDurationByPlayer = new Map<string, number>()
+    let maxIdleDur = -1
+    for (const p of eligiblePlayers) {
+      const entry = getCacheEntry(cache, p.id)
+      const idleStart = entry.lastGameEndMs != null ? entry.lastGameEndMs : Math.min(p.joinedAt, poolMinJoinedAt)
+      const d = Math.max(0, now - idleStart)
+      idleDurationByPlayer.set(p.id, d)
+      if (d > maxIdleDur) maxIdleDur = d
+    }
+    const longestWaitIds = new Set<string>()
+    for (const p of eligiblePlayers) {
+      if (idleDurationByPlayer.get(p.id) === maxIdleDur) longestWaitIds.add(p.id)
+    }
 
     const rankedPlayers = rankPlayers(eligiblePlayers)
 
@@ -177,8 +227,9 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
         const C = index + 1
         const Mo = (C / 2) * P
 
-        const lastMatch = lastCompletedMatchForPlayer(player.id, allHistoricalMatches)
-        const waitingSince = arenaWaitClockStartMs(player, allHistoricalMatches, settings)
+        const entry = getCacheEntry(cache, player.id)
+        const lastMatch = entry.lastCompletedMatch
+        const waitingSince = arenaPairingEligibleAtMsCached(player, entry, settings)
         const lastResult = player.gameResults[player.gameResults.length - 1]
         const Dp =
           lastMatch?.startTime != null && lastMatch?.endTime != null
@@ -208,12 +259,17 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
         return {
           ...player,
           waitingSince,
+          idleDurationMs: idleDurationByPlayer.get(player.id) ?? 0,
           lastMatchDuration: Dp,
           lastMatchResult: lastResult,
           tableRange,
           optimalTable: Math.round(Mo),
         }
       })
+
+    /** Target pair count for this call (table slots cap + player count). */
+    const pairGoal =
+      maxMatches !== undefined ? maxMatches : Math.floor(eligiblePlayers.length / 2)
 
     let playersWithWaitData = buildWaitData(false)
 
@@ -238,10 +294,10 @@ export const balancedStrengthAlgorithm: PairingAlgorithm = {
       longestWaitIds,
     )
 
-    if (matches.length === 0 && eligiblePlayers.length >= 2) {
+    if (eligiblePlayers.length >= 2 && matches.length < pairGoal) {
       playersWithWaitData = buildWaitData(true)
       if (process.env.NODE_ENV === "development")
-        console.log("[v0] Balanced Strength: fallback full table range (no pairs in banded pass)")
+        console.log("[v0] Balanced Strength: fallback full table range (partial or empty banded pass)")
       matches = greedyTablePairingsFromWaitData(
         playersWithWaitData,
         eligiblePlayers,
@@ -373,7 +429,8 @@ function pickBestOrientedPairFromPool(
       whitePlayer: PlayerWithWaitData
       blackPlayer: PlayerWithWaitData
       cost: number
-      waitSum: number
+      minIdle: number
+      idleSum: number
       maxGames: number
       gamesDeficit: number
       key: string
@@ -382,7 +439,8 @@ function pickBestOrientedPairFromPool(
     for (const [a, b] of pairs) {
       const o = bestOrientationForPair(a, b, colorPriority, mode, longestWaitIds)
       if (!o) continue
-      const waitSum = a.waitingSince + b.waitingSince
+      const minIdle = Math.min(a.idleDurationMs, b.idleDurationMs)
+      const idleSum = a.idleDurationMs + b.idleDurationMs
       const key = stablePairKey(a, b)
       const ga = a.gameResults.length
       const gb = b.gameResults.length
@@ -392,16 +450,22 @@ function pickBestOrientedPairFromPool(
       if (
         !best ||
         o.cost < best.cost ||
-        (o.cost === best.cost && waitSum < best.waitSum) ||
+        (o.cost === best.cost && minIdle > best.minIdle) ||
         (o.cost === best.cost &&
-          waitSum === best.waitSum &&
+          minIdle === best.minIdle &&
+          idleSum > best.idleSum) ||
+        (o.cost === best.cost &&
+          minIdle === best.minIdle &&
+          idleSum === best.idleSum &&
           maxGames < best.maxGames) ||
         (o.cost === best.cost &&
-          waitSum === best.waitSum &&
+          minIdle === best.minIdle &&
+          idleSum === best.idleSum &&
           maxGames === best.maxGames &&
           gamesDeficit > best.gamesDeficit) ||
         (o.cost === best.cost &&
-          waitSum === best.waitSum &&
+          minIdle === best.minIdle &&
+          idleSum === best.idleSum &&
           maxGames === best.maxGames &&
           gamesDeficit === best.gamesDeficit &&
           key < best.key)
@@ -410,7 +474,8 @@ function pickBestOrientedPairFromPool(
           whitePlayer: o.whitePlayer as PlayerWithWaitData,
           blackPlayer: o.blackPlayer as PlayerWithWaitData,
           cost: o.cost,
-          waitSum,
+          minIdle,
+          idleSum,
           maxGames,
           gamesDeficit,
           key,

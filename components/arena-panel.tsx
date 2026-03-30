@@ -10,6 +10,10 @@ import { TournamentSettingsPanel } from "./tournament-settings"
 import { AlgorithmComparisonPanel } from "./algorithm-comparison-panel"
 import type { ArenaState, Player, Match, MatchResult, TournamentSettings } from "@/lib/types"
 import { getPairingAlgorithm } from "@/lib/pairing"
+import { calculatePointsFromSettings } from "@/lib/points"
+import { logArenaPairing } from "@/lib/pairing/arena-pairing-debug"
+import { isPlayerAvailableForPairing } from "@/lib/pairing/player-eligibility"
+import { isArenaT1Eligible, setArenaCooldownReductions } from "@/lib/pairing/arena-t1"
 import {
   X,
   Trophy,
@@ -25,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { DEFAULT_SETTINGS } from "@/lib/types"
+import { parseTournamentSettings } from "@/lib/tournament-settings"
 import {
   effectiveTableCountFromDb,
   effectiveTableSlotsForPairing,
@@ -38,6 +43,7 @@ import {
   loadMatches,
   playerNameExistsInTournament,
   getAvatarUrls,
+  formatSupabaseError,
 } from "@/lib/database/tournament-db"
 import { useRouter } from "next/navigation"
 import { ArenaPlayersTab } from "@/components/tournament/arena-players-tab"
@@ -301,7 +307,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     // Player clients can't write to matches/players tables due to RLS.
     onAutoComplete: isOrganizer ? (matchId, winnerId, isDraw) => {
       if (DEBUG) console.log("[v0] Organizer auto-completing match from Realtime:", matchId)
-      recordResult(matchId, winnerId, isDraw)
+      recordResult(matchId, winnerId, isDraw, /* skipDbWrite */ true)
     } : undefined,
   })
 
@@ -438,13 +444,10 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           ? new Date(tournament.start_time).getTime()
           : null
 
-        const savedSettings =
-          tournament.settings && typeof tournament.settings === "object"
-            ? (tournament.settings as TournamentSettings)
-            : {}
+        const validatedSettings = parseTournamentSettings(tournament)
         const resolvedTables = effectiveTableCountFromDb({
           tables_count: tournament.tables_count,
-          settings: savedSettings,
+          settings: validatedSettings,
           status: tournament.status,
         })
 
@@ -453,8 +456,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           players: enrichedPlayers.length > 0 ? enrichedPlayers : prev.players,
           tableCount: resolvedTables,
           settings: {
-            ...DEFAULT_SETTINGS,
-            ...savedSettings,
+            ...validatedSettings,
             tableCount: resolvedTables,
           },
           status: tournament.status,
@@ -560,8 +562,21 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
   const arenaStateRef = useRef(arenaState)
   arenaStateRef.current = arenaState
+  const cooldownReductionMsByPlayerIdRef = useRef<Record<string, number>>({})
   const waitingForFinalResultsRef = useRef(waitingForFinalResults)
   waitingForFinalResultsRef.current = waitingForFinalResults
+  useEffect(() => {
+    setArenaCooldownReductions(cooldownReductionMsByPlayerIdRef.current)
+    return () => setArenaCooldownReductions({})
+  }, [])
+
+  useEffect(() => {
+    if (!arenaState.isActive) {
+      cooldownReductionMsByPlayerIdRef.current = {}
+      setArenaCooldownReductions({})
+    }
+  }, [arenaState.isActive])
+
   const tournamentMetadataForPairingRef = useRef(tournamentMetadata)
   tournamentMetadataForPairingRef.current = tournamentMetadata
 
@@ -579,13 +594,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const activePairingMatches = state.pairedMatches.filter((m) => !m.result?.completed)
       const meta = tournamentMetadataForPairingRef.current
       const hasVenue = meta?.latitude != null && meta?.longitude != null
-      const availablePlayers = state.players.filter(
-        (p) =>
-          !p.paused &&
-          !p.markedForRemoval &&
-          !p.markedForPause &&
-          (p.checkedInAt != null || !hasVenue) &&
-          !activePairingMatches.some((m) => m.player1.id === p.id || m.player2.id === p.id),
+      const availablePlayers = state.players.filter((p) =>
+        isPlayerAvailableForPairing(p, activePairingMatches, hasVenue),
       )
 
       const tableSlots = effectiveTableSlotsForPairing(state.tableCount, state.settings)
@@ -645,10 +655,50 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             matchesWithTables.map((m) => `${m.player1.name} vs ${m.player2.name} (Table ${m.tableNumber})`),
           )
 
-        setArenaState((prev) => ({
-          ...prev,
-          pairedMatches: [...prev.pairedMatches, ...matchesWithTables],
-        }))
+        // H3: clear cooldown reductions for players who are now paired into a new match
+        for (const m of matchesWithTables) {
+          delete cooldownReductionMsByPlayerIdRef.current[m.player1.id]
+          delete cooldownReductionMsByPlayerIdRef.current[m.player2.id]
+        }
+        setArenaCooldownReductions(cooldownReductionMsByPlayerIdRef.current)
+
+        // C2 guard: verify no proposed player is already in an active DB match
+        // (prevents two organizer tabs from creating duplicate pairings)
+        if (tournamentId) {
+          const proposedPlayerIds = new Set(
+            matchesWithTables.flatMap((m) => [m.player1.id, m.player2.id]),
+          )
+          loadMatches(tournamentId).then((dbMatches) => {
+            const dbActivePlayerIds = new Set(
+              dbMatches
+                .filter((m) => !m.result?.completed)
+                .flatMap((m) => [m.player1.id, m.player2.id]),
+            )
+            const conflictFree = matchesWithTables.filter(
+              (m) => !dbActivePlayerIds.has(m.player1.id) && !dbActivePlayerIds.has(m.player2.id),
+            )
+            if (conflictFree.length < matchesWithTables.length && DEBUG) {
+              console.warn(`[v0] Pairing dedup: dropped ${matchesWithTables.length - conflictFree.length} matches (players already in active DB matches)`)
+            }
+            if (conflictFree.length > 0) {
+              setArenaState((prev) => ({
+                ...prev,
+                pairedMatches: [...prev.pairedMatches, ...conflictFree],
+              }))
+            }
+          }).catch((err) => {
+            console.error("[v0] Pairing dedup check failed, saving all matches:", formatSupabaseError(err))
+            setArenaState((prev) => ({
+              ...prev,
+              pairedMatches: [...prev.pairedMatches, ...matchesWithTables],
+            }))
+          })
+        } else {
+          setArenaState((prev) => ({
+            ...prev,
+            pairedMatches: [...prev.pairedMatches, ...matchesWithTables],
+          }))
+        }
       }
     }, algorithm.getPollingInterval())
 
@@ -664,13 +714,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const collectPairingInputs = useCallback((state: ArenaState) => {
     const activePairingMatches = state.pairedMatches.filter((m) => !m.result?.completed)
     const hasVenue = tournamentMetadata?.latitude != null && tournamentMetadata?.longitude != null
-    const availablePlayers = state.players.filter(
-      (p) =>
-        !p.paused &&
-        !p.markedForRemoval &&
-        !p.markedForPause &&
-        (p.checkedInAt != null || !hasVenue) &&
-        !activePairingMatches.some((m) => m.player1.id === p.id || m.player2.id === p.id),
+    const availablePlayers = state.players.filter((p) =>
+      isPlayerAvailableForPairing(p, activePairingMatches, hasVenue),
     )
     const tableSlots = effectiveTableSlotsForPairing(state.tableCount, state.settings)
     const occupiedTables = state.pairedMatches
@@ -688,40 +733,43 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     return { activePairingMatches, availablePlayers, availableTables, matchesForPairing }
   }, [tournamentMetadata?.latitude, tournamentMetadata?.longitude])
 
-  const handleForcePairing = useCallback(() => {
+  const handleReduceWaitOneMinute = useCallback(() => {
     if (!isOrganizer || !arenaState.isActive || waitingForFinalResults) return
-    const algorithmId = arenaState.settings.pairingAlgorithm || "all-vs-all"
-    if (algorithmId !== "balanced-strength") return
-    const algorithm = getPairingAlgorithm(algorithmId)
-    const state = arenaStateRef.current
-    const { availablePlayers, availableTables, matchesForPairing } = collectPairingInputs(state)
-    if (availableTables <= 0 || availablePlayers.length < 2) {
-      toast.error(t("arena.forcePairingUnavailable"))
-      return
-    }
+    if ((arenaState.settings.pairingAlgorithm || "all-vs-all") !== "balanced-strength") return
 
-    const maxMatches = Math.min(availableTables, Math.floor(availablePlayers.length / 2))
-    const newMatches = algorithm.createPairings(
-      availablePlayers,
-      matchesForPairing,
-      state.settings,
-      maxMatches,
-      state.players.length,
-      { skipT1: true },
+    const state = arenaStateRef.current
+    const { availablePlayers, matchesForPairing } = collectPairingInputs(state)
+    const now = Date.now()
+    const coolingPlayers = availablePlayers.filter(
+      (p) => !isArenaT1Eligible(p, matchesForPairing, state.settings, now),
     )
 
-    if (newMatches.length === 0) {
-      toast.message(t("arena.forcePairingNoMatches"))
+    if (coolingPlayers.length === 0) {
+      toast.message(t("arena.reduceWaitNoPlayers"))
       return
     }
 
-    const matchesWithTables = assignTablesToMatchesForState(newMatches, state)
-    setArenaState((prev) => ({
-      ...prev,
-      pairedMatches: [...prev.pairedMatches, ...matchesWithTables],
-    }))
-    toast.success(t("arena.forcePairingSuccess", { count: matchesWithTables.length }))
-  }, [arenaState.isActive, arenaState.settings.pairingAlgorithm, collectPairingInputs, isOrganizer, t, waitingForFinalResults])
+    const reductionStepMs = 60_000
+    const next = { ...cooldownReductionMsByPlayerIdRef.current }
+    for (const p of coolingPlayers) {
+      next[p.id] = (next[p.id] ?? 0) + reductionStepMs
+    }
+    cooldownReductionMsByPlayerIdRef.current = next
+    setArenaCooldownReductions(next)
+
+    logArenaPairing("Reduced cooldown by 60s", {
+      affectedCount: coolingPlayers.length,
+      affectedPlayers: coolingPlayers.map((p) => p.name),
+    })
+    toast.success(t("arena.reduceWaitSuccess", { count: coolingPlayers.length }))
+  }, [
+    arenaState.isActive,
+    arenaState.settings.pairingAlgorithm,
+    collectPairingInputs,
+    isOrganizer,
+    t,
+    waitingForFinalResults,
+  ])
 
   // When organizer is in "wait for final results" and all matches are complete (e.g. via Realtime),
   // persist tournament as completed so players see the correct status.
@@ -790,9 +838,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         const dbPlayers = await loadPlayers(tournamentId)
 
         setArenaState((prev) => {
-          // Merge database players with local state
-          // Keep local state for existing players (they may have been paused/modified)
-          // Add new players from database that aren't in local state
           const existingPlayerIds = new Set(prev.players.map((p) => p.id))
           const newPlayers = dbPlayers.filter((p) => !existingPlayerIds.has(p.id))
 
@@ -815,14 +860,15 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       }
     }
 
-    // Refresh every 5 seconds when on Players tab
-    const interval = setInterval(refreshPlayers, 5000)
-
-    // Also refresh immediately when switching to Players tab
+    // One-time refresh when switching to Players tab
     refreshPlayers()
 
-    return () => clearInterval(interval)
-  }, [tournamentId, arenaState.status, activeTab])
+    // Only poll every 5s if Realtime is not yet active (still loading)
+    if (isLoading) {
+      const interval = setInterval(refreshPlayers, 5000)
+      return () => clearInterval(interval)
+    }
+  }, [tournamentId, arenaState.status, activeTab, isLoading])
 
   useEffect(() => {
     if (!tournamentId || !arenaState.isActive || !isOrganizer) return
@@ -831,7 +877,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     const activeMatches = arenaState.pairedMatches.filter((m) => !m.result?.completed)
     if (activeMatches.length > 0) {
       suppressRealtime()
-      saveMatches(tournamentId, activeMatches).catch((err) => console.error("[v0] Failed to save active matches:", err))
+      saveMatches(tournamentId, activeMatches).catch((err) => console.error("[v0] Failed to save active matches:", formatSupabaseError(err)))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- length-only dep: avoid save spam; body reads latest pairedMatches
   }, [
@@ -1375,7 +1421,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         new Date(startTimeMs).toISOString(),
       )
     } catch (err) {
-      console.error("[v0] Failed to persist tables_count after start:", err)
+      console.error("[v0] Failed to persist tables_count after start:", formatSupabaseError(err))
     }
 
     setArenaState((prev) => ({
@@ -1457,7 +1503,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     setShowPodium(false)
   }
 
-  const recordResult = async (matchId: string, winnerId: string | undefined, isDraw: boolean) => {
+  const recordResult = async (matchId: string, winnerId: string | undefined, isDraw: boolean, skipDbWrite = false) => {
     if (DEBUG) console.log("[v0] Recording result for match:", matchId, "isDraw:", isDraw, "winnerId:", winnerId)
 
     let newPairedMatches = []
@@ -1471,7 +1517,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       const match = prev.pairedMatches[matchIndex]
       const updatedMatch = {
         ...match,
-        endTime: Date.now(), // Track when result was entered
+        endTime: Date.now(),
         result: {
           winnerId,
           isDraw,
@@ -1521,6 +1567,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           opponentIds: [...player.opponentIds, opponent.id],
           gameResults: [...player.gameResults, gameResult],
           pieceColors: [...player.pieceColors, pieceColor],
+          pointsEarned: [...(player.pointsEarned || []), points],
           tableNumbers: [...(player.tableNumbers || []), match.tableNumber || 0],
         }
       })
@@ -1564,12 +1611,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         return player
       })
 
-      if (tournamentId && isOrganizer) {
+      if (tournamentId && isOrganizer && !skipDbWrite) {
         savePlayers(tournamentId, newPlayers).catch((err) => {
-          console.error("[v0] Error saving players after match completion:", err)
+          console.error("[v0] Error saving players after match completion:", formatSupabaseError(err))
         })
         saveMatches(tournamentId, mergeMatchesForSave(newPairedMatches, newAllTimeMatches)).catch((err) => {
-          console.error("[v0] Error saving matches after match completion:", err)
+          console.error("[v0] Error saving matches after match completion:", formatSupabaseError(err))
         })
       }
 
@@ -1582,123 +1629,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     })
   }
 
-  // Renamed from recordResult to match the update's function name
-  const recordMatchResult = (matchId: string, winnerId: string | undefined, isDraw: boolean) => {
-    if (DEBUG) console.log("[v0] Recording result for match:", matchId, "isDraw:", isDraw, "winnerId:", winnerId)
-
-    let newPairedMatches = []
-    let newAllTimeMatches = []
-    let newPlayers = []
-
-    setArenaState((prev) => {
-      const matchIndex = prev.pairedMatches.findIndex((m) => m.id === matchId)
-      if (matchIndex === -1) return prev
-
-      const match = prev.pairedMatches[matchIndex]
-      const updatedMatch = {
-        ...match,
-        endTime: Date.now(), // Track when result was entered
-        result: {
-          winnerId,
-          isDraw,
-          completed: true,
-          completedAt: Date.now(),
-        },
-      }
-
-      newPlayers = prev.players.map((player) => {
-        if (player.id !== match.player1.id && player.id !== match.player2.id) {
-          return player
-        }
-
-        const isPlayer1 = player.id === match.player1.id
-        const isWinner = winnerId === player.id
-        const opponent = isPlayer1 ? match.player2 : match.player1
-
-        const currentStreak = player.streak
-        let newStreak = player.streak
-
-        if (isDraw) {
-          newStreak = 0
-        } else if (isWinner) {
-          newStreak = player.streak + 1
-        } else {
-          newStreak = 0
-        }
-
-        const points = calculatePointsFromSettings(isWinner, isDraw, currentStreak, prev.settings)
-
-        let gameResult: "W" | "D" | "L"
-        if (isDraw) {
-          gameResult = "D"
-        } else if (isWinner) {
-          gameResult = "W"
-        } else {
-          gameResult = "L"
-        }
-
-        const pieceColor: "white" | "black" = isPlayer1 ? "white" : "black"
-
-        return {
-          ...player,
-          score: player.score + points,
-          gamesPlayed: player.gamesPlayed + 1,
-          streak: newStreak,
-          opponentIds: [...player.opponentIds, opponent.id],
-          gameResults: [...player.gameResults, gameResult],
-          pieceColors: [...player.pieceColors, pieceColor],
-          tableNumbers: [...(player.tableNumbers || []), match.tableNumber || 0],
-        }
-      })
-
-      // so both players become available for next pairing
-      if (prev.settings.pairingAlgorithm === "balanced-strength") {
-        newPairedMatches = prev.pairedMatches.filter((m) => m.id !== matchId)
-      } else {
-        // For all-vs-all, keep completed matches in pairedMatches until round completes
-        newPairedMatches = [...prev.pairedMatches]
-        newPairedMatches[matchIndex] = updatedMatch
-      }
-
-      newAllTimeMatches = [...prev.allTimeMatches, updatedMatch]
-
-      if (waitingForFinalResults) {
-        const remainingMatches = newPairedMatches.filter((m) => m.id !== matchId && !m.result?.completed)
-
-        // Only organizer persists completion; players will see status via Realtime once organizer finalizes
-        if (remainingMatches.length === 0 && isOrganizer) {
-          if (DEBUG) console.log("[v0] All final results entered, ending tournament")
-          setTimeout(() => finalizeEndTournament(), 500) // Small delay for state to settle
-        }
-      }
-
-      // Remove players marked for removal
-      const playersAfterRemoval = prev.players.filter((p) => !p.markedForRemoval)
-
-      // Also update in pairedMatches (remove marked players from future rounds)
-      const updatedPairedMatches = prev.pairedMatches.map((m) => ({
-        ...m,
-        player1: m.player1.markedForRemoval ? { ...m.player1, markedForRemoval: false } : m.player1,
-        player2: m.player2.markedForRemoval ? { ...m.player2, markedForRemoval: false } : m.player2,
-      }))
-
-      if (tournamentId && isOrganizer) {
-        savePlayers(tournamentId, playersAfterRemoval).catch((err) => {
-          console.error("[v0] Error saving players after result:", err)
-        })
-        saveMatches(tournamentId, mergeMatchesForSave(updatedPairedMatches, newAllTimeMatches)).catch((err) => {
-          console.error("[v0] Error saving matches after result:", err)
-        })
-      }
-
-      return {
-        ...prev,
-        players: playersAfterRemoval,
-        pairedMatches: updatedPairedMatches,
-        allTimeMatches: newAllTimeMatches,
-      }
-    })
-  }
 
   const analyzeRematches = () => {
     const pairings = new Map<string, number>()
@@ -1834,28 +1764,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     return 0
   })
 
-  const calculatePointsFromSettings = (
-    isWinner: boolean,
-    isDraw: boolean,
-    currentStreak: number,
-    settings: typeof arenaState.settings,
-  ) => {
-    let basePoints = 0
-
-    if (isDraw) {
-      basePoints = settings.drawPoints
-    } else if (isWinner) {
-      basePoints = settings.winPoints
-    } else {
-      basePoints = settings.lossPoints
-    }
-
-    if (settings.streakEnabled && currentStreak >= 2) {
-      return basePoints * settings.streakMultiplier
-    }
-
-    return basePoints
-  }
 
   const handlePlayerSubmit = async (matchId: string, result: "player1-win" | "draw" | "player2-win") => {
     if (DEBUG) console.log("[v0] Player submitting result:", matchId, result)
@@ -2095,81 +2003,73 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         return prev
       }
 
-      // Find the corresponding game in opponent's history
-      const opponentGameIndex = opponent.opponentIds.findIndex(
-        (id, idx) => id === playerId && idx <= gameIndex && opponent.gameResults[idx] !== undefined,
-      )
+      // C4 fix: find opponent's game by counting occurrences of this matchup,
+      // not by positional index comparison (which breaks for rematches).
+      let pairOccurrence = 0
+      for (let i = 0; i <= gameIndex; i++) {
+        if (player.opponentIds[i] === opponentId) pairOccurrence++
+      }
+      let opponentGameIndex = -1
+      let count = 0
+      for (let j = 0; j < opponent.opponentIds.length; j++) {
+        if (opponent.opponentIds[j] === playerId) {
+          count++
+          if (count === pairOccurrence) {
+            opponentGameIndex = j
+            break
+          }
+        }
+      }
 
       if (opponentGameIndex === -1) {
         console.error("[v0] Could not find corresponding game in opponent's history")
         return prev
       }
 
-      // Calculate point changes
-      const calculatePointChange = (result: "W" | "D" | "L", streakBefore: number) => {
-        const hasStreak = streakBefore >= 2
-        if (result === "W") return hasStreak ? 4 : 2
-        if (result === "D") return hasStreak ? 2 : 1
-        return 0
+      const newOpponentResult: "W" | "D" | "L" = newResult === "W" ? "L" : newResult === "L" ? "W" : "D"
+
+      // C5 fix: recalculate ALL points from scratch for both players
+      // so streak changes cascade correctly to subsequent games.
+      const recalcAll = (results: ("W" | "D" | "L")[]) => {
+        let streak = 0
+        let total = 0
+        const earned: number[] = []
+        for (const r of results) {
+          const isW = r === "W"
+          const isD = r === "D"
+          const pts = calculatePointsFromSettings(isW, isD, streak, prev.settings)
+          earned.push(pts)
+          total += pts
+          streak = isD ? 0 : isW ? streak + 1 : 0
+        }
+        return { total, streak, earned }
       }
 
-      // Calculate streak before this game for both players
-      const playerStreakBefore =
-        gameIndex === 0
-          ? 0
-          : player.gameResults.slice(0, gameIndex).reduce((streak, r, idx) => (r === "W" ? streak + 1 : 0), 0)
+      const playerResults = [...player.gameResults]
+      playerResults[gameIndex] = newResult
+      const p = recalcAll(playerResults)
 
-      const opponentStreakBefore =
-        opponentGameIndex === 0
-          ? 0
-          : opponent.gameResults.slice(0, opponentGameIndex).reduce((streak, r, idx) => (r === "W" ? streak + 1 : 0), 0)
+      const oppResults = [...opponent.gameResults]
+      oppResults[opponentGameIndex] = newOpponentResult
+      const o = recalcAll(oppResults)
 
-      // Calculate old and new points
-      const oldPlayerPoints = calculatePointChange(oldResult, playerStreakBefore)
-      const newPlayerPoints = calculatePointChange(newResult, playerStreakBefore)
-      const pointDelta = newPlayerPoints - oldPlayerPoints
-
-      // Determine opponent's new result (opposite of player's)
-      const newOpponentResult: "W" | "D" | "L" = newResult === "W" ? "L" : newResult === "L" ? "W" : "D"
-      const oldOpponentResult = opponent.gameResults[opponentGameIndex]
-      const oldOpponentPoints = calculatePointChange(oldOpponentResult, opponentStreakBefore)
-      const newOpponentPoints = calculatePointChange(newOpponentResult, opponentStreakBefore)
-      const opponentPointDelta = newOpponentPoints - oldOpponentPoints
-
-      // Update both players
-      const updatedPlayers = prev.players.map((p) => {
-        if (p.id === playerId) {
-          const newGameResults = [...p.gameResults]
-          newGameResults[gameIndex] = newResult
-          return {
-            ...p,
-            score: p.score + pointDelta,
-            gameResults: newGameResults,
-          }
+      const updatedPlayers = prev.players.map((pl) => {
+        if (pl.id === playerId) {
+          return { ...pl, score: p.total, streak: p.streak, gameResults: playerResults, pointsEarned: p.earned }
         }
-        if (p.id === opponentId) {
-          const newGameResults = [...opponent.gameResults]
-          newGameResults[opponentGameIndex] = newOpponentResult
-          return {
-            ...opponent,
-            score: opponent.score + opponentPointDelta,
-            gameResults: newGameResults,
-          }
+        if (pl.id === opponentId) {
+          return { ...opponent, score: o.total, streak: o.streak, gameResults: oppResults, pointsEarned: o.earned }
         }
-        return p
+        return pl
       })
 
-      // Save to database
       if (tournamentId) {
         savePlayers(tournamentId, updatedPlayers).catch((err) => {
-          console.error("[v0] Error saving players after override:", err)
+          console.error("[v0] Error saving players after override:", formatSupabaseError(err))
         })
       }
 
-      return {
-        ...prev,
-        players: updatedPlayers,
-      }
+      return { ...prev, players: updatedPlayers }
     })
   }
 
@@ -2219,10 +2119,10 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       // Save updated player and match states (organizer only — players lack RLS write access)
       if (tournamentId && isOrganizer) {
         savePlayers(tournamentId, updated.players).catch((err) => {
-          console.error("[v0] Error saving players after match completion:", err)
+          console.error("[v0] Error saving players after match completion:", formatSupabaseError(err))
         })
         saveMatches(tournamentId, mergeMatchesForSave(updated.pairedMatches, updated.allTimeMatches)).catch((err) => {
-          console.error("[v0] Error saving matches after match completion:", err)
+          console.error("[v0] Error saving matches after match completion:", formatSupabaseError(err))
         })
       }
 
@@ -2469,7 +2369,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                 tournamentMetadata={tournamentMetadata}
                 isActive={arenaState.isActive}
                 waitingForFinalResults={waitingForFinalResults}
-                onForcePairing={handleForcePairing}
+                onReduceWaitOneMinute={handleReduceWaitOneMinute}
               />
             ) : null}
           </TabsContent>
@@ -2500,6 +2400,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               players={arenaState.players}
               isPlayerView={effectivePlayerView}
               onOverrideResult={!effectivePlayerView ? overrideResult : undefined}
+              settings={arenaState.settings}
             />
           </TabsContent>
         </Tabs>

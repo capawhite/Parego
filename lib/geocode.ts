@@ -50,35 +50,3 @@ export async function geocodeLocation(
   }
 }
 
-/**
- * Get user coordinates from browser geolocation API
- */
-export function getBrowserLocation(): Promise<{
-  latitude: number
-  longitude: number
-} | null> {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve(null)
-      return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        })
-      },
-      (error) => {
-        if (process.env.NODE_ENV === "development")
-          console.log("[v0] Browser geolocation denied or failed:", error.message)
-        resolve(null)
-      },
-      {
-        timeout: 10000,
-        maximumAge: 300000, // Cache for 5 minutes
-      },
-    )
-  })
-}

@@ -8,12 +8,6 @@ const ALL_MESSAGES = {
   es: esMessages,
 } as const
 
-export type Messages = (typeof ALL_MESSAGES)[Locale]
-
-export function getMessages(locale: Locale): Messages {
-  return ALL_MESSAGES[locale] ?? ALL_MESSAGES.en
-}
-
 function interpolate(template: string, params?: Record<string, string | number>): string {
   if (!params) return template
   return Object.keys(params).reduce((result, key) => {
@@ -27,7 +21,7 @@ export function translate(
   path: string,
   params?: Record<string, string | number>,
 ): string {
-  const messages = getMessages(locale)
+  const messages = ALL_MESSAGES[locale] ?? ALL_MESSAGES.en
   const segments = path.split(".")
 
   let current: any = messages

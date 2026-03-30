@@ -1,5 +1,6 @@
 import type { Player } from "@/lib/types"
 import {
+  colorBalance,
   fixedOrientationCost,
   sameColorTailStreak,
   type ColorBalancePriority,
@@ -82,9 +83,12 @@ export function bestOrientationForPair(
 
   candidates.sort((x, y) => {
     if (x.cost !== y.cost) return x.cost - y.cost
-    return orientationKey(x.whitePlayer, x.blackPlayer).localeCompare(
-      orientationKey(y.whitePlayer, y.blackPlayer),
-    )
+    // Tiebreaker: give white to the player with the lower color balance
+    // (more blacks historically → needs white more). Falls back to ID only as last resort.
+    const balXW = colorBalance((x.whitePlayer.pieceColors ?? []) as PieceColor[])
+    const balYW = colorBalance((y.whitePlayer.pieceColors ?? []) as PieceColor[])
+    if (balXW !== balYW) return balXW - balYW
+    return x.whitePlayer.id.localeCompare(y.whitePlayer.id)
   })
 
   return candidates[0]

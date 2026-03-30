@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
   colorBalance,
-  orientationCostForPair,
   sameColorTailStreak,
   scoreMatchingMultiplier,
 } from "@/lib/pairing/color-utils"
@@ -35,14 +34,6 @@ describe("color-utils", () => {
     expect(sameColorTailStreak([])).toEqual({ color: null, length: 0 })
     expect(sameColorTailStreak(["black", "white", "white"])).toEqual({ color: "white", length: 2 })
     expect(sameColorTailStreak(["white", "white", "white"])).toEqual({ color: "white", length: 3 })
-  })
-
-  it("orientationCostForPair gives black to player on a long white streak", () => {
-    const heavyWhite = makePlayer("a", ["white", "white", "white"])
-    const fresh = makePlayer("b", [])
-    const { whitePlayer, blackPlayer } = orientationCostForPair(heavyWhite, fresh, "high")
-    expect(blackPlayer.id).toBe("a")
-    expect(whitePlayer.id).toBe("b")
   })
 
   it("scoreMatchingMultiplier scales strictness", () => {

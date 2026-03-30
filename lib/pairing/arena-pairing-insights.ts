@@ -1,5 +1,6 @@
 import type { ArenaState, Match, Player, TournamentSettings } from "@/lib/types"
 import { getPairingAlgorithm } from "@/lib/pairing"
+import { isPlayerAvailableForPairing } from "@/lib/pairing/player-eligibility"
 import { effectiveTableSlotsForPairing } from "@/lib/tournament/effective-table-count"
 import { minIdlePlayersBeforePairing } from "@/lib/pairing/idle-threshold"
 import {
@@ -104,13 +105,8 @@ export function computeArenaPairingInsights(input: ArenaPairingInsightsInput): A
   const inActiveGame = (p: Player) =>
     activePairingMatches.some((m) => m.player1.id === p.id || m.player2.id === p.id)
 
-  const availablePlayers = state.players.filter(
-    (p) =>
-      !p.paused &&
-      !p.markedForRemoval &&
-      !p.markedForPause &&
-      (p.checkedInAt != null || !hasVenue) &&
-      !inActiveGame(p),
+  const availablePlayers = state.players.filter((p) =>
+    isPlayerAvailableForPairing(p, activePairingMatches, hasVenue),
   )
 
   const tableSlots = effectiveTableSlotsForPairing(state.tableCount, settings)

@@ -6,8 +6,8 @@ import {
   type ColorBalancePriority,
 } from "./color-utils"
 import { minIdlePlayersBeforePairing } from "./idle-threshold"
-import { longestWaitingPlayerIds } from "./idle-wait"
 import { bestOrientationForPair, type ConsecutiveColorCapMode } from "./color-consecutive-cap"
+import { buildPlayerMatchCache, getCacheEntry } from "./pairing-cache"
 
 interface PairingScore {
   pairing: [Player, Player]
@@ -30,6 +30,7 @@ interface PairingScore {
  * - Prioritizes avoiding recent rematches (uses opponentIds for history)
  * - Matches similar skill levels when possible
  * - Balances piece colors
+ * - Prefers pairing longer-idle players when the greedy subset leaves one out (odd counts)
  * - Small fields (<=4 players): only pair when no games in progress to avoid instant rematch
  */
 export const allVsAllAlgorithm: PairingAlgorithm = {
@@ -43,7 +44,6 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
     settings: TournamentSettings,
     maxMatches?: number,
     _totalPlayers?: number,
-    _options?: { skipT1?: boolean },
   ): Match[] {
     if (process.env.NODE_ENV === "development")
       console.log("[v0] All vs All: Creating pairings", {
@@ -107,7 +107,22 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
     })
 
     const nowMs = Date.now()
-    const longestWaitIds = longestWaitingPlayerIds(availablePlayers, allHistoricalMatches, nowMs)
+    const cache = buildPlayerMatchCache(allHistoricalMatches)
+    const poolMinJoined = Math.min(...availablePlayers.map((p) => p.joinedAt))
+
+    const idleDurationByPlayer = new Map<string, number>()
+    let maxIdleDur = -1
+    for (const p of availablePlayers) {
+      const entry = getCacheEntry(cache, p.id)
+      const idleStart = entry.lastGameEndMs != null ? entry.lastGameEndMs : Math.min(p.joinedAt, poolMinJoined)
+      const d = Math.max(0, nowMs - idleStart)
+      idleDurationByPlayer.set(p.id, d)
+      if (d > maxIdleDur) maxIdleDur = d
+    }
+    const longestWaitIds = new Set<string>()
+    for (const p of availablePlayers) {
+      if (idleDurationByPlayer.get(p.id) === maxIdleDur) longestWaitIds.add(p.id)
+    }
 
     const buildForRematchFilter = (capMode: ConsecutiveColorCapMode) => {
       const raw = generatePairingScores(
@@ -118,6 +133,7 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
         settings,
         capMode,
         longestWaitIds,
+        idleDurationByPlayer,
       )
       if (isSaturated) return raw
       let filtered = raw.filter((p) => p.rematchLevel === "none")
@@ -173,6 +189,14 @@ export const allVsAllAlgorithm: PairingAlgorithm = {
 function findBestPairingSubset(pairings: PairingScore[], maxMatches?: number): Match[] {
   if (pairings.length === 0) return []
 
+  const scoreByPairKey = new Map<string, number>()
+  for (const p of pairings) {
+    const key = p.pairing[0].id <= p.pairing[1].id
+      ? `${p.pairing[0].id}\0${p.pairing[1].id}`
+      : `${p.pairing[1].id}\0${p.pairing[0].id}`
+    scoreByPairKey.set(key, p.score)
+  }
+
   let bestMatches: Match[] = []
   let bestTotalScore = Number.POSITIVE_INFINITY
 
@@ -181,12 +205,10 @@ function findBestPairingSubset(pairings: PairingScore[], maxMatches?: number): M
   for (let targetMatches = maxPossibleMatches; targetMatches >= 1; targetMatches--) {
     const matches = greedySelectPairings(pairings, targetMatches)
     const totalScore = matches.reduce((sum, m) => {
-      const scoring = pairings.find(
-        (p) =>
-          (p.pairing[0].id === m.player1.id && p.pairing[1].id === m.player2.id) ||
-          (p.pairing[0].id === m.player2.id && p.pairing[1].id === m.player1.id),
-      )
-      return sum + (scoring?.score || 0)
+      const key = m.player1.id <= m.player2.id
+        ? `${m.player1.id}\0${m.player2.id}`
+        : `${m.player2.id}\0${m.player1.id}`
+      return sum + (scoreByPairKey.get(key) ?? 0)
     }, 0)
 
     if (
@@ -233,6 +255,7 @@ function generatePairingScores(
   settings: TournamentSettings,
   capMode: ConsecutiveColorCapMode,
   longestWaitIds: Set<string>,
+  idleDurationByPlayer: Map<string, number>,
 ): PairingScore[] {
   const pairings: PairingScore[] = []
 
@@ -288,6 +311,12 @@ function generatePairingScores(
       score += rematchPenalty
       score += colorCost * colorMult
       score -= totalDeficit * 20
+      // Prefer pairs that include longer-waiting players (odd-field sit-out fairness)
+      const minPairIdle = Math.min(
+        idleDurationByPlayer.get(whitePlayer.id) ?? 0,
+        idleDurationByPlayer.get(blackPlayer.id) ?? 0,
+      )
+      score -= minPairIdle * 0.001
 
       pairings.push({
         pairing: [whitePlayer, blackPlayer],

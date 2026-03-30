@@ -56,12 +56,12 @@ export function TournamentSettingsPanel({
           <fieldset disabled={!isOrganizer} className={!isOrganizer ? "opacity-60" : ""}>
             {/* Scoring Settings */}
             <div className="space-y-3">
-              <h3 className="text-base font-semibold">Scoring System</h3>
+              <h3 className="text-base font-semibold">{t("settings.scoringSection")}</h3>
 
               <div className="grid grid-cols-3 gap-3 max-w-sm">
                 <div className="space-y-1.5">
                   <Label htmlFor="winPoints" className="text-xs">
-                    Win
+                    {t("settings.winLabel")}
                   </Label>
                   <Input
                     id="winPoints"
@@ -87,7 +87,7 @@ export function TournamentSettingsPanel({
 
                 <div className="space-y-1.5">
                   <Label htmlFor="lossPoints" className="text-xs">
-                    Loss
+                    {t("settings.lossLabel")}
                   </Label>
                   <Input
                     id="lossPoints"
@@ -116,7 +116,7 @@ export function TournamentSettingsPanel({
               {settings.streakEnabled && (
                 <div className="space-y-1.5 max-w-[140px]">
                   <Label htmlFor="streakMultiplier" className="text-sm">
-                    Multiplier
+                    {t("settings.multiplierLabel")}
                   </Label>
                   <Input
                     id="streakMultiplier"
@@ -128,8 +128,10 @@ export function TournamentSettingsPanel({
                     className="h-8 text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Win: {settings.winPoints * settings.streakMultiplier}, Draw:{" "}
-                    {settings.drawPoints * settings.streakMultiplier}
+                    {t("settings.multiplierPreview", {
+                      win: settings.winPoints * settings.streakMultiplier,
+                      draw: settings.drawPoints * settings.streakMultiplier,
+                    })}
                   </p>
                 </div>
               )}
@@ -184,7 +186,7 @@ export function TournamentSettingsPanel({
 
             {/* Pairing Rules */}
             <div className="space-y-3">
-              <h3 className="text-base font-semibold">Pairing Rules</h3>
+              <h3 className="text-base font-semibold">{t("settings.pairingRulesSection")}</h3>
 
               <div className="space-y-1.5 max-w-[140px]">
                 <Label htmlFor="avoidRecentRematches" className="text-sm">
@@ -285,7 +287,7 @@ export function TournamentSettingsPanel({
 
             {/* Tournament Settings */}
             <div className="space-y-3">
-              <h3 className="text-base font-semibold">{t("settings.tournamentSection")}</h3>
+              <h3 className="text-base font-semibold">{t("settings.simulatorCompletionSection")}</h3>
 
               {onToggleSimulator && (
                 <div className="flex items-center justify-between py-2">
