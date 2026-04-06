@@ -40,55 +40,97 @@ export default function NearbyPage() {
   // Get user's registered location and request geolocation
   useEffect(() => {
     async function initLocation() {
-      // First, try to get GPS location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setUserLocation({
-              lat: position.coords.latitude,
-              lon: position.coords.longitude,
-            })
-            setLocationSource("gps")
-            setRequestingLocation(false)
-          },
-          async (error) => {
-            if (process.env.NODE_ENV === "development")
-              console.log("[v0] GPS location error, attempting to use registered location")
-
-            // Get user's profile location
-            const {
-              data: { user },
-            } = await supabase.auth.getUser()
-            if (user) {
-              const { data: profile } = await supabase
-                .from("users")
-                .select("latitude, longitude, city, country")
-                .eq("id", user.id)
-                .maybeSingle()
-
-              if (profile?.latitude && profile?.longitude) {
-                setUserLocation({
-                  lat: profile.latitude,
-                  lon: profile.longitude,
-                })
-                setLocationSource("registered")
-                setLocationError(null)
-              } else {
-                setLocationError(t("nearby.errorSetLocationOrEnableGps"))
-              }
-            } else {
-              setLocationError(t("nearby.errorLoginRequired"))
-            }
-            setRequestingLocation(false)
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 300000,
-          },
-        )
-      } else {
+      if (!navigator.geolocation) {
         setLocationError(t("nearby.errorNoGeolocation"))
+        setRequestingLocation(false)
+        return
+      }
+
+      const requestPosition = (options: PositionOptions) =>
+        new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, options)
+        })
+
+      const tryRegisteredLocation = async () => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) return false
+
+        const { data: profile } = await supabase
+          .from("users")
+          .select("latitude, longitude")
+          .eq("id", user.id)
+          .maybeSingle()
+
+        if (profile?.latitude && profile?.longitude) {
+          setUserLocation({
+            lat: profile.latitude,
+            lon: profile.longitude,
+          })
+          setLocationSource("registered")
+          setLocationError(null)
+          return true
+        }
+
+        return false
+      }
+
+      try {
+        // Attempt 1: precise GPS, then fall back to lower accuracy for slow devices.
+        let position: GeolocationPosition
+        try {
+          position = await requestPosition({
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 300000,
+          })
+        } catch (firstError) {
+          const firstGeoError = firstError as GeolocationPositionError
+          if (
+            firstGeoError?.code !== GeolocationPositionError.TIMEOUT &&
+            firstGeoError?.code !== GeolocationPositionError.POSITION_UNAVAILABLE
+          ) {
+            throw firstError
+          }
+
+          position = await requestPosition({
+            enableHighAccuracy: false,
+            timeout: 20000,
+            maximumAge: 600000,
+          })
+        }
+
+        setUserLocation({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+        })
+        setLocationSource("gps")
+        setLocationError(null)
+      } catch (error) {
+        const geoError = error as GeolocationPositionError
+        const code = geoError?.code
+
+        if (process.env.NODE_ENV === "development") {
+          console.log("[v0] GPS location error:", code, geoError?.message)
+        }
+
+        const canTryRegisteredFallback =
+          code === GeolocationPositionError.PERMISSION_DENIED ||
+          code === GeolocationPositionError.POSITION_UNAVAILABLE
+
+        if (canTryRegisteredFallback) {
+          const usedRegisteredLocation = await tryRegisteredLocation()
+          if (!usedRegisteredLocation) {
+            setLocationError(t("nearby.errorSetLocationOrEnableGps"))
+          }
+        } else if (code === GeolocationPositionError.TIMEOUT) {
+          setLocationError(t("nearby.errorSetLocationOrEnableGps"))
+        } else {
+          setLocationError(t("nearby.errorSetLocationOrEnableGps"))
+        }
+      } finally {
         setRequestingLocation(false)
       }
     }
