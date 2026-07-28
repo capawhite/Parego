@@ -2,19 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" // Added CardDescription
+import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Leaderboard } from "./leaderboard"
 import { TournamentPodium } from "./tournament-podium"
 import { TournamentSettingsPanel } from "./tournament-settings"
 import { AlgorithmComparisonPanel } from "./algorithm-comparison-panel"
 import type { ArenaState, Player, Match, TournamentSettings } from "@/lib/types"
-import { logArenaPairing } from "@/lib/pairing/arena-pairing-debug"
-import { isPlayerAvailableForPairing } from "@/lib/pairing/player-eligibility"
-import { isArenaT1Eligible, setArenaCooldownReductions } from "@/lib/pairing/arena-t1"
-import { assignTablesToMatchesForState } from "@/lib/tournament/merge-matches"
 import { isPairingHeartbeatStale } from "@/lib/tournament/pairing-loop-gate"
-import { analyzeRematches as analyzeRematchesPure } from "@/lib/tournament/rematch-analysis"
 import {
   X,
   Trophy,
@@ -31,22 +26,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { DEFAULT_SETTINGS } from "@/lib/types"
-import { effectiveTableSlotsForPairing } from "@/lib/tournament/effective-table-count"
-import { loadPlayers } from "@/lib/database/tournament-db"
 import { useRouter } from "next/navigation"
 import { ArenaPlayersTab } from "@/components/tournament/arena-players-tab"
 import { ArenaPairingsTab } from "@/components/tournament/arena-pairings-tab"
 import { ArenaPairingStatusPanel } from "@/components/tournament/arena-pairing-status-panel"
 import { ArenaResultsTab } from "@/components/tournament/arena-results-tab"
 import { ArenaTournamentHeader } from "@/components/tournament/arena-tournament-header"
-import { PairingMatchCard } from "@/components/tournament/pairing-match-card"
+import { ArenaFullscreenPairings } from "@/components/tournament/arena-fullscreen-pairings"
 import {
   getGuestSessionHistory,
   getConversionPromptDismissed,
   type GuestSessionEntry,
 } from "@/lib/guest-session-history"
 import { ConversionPrompt, type ConversionTrigger } from "@/components/conversion-prompt"
-import { cn } from "@/lib/utils"
 import { deleteTournament } from "@/app/actions/delete-tournament"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
@@ -60,6 +52,9 @@ import { useArenaMatchResults } from "@/hooks/tournament/use-arena-match-results
 import { useArenaLifecycle } from "@/hooks/tournament/use-arena-lifecycle"
 import { useArenaTournamentLoad } from "@/hooks/tournament/use-arena-tournament-load"
 import { useArenaAutosave } from "@/hooks/tournament/use-arena-autosave"
+import { useArenaCooldown } from "@/hooks/tournament/use-arena-cooldown"
+import { useArenaPlayerSession, type ArenaSessionData } from "@/hooks/tournament/use-arena-player-session"
+import { useArenaPlayersRefresh } from "@/hooks/tournament/use-arena-players-refresh"
 import { formatDurationClock } from "@/lib/tournament/format-duration"
 
 const TOURNAMENT_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
@@ -71,13 +66,6 @@ interface ArenaPanelProps {
   tournamentId: string
   tournamentName: string
   isPlayerView?: boolean
-}
-
-interface ArenaSessionData {
-  tournamentId: string
-  playerName?: string
-  playerId?: string
-  role?: "organizer" | "player"
 }
 
 export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, isPlayerView }: ArenaPanelProps) {
@@ -418,81 +406,15 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     return () => clearInterval(interval)
   }, [arenaState.isActive, arenaState.tournamentStartTime, arenaState.tournamentDuration, waitingForFinalResults, isOrganizer])
 
-  const arenaStateRef = useRef(arenaState)
-  arenaStateRef.current = arenaState
-  const cooldownReductionMsByPlayerIdRef = useRef<Record<string, number>>({})
   const recordedCompletedMatchIdsRef = useRef<Set<string>>(new Set())
-  useEffect(() => {
-    setArenaCooldownReductions(cooldownReductionMsByPlayerIdRef.current)
-    return () => setArenaCooldownReductions({})
-  }, [])
 
-  useEffect(() => {
-    if (!arenaState.isActive) {
-      cooldownReductionMsByPlayerIdRef.current = {}
-      setArenaCooldownReductions({})
-    }
-  }, [arenaState.isActive])
-
-  const collectPairingInputs = useCallback((state: ArenaState) => {
-    const activePairingMatches = state.pairedMatches.filter((m) => !m.result?.completed)
-    const hasVenue = tournamentMetadata?.latitude != null && tournamentMetadata?.longitude != null
-    const availablePlayers = state.players.filter((p) =>
-      isPlayerAvailableForPairing(p, activePairingMatches, hasVenue),
-    )
-    const tableSlots = effectiveTableSlotsForPairing(state.tableCount, state.settings)
-    const occupiedTables = state.pairedMatches
-      .filter((m) => !m.result?.completed && m.tableNumber)
-      .map((m) => m.tableNumber!)
-    const availableTables = tableSlots - occupiedTables.length
-    const matchesForPairing = (() => {
-      const byId = new Map<string, Match>()
-      for (const m of state.allTimeMatches) byId.set(m.id, m)
-      for (const m of state.pairedMatches) {
-        if (m.result?.completed) byId.set(m.id, m)
-      }
-      return [...byId.values()]
-    })()
-    return { activePairingMatches, availablePlayers, availableTables, matchesForPairing }
-  }, [tournamentMetadata?.latitude, tournamentMetadata?.longitude])
-
-  const handleReduceWaitOneMinute = useCallback(() => {
-    if (!isOrganizer || !arenaState.isActive || waitingForFinalResults) return
-    if ((arenaState.settings.pairingAlgorithm || "all-vs-all") !== "balanced-strength") return
-
-    const state = arenaStateRef.current
-    const { availablePlayers, matchesForPairing } = collectPairingInputs(state)
-    const now = Date.now()
-    const coolingPlayers = availablePlayers.filter(
-      (p) => !isArenaT1Eligible(p, matchesForPairing, state.settings, now),
-    )
-
-    if (coolingPlayers.length === 0) {
-      toast.message(t("arena.reduceWaitNoPlayers"))
-      return
-    }
-
-    const reductionStepMs = 60_000
-    const next = { ...cooldownReductionMsByPlayerIdRef.current }
-    for (const p of coolingPlayers) {
-      next[p.id] = (next[p.id] ?? 0) + reductionStepMs
-    }
-    cooldownReductionMsByPlayerIdRef.current = next
-    setArenaCooldownReductions(next)
-
-    logArenaPairing("Reduced cooldown by 60s", {
-      affectedCount: coolingPlayers.length,
-      affectedPlayers: coolingPlayers.map((p) => p.name),
-    })
-    toast.success(t("arena.reduceWaitSuccess", { count: coolingPlayers.length }))
-  }, [
-    arenaState.isActive,
-    arenaState.settings.pairingAlgorithm,
-    collectPairingInputs,
+  const { handleReduceWaitOneMinute } = useArenaCooldown({
+    arenaState,
     isOrganizer,
-    t,
     waitingForFinalResults,
-  ])
+    hasVenue: tournamentMetadata?.latitude != null && tournamentMetadata?.longitude != null,
+    t,
+  })
 
   // When organizer is in "wait for final results" and all matches are complete (e.g. via Realtime),
   // persist tournament as completed so players see the correct status.
@@ -518,80 +440,20 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     arenaState.pairedMatches,
   ])
 
-  useEffect(() => {
-    const sessionData = localStorage.getItem("tournamentPlayer")
-    if (DEBUG) console.log("[v0] Checking session data:", sessionData)
-    if (sessionData) {
-      try {
-        const parsed: ArenaSessionData = JSON.parse(sessionData)
-        if (DEBUG) {
-          console.log("[v0] Parsed session:", parsed)
-          console.log("[v0] Tournament ID match:", parsed.tournamentId, "===", initialTournamentId)
-        }
-        if (parsed.tournamentId === initialTournamentId && parsed.role === "player") {
-          if (DEBUG) console.log("[v0] Setting player view mode")
-          // setIsPlayerView(true) // Removed, now comes from props
-          setPlayerSession(parsed)
-          // Show welcome message for new players
-          const hasSeenWelcome = localStorage.getItem(`welcome_${initialTournamentId}_${parsed.playerId}`)
-          if (!hasSeenWelcome && arenaState.isActive) {
-            setShowWelcomeMessage(true)
-            localStorage.setItem(`welcome_${initialTournamentId}_${parsed.playerId}`, "true")
-          }
-        } else if (parsed.tournamentId === initialTournamentId && parsed.role === "organizer") {
-          if (DEBUG) console.log("[v0] Setting organizer view mode")
-          // setIsPlayerView(false) // Removed, now comes from props
-        }
-      } catch (err) {
-        console.error("[v0] Error parsing session:", err)
-        // setIsPlayerView(false) // Removed, now comes from props
-      }
-    } else {
-      if (DEBUG) console.log("[v0] No session found, defaulting to organizer view")
-      // setIsPlayerView(false) // Removed, now comes from props
-    }
-  }, [initialTournamentId, arenaState.isActive])
+  useArenaPlayerSession({
+    initialTournamentId: initialTournamentId || "",
+    arenaIsActive: arenaState.isActive,
+    setPlayerSession,
+    setShowWelcomeMessage,
+  })
 
-
-  useEffect(() => {
-    if (!tournamentId || arenaState.status === "completed" || activeTab !== "players") return
-
-    const refreshPlayers = async () => {
-      try {
-        const dbPlayers = await loadPlayers(tournamentId)
-
-        setArenaState((prev) => {
-          const existingPlayerIds = new Set(prev.players.map((p) => p.id))
-          const newPlayers = dbPlayers.filter((p) => !existingPlayerIds.has(p.id))
-
-          if (newPlayers.length > 0) {
-            if (DEBUG)
-              console.log(
-                "[v0] New players joined:",
-                newPlayers.map((p) => p.name),
-              )
-            return {
-              ...prev,
-              players: [...prev.players, ...newPlayers],
-            }
-          }
-
-          return prev
-        })
-      } catch (error) {
-        console.error("[v0] Error refreshing players:", error)
-      }
-    }
-
-    // One-time refresh when switching to Players tab
-    refreshPlayers()
-
-    // Only poll every 5s if Realtime is not yet active (still loading)
-    if (isLoading) {
-      const interval = setInterval(refreshPlayers, 5000)
-      return () => clearInterval(interval)
-    }
-  }, [tournamentId, arenaState.status, activeTab, isLoading])
+  useArenaPlayersRefresh({
+    tournamentId,
+    status: arenaState.status,
+    activeTab,
+    isLoading,
+    setArenaState,
+  })
 
   const {
     handleStartTournament,
@@ -647,44 +509,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     t,
   })
 
-  const analyzeRematches = () => {
-    const { uniquePairings, rematches } = analyzeRematchesPure(arenaState.players)
-    if (DEBUG) console.log("[v0] REMATCH ANALYSIS:", {
-      totalUniquePairings: uniquePairings,
-      totalRematches: rematches.length,
-      rematchDetails: rematches.length > 0 ? rematches : "No rematches detected",
-    })
-    const rematchDetail =
-      rematches.length > 0
-        ? rematches.map((r) => `${r.players}: ${r.count} times`).join("\n")
-        : "No rematches detected!"
-    toast.info(t("arena.rematchAnalysisTitle"), {
-      description: `Unique pairings: ${uniquePairings}\nRematches: ${rematches.length}\n\n${rematchDetail}`,
-      duration: 20_000,
-    })
-    return rematches
-  }
-
-  const getOccupiedTables = () => {
-    return arenaState.pairedMatches.filter((m) => !m.result?.completed && m.tableNumber).map((m) => m.tableNumber!)
-  }
-
-  const getNextAvailableTable = (): number | undefined => {
-    const occupiedTables = getOccupiedTables()
-    for (let i = 1; i <= arenaState.tableCount; i++) {
-      if (!occupiedTables.includes(i)) {
-        return i
-      }
-    }
-    return undefined
-  }
-
-  const assignTablesToMatches = (matches: Match[]) => assignTablesToMatchesForState(matches, arenaState)
-
-  const activePlayers = arenaState.players.filter(
-    (p) => p.active && !p.paused && !p.markedForRemoval && !p.markedForPause,
-  ).length
-  const inProgress = arenaState.pairedMatches.filter((m) => !m.result?.completed).length
   const maxSimultaneousPairings = Math.floor(arenaState.players.length / 2)
   const pendingMatches = arenaState.pairedMatches.filter((m) => !m.result?.completed)
   const sortedPendingMatches = [...pendingMatches].sort((a, b) => {
@@ -716,36 +540,11 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
   if (isFullScreenPairings) {
     return (
-      <div className="fixed inset-0 z-50 overflow-auto bg-secondary">
-        <div className="container mx-auto py-3 px-4">
-          <div className="mb-3 space-y-1">
-            <p className="text-sm font-medium text-muted-foreground truncate" title={displayName}>
-              {displayName}
-            </p>
-            <div className="flex items-center justify-between gap-2">
-            <h1 className="text-2xl font-bold">{t("arena.currentPairings")}</h1>
-            <Button variant="outline" size="sm" onClick={() => setIsFullScreenPairings(false)}>
-              <X className="h-4 w-4 mr-2" />
-              {t("common.close")}
-            </Button>
-            </div>
-          </div>
-
-          {sortedPendingMatches.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-              {sortedPendingMatches.map((match) => (
-                <PairingMatchCard key={match.id} match={match} showSubmissionStatus={false} />
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">{t("arena.noActivePairings")}</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
+      <ArenaFullscreenPairings
+        displayName={displayName}
+        matches={sortedPendingMatches}
+        onClose={() => setIsFullScreenPairings(false)}
+      />
     )
   }
 
