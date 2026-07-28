@@ -40,7 +40,6 @@ import {
 } from "@/lib/tournament/effective-table-count"
 import {
   saveTournament,
-  loadTournament,
   loadPlayers,
   savePlayers,
   saveMatches,
@@ -49,6 +48,7 @@ import {
   getAvatarUrls,
   formatSupabaseError,
 } from "@/lib/database/tournament-db"
+import { fetchTournamentById, joinTournamentAction } from "@/app/actions/join-tournament"
 import { useRouter } from "next/navigation"
 import { ArenaPlayersTab } from "@/components/tournament/arena-players-tab"
 import { ArenaPairingsTab } from "@/components/tournament/arena-pairings-tab"
@@ -384,7 +384,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
         }
       }
 
-      const tournament = await loadTournament(tournamentId)
+      const tournament = await fetchTournamentById(tournamentId)
       if (tournament) {
         if (DEBUG) console.log("[v0] Found tournament:", tournament.name, "Status:", tournament.status)
 
@@ -807,45 +807,21 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     setPlayerNameInput("")
 
     if (tournamentId) {
+      let savedPlayerId = newPlayer.id
       try {
-        const supabase = createClient()
         const deviceId = addToGuestHistory ? getDeviceId() : null
-        const { error: insertErr } = await supabase.from("players").insert({
-          id: newPlayer.id,
-          tournament_id: tournamentId,
+        const joinResult = await joinTournamentAction({
+          tournamentId,
           name: newPlayer.name,
-          user_id: userId || null,
-          is_guest: isGuest,
-          points: 0,
-          wins: 0,
-          draws: 0,
-          losses: 0,
-          games_played: 0,
-          white_count: 0,
-          black_count: 0,
-          current_streak: 0,
-          on_streak: false,
-          paused: false,
-          game_history: [],
-          opponents: [],
-          results: [],
-          colors: [],
-          points_earned: [],
-          table_numbers: [],
+          userId: userId || null,
+          isGuest,
           rating: newPlayer.rating,
-          buchholz: 0,
-          sonneborn_berger: 0,
-          is_paused: false,
-          is_removed: false,
-          device_id: deviceId,
+          deviceId,
+          asOrganizer: isOrganizer,
+          playerId: newPlayer.id,
         })
-        if (insertErr) {
-          const err = insertErr as unknown as Record<string, unknown>
-          const msg = (err.message as string) ?? (insertErr instanceof Error ? insertErr.message : String(insertErr))
-          const code = (err.code as string) ?? ""
-          const details = (err.details as string) ?? ""
-          const hint = (err.hint as string) ?? ""
-          if (code === "23505") {
+        if (!joinResult.success) {
+          if (joinResult.errorCode === "ALREADY_JOINED") {
             toast.error(t("arena.toastAlreadyJoinedFromDevice"))
             setArenaState((prev) => ({
               ...prev,
@@ -853,19 +829,38 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             }))
             return
           }
-          console.error("[v0] Error saving player to database:", msg, code ? `(${code})` : "", details || hint || "")
-          toast.error(msg || t("arena.toastFailedToAddPlayer"))
+          console.error("[v0] Error saving player to database:", joinResult.error)
+          toast.error(joinResult.error || t("arena.toastFailedToAddPlayer"))
+          setArenaState((prev) => ({
+            ...prev,
+            players: prev.players.filter((p) => p.id !== newPlayer.id),
+          }))
+          return
+        }
+        if (joinResult.playerId && joinResult.playerId !== newPlayer.id) {
+          savedPlayerId = joinResult.playerId
+          setArenaState((prev) => ({
+            ...prev,
+            players: prev.players.map((p) =>
+              p.id === newPlayer.id ? { ...p, id: joinResult.playerId! } : p,
+            ),
+          }))
         }
       } catch (error) {
         const err = error as Record<string, unknown>
         const msg = (err?.message as string) ?? (error instanceof Error ? error.message : String(error))
         console.error("[v0] Error saving player to database:", msg, error)
         toast.error(msg || t("arena.toastFailedToAddPlayer"))
+        setArenaState((prev) => ({
+          ...prev,
+          players: prev.players.filter((p) => p.id !== newPlayer.id),
+        }))
+        return
       }
       if (isGuest && tournamentId && addToGuestHistory) {
         addGuestSession({
           tournamentId,
-          playerId: newPlayer.id,
+          playerId: savedPlayerId,
           displayName: name,
         })
       }
@@ -1084,37 +1079,30 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
     if (tournamentId) {
       try {
-        const supabase = createClient()
-        await supabase.from("players").insert({
-          id: newPlayer.id,
-          tournament_id: tournamentId,
+        const joinResult = await joinTournamentAction({
+          tournamentId,
           name: newPlayer.name,
-          user_id: currentUserId,
-          is_guest: false,
-          points: 0,
-          wins: 0,
-          draws: 0,
-          losses: 0,
-          games_played: 0,
-          white_count: 0,
-          black_count: 0,
-          current_streak: 0,
-          on_streak: false,
-          paused: false,
-          game_history: [],
-          opponents: [],
-          results: [],
-          colors: [],
-          points_earned: [],
-          table_numbers: [],
+          userId: currentUserId,
+          isGuest: false,
           rating: newPlayer.rating,
-          buchholz: newPlayer.buchholz ?? 0,
-          sonneborn_berger: newPlayer.sonnebornBerger ?? 0,
-          checked_in_at: checkedInAt != null ? new Date(checkedInAt).toISOString() : null,
-          presence_source: presenceSource,
+          checkedInAt: checkedInAt != null ? new Date(checkedInAt).toISOString() : null,
+          presenceSource,
+          playerId: newPlayer.id,
         })
+        if (!joinResult.success) {
+          console.error("[v0] Error saving player to database:", joinResult.error)
+          toast.error(joinResult.error || t("arena.toastFailedToAddPlayer"))
+          setArenaState((prev) => ({
+            ...prev,
+            players: prev.players.filter((p) => p.id !== newPlayer.id),
+          }))
+        }
       } catch (error) {
         console.error("[v0] Error saving player to database:", error)
+        setArenaState((prev) => ({
+          ...prev,
+          players: prev.players.filter((p) => p.id !== newPlayer.id),
+        }))
       }
     }
   }

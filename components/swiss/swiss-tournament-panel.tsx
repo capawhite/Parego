@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useI18n } from "@/components/i18n-provider"
 import { createClient } from "@/lib/supabase/client"
 import {
-  loadTournament,
   loadPlayers,
   loadMatches,
   savePlayers,
@@ -18,6 +17,7 @@ import {
   saveTournament,
   formatSupabaseError,
 } from "@/lib/database/tournament-db"
+import { fetchTournamentById, joinTournamentAction } from "@/app/actions/join-tournament"
 import { parseTournamentSettings } from "@/lib/tournament-settings"
 import {
   effectiveTableCountFromDb,
@@ -109,7 +109,7 @@ export function SwissTournamentPanel({ tournamentId }: { tournamentId: string })
 
   const flushSettingsToDb = useCallback(
     async (next: TournamentSettings) => {
-      const trow = await loadTournament(tournamentId)
+      const trow = await fetchTournamentById(tournamentId)
       if (!trow) return
       const tablesSave = Math.max(trow.tables_count ?? 0, next.tableCount ?? 0)
       await saveTournament(
@@ -159,7 +159,7 @@ export function SwissTournamentPanel({ tournamentId }: { tournamentId: string })
         clearTimeout(settingsSaveTimer.current)
         settingsSaveTimer.current = null
       }
-      const trow = await loadTournament(tournamentId)
+      const trow = await fetchTournamentById(tournamentId)
       if (!trow) return
       const nextSettings = { ...parseTournamentSettings(trow), tableCount: n }
       const tablesSave = Math.max(trow.tables_count ?? 0, n)
@@ -195,7 +195,7 @@ export function SwissTournamentPanel({ tournamentId }: { tournamentId: string })
   )
 
   const refresh = useCallback(async () => {
-    const trow = await loadTournament(tournamentId)
+    const trow = await fetchTournamentById(tournamentId)
     if (!trow) return
     setName(trow.name)
     setStatus(trow.status)
@@ -377,7 +377,7 @@ export function SwissTournamentPanel({ tournamentId }: { tournamentId: string })
       suppressUntil.current = Date.now() + 2000
       await savePlayers(tournamentId, nextPlayers, advanced)
       await saveMatches(tournamentId, nextMatches)
-      const trow = await loadTournament(tournamentId)
+      const trow = await fetchTournamentById(tournamentId)
       if (trow) {
         await saveTournament(
           tournamentId,
@@ -428,47 +428,23 @@ export function SwissTournamentPanel({ tournamentId }: { tournamentId: string })
         }
       }
       const id = `p-${Date.now()}`
-      const supabase = createClient()
       setAddingPlayer(true)
       try {
-        const { error: insertErr } = await supabase.from("players").insert({
-          id,
-          tournament_id: tournamentId,
+        const joinResult = await joinTournamentAction({
+          tournamentId,
           name: trimmed,
-          user_id: opts.userId ?? null,
-          is_guest: opts.isGuest,
-          points: 0,
-          wins: 0,
-          draws: 0,
-          losses: 0,
-          games_played: 0,
-          white_count: 0,
-          black_count: 0,
-          current_streak: 0,
-          on_streak: false,
-          paused: false,
-          game_history: [],
-          opponents: [],
-          results: [],
-          colors: [],
-          points_earned: [],
-          table_numbers: [],
-          rating: null,
-          buchholz: 0,
-          sonneborn_berger: 0,
-          is_paused: false,
-          is_removed: false,
-          device_id: null,
+          userId: opts.userId ?? null,
+          isGuest: opts.isGuest,
+          asOrganizer: isOrganizer,
+          playerId: id,
         })
-        if (insertErr) {
-          const err = insertErr as unknown as Record<string, unknown>
-          const code = (err.code as string) ?? ""
-          if (code === "23505") {
+        if (!joinResult.success) {
+          if (joinResult.errorCode === "ALREADY_JOINED") {
             toast.error(t("arena.toastAlreadyJoinedFromDevice"))
             return
           }
-          console.error(insertErr)
-          toast.error(formatSupabaseError(insertErr))
+          console.error(joinResult.error)
+          toast.error(joinResult.error || t("arena.toastFailedToAddPlayer"))
           return
         }
         toast.success(t("swiss.playerAdded", { name: trimmed }))
@@ -478,7 +454,7 @@ export function SwissTournamentPanel({ tournamentId }: { tournamentId: string })
         setAddingPlayer(false)
       }
     },
-    [players, status, settings, tablesCount, tournamentId, t, refresh],
+    [players, status, settings, tablesCount, tournamentId, t, refresh, isOrganizer],
   )
 
   const handleAddRandomGuest = () => {

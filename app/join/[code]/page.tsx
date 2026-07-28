@@ -5,11 +5,12 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { loadTournament, loadPlayers, playerNameExistsInTournament, type TournamentData } from "@/lib/database/tournament-db"
+import { loadPlayers, type TournamentData } from "@/lib/database/tournament-db"
 import { Loader2, Users, Trophy, MapPin, Check } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { checkVenueProximity } from "@/app/actions/check-in"
+import { fetchTournamentById, joinTournamentAction } from "@/app/actions/join-tournament"
 import { addGuestSession } from "@/lib/guest-session-history"
 import { toast } from "sonner"
 import { SIMPLE_LEVELS, resolveRating, type RatingBandValue } from "@/lib/rating-bands"
@@ -79,7 +80,7 @@ export default function JoinTournamentPage() {
   useEffect(() => {
     async function loadTournamentData() {
       try {
-        const data = await loadTournament(code)
+        const data = await fetchTournamentById(code)
         if (data) {
           setTournament(data)
           const players = await loadPlayers(code)
@@ -240,17 +241,6 @@ export default function JoinTournamentPage() {
         let finalName = isRegistered ? playerName.trim() : guestName.trim()
         const isGuest = !isRegistered
 
-        const nameTaken = await playerNameExistsInTournament(code, finalName)
-        if (nameTaken) {
-          setError(
-            t("join.errorNameTaken", {
-              name: finalName,
-            }),
-          )
-          setJoining(false)
-          return
-        }
-
         if (!isRegistered) {
           // Defensive: guest already joined in this session (localStorage)
           try {
@@ -269,49 +259,48 @@ export default function JoinTournamentPage() {
           }
         }
 
-        const supabase = createClient()
         const newPlayerId = globalThis.crypto.randomUUID()
         const deviceId = getDeviceId() || null
 
-        const { error: insertError } = await supabase.from("players").insert({
-          id: newPlayerId,
-          tournament_id: code,
+        const joinResult = await joinTournamentAction({
+          tournamentId: code,
           name: finalName,
-          user_id: isRegistered ? userId : null,
-          is_guest: isGuest,
-          points: 0,
-          wins: 0,
-          draws: 0,
-          losses: 0,
-          games_played: 0,
-          white_count: 0,
-          black_count: 0,
-          current_streak: 0,
-          on_streak: false,
-          paused: false,
-          game_history: [],
-          opponents: [],
-          results: [],
-          colors: [],
-          points_earned: [],
-          table_numbers: [],
-          checked_in_at: proximity.checkedInAt,
-          presence_source: proximity.presenceSource,
+          userId: isRegistered ? userId : null,
+          isGuest,
           rating: playerRating,
-          device_id: deviceId,
+          deviceId,
+          checkedInAt: proximity.checkedInAt,
+          presenceSource: proximity.presenceSource,
+          playerId: newPlayerId,
         })
 
-        if (insertError) {
-          if (insertError.code === "23505") {
-            setError(t("join.errorAlreadyJoinedFromDevice"))
+        if (!joinResult.success) {
+          if (joinResult.errorCode === "ALREADY_JOINED") {
+            setError(
+              joinResult.error?.toLowerCase().includes("device")
+                ? t("join.errorAlreadyJoinedFromDevice")
+                : t("join.errorAlreadyJoined"),
+            )
             setAlreadyJoined(true)
             setJoining(false)
             return
           }
-          console.error("[v0] Error joining tournament:", insertError)
+          if (joinResult.errorCode === "NAME_TAKEN") {
+            setError(t("join.errorNameTaken", { name: finalName }))
+            setJoining(false)
+            return
+          }
+          if (joinResult.errorCode === "RATE_LIMITED") {
+            setError(joinResult.error || t("join.errorFailedToJoinTryAgain"))
+            setJoining(false)
+            return
+          }
+          console.error("[v0] Error joining tournament:", joinResult.error)
           setError(t("join.errorFailedToJoinTryAgain"))
           return
         }
+
+        const joinedPlayerId = joinResult.playerId || newPlayerId
 
         setSuccess(true)
         localStorage.setItem(
@@ -319,7 +308,7 @@ export default function JoinTournamentPage() {
           JSON.stringify({
             tournamentId: code,
             playerName: finalName,
-            playerId: newPlayerId,
+            playerId: joinedPlayerId,
             role: "player",
             isGuest: isGuest,
           }),
@@ -328,7 +317,7 @@ export default function JoinTournamentPage() {
         if (isGuest) {
           addGuestSession({
             tournamentId: code,
-            playerId: newPlayerId,
+            playerId: joinedPlayerId,
             displayName: finalName,
           })
         }
