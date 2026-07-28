@@ -9,6 +9,7 @@ import { createAdminClient, adminClientMissingReason } from "@/lib/supabase/admi
 import { getSubmissionSide, type ResultType } from "@/lib/result-utils"
 import { calculatePointsFromSettings } from "@/lib/points"
 import { parseTournamentSettings } from "@/lib/tournament-settings"
+import { isSwissAlgorithm } from "@/lib/pairing/swiss"
 import type { SubmitErrorCode } from "@/lib/submit-error-codes"
 
 export type { SubmitErrorCode } from "@/lib/submit-error-codes"
@@ -220,7 +221,7 @@ export async function submitMatchResultImpl(
 
       const isP1Winner = agreedResult === "player1-win"
       const isP2Winner = agreedResult === "player2-win"
-      const swiss = settings.pairingAlgorithm === "fide-swiss"
+      const swiss = isSwissAlgorithm(settings.pairingAlgorithm)
       const streak1 = Number(p1Row.current_streak) || 0
       const streak2 = Number(p2Row.current_streak) || 0
       const newStreak1 = swiss ? 0 : isDraw ? 0 : isP1Winner ? streak1 + 1 : 0

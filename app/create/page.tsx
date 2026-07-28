@@ -14,8 +14,6 @@ import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
 
-const SWISS_UI_ENABLED = false
-
 export default function CreateTournamentPage() {
   const router = useRouter()
   const { t } = useI18n()
@@ -179,7 +177,7 @@ export default function CreateTournamentPage() {
         pairingAlgorithm,
         baseTimeMinutes,
         incrementSeconds,
-        ...(pairingAlgorithm === "fide-swiss"
+        ...(pairingAlgorithm === "swiss"
           ? {
               plannedSwissRounds,
               swissLastCompletedRound: 0,
@@ -191,7 +189,7 @@ export default function CreateTournamentPage() {
           : {}),
       }
 
-      const initialTablesCount = pairingAlgorithm === "fide-swiss" ? swissInitialTables : 0
+      const initialTablesCount = pairingAlgorithm === "swiss" ? swissInitialTables : 0
 
       await saveTournament(
         tournamentId,
@@ -208,11 +206,7 @@ export default function CreateTournamentPage() {
         startTime ? new Date(startTime).toISOString() : undefined,
       )
 
-      router.push(
-        pairingAlgorithm === "fide-swiss"
-          ? `/tournament/${tournamentId}/swiss`
-          : `/tournament/${tournamentId}`,
-      )
+      router.push(`/tournament/${tournamentId}`)
     } catch (error) {
       console.error("[v0] Error creating tournament:", error)
       toast.error(t("create.errorCreate"))
@@ -350,19 +344,19 @@ export default function CreateTournamentPage() {
                 <SelectContent>
                   <SelectItem value="all-vs-all">{t("create.pairingAllVsAll")}</SelectItem>
                   <SelectItem value="balanced-strength">{t("create.pairingArenaBalanced")}</SelectItem>
-                  {SWISS_UI_ENABLED && <SelectItem value="fide-swiss">{t("create.pairingSwiss")}</SelectItem>}
+                  <SelectItem value="swiss">{t("create.pairingSwiss")}</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
                 {pairingAlgorithm === "balanced-strength"
                   ? t("create.pairingArenaBalancedDescription")
-                  : pairingAlgorithm === "fide-swiss"
+                  : pairingAlgorithm === "swiss"
                     ? t("create.pairingSwissDescription")
                     : t("create.pairingAllVsAllDescription")}
               </p>
             </div>
 
-            {pairingAlgorithm === "fide-swiss" && (
+            {pairingAlgorithm === "swiss" && (
               <div className="space-y-2">
                 <Label htmlFor="swiss-rounds">{t("create.plannedSwissRoundsLabel")}</Label>
                 <Input

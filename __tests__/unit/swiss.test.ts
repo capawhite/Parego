@@ -1,0 +1,155 @@
+import { describe, it, expect } from "vitest"
+import {
+  applyPairingByeToPlayers,
+  canPairNextSwissRound,
+  createSwissRoundPairings,
+  isPairingByeMatch,
+  maybeAdvanceSwissLastCompletedRound,
+  nextSwissRoundToPair,
+} from "@/lib/pairing/swiss"
+import { DEFAULT_SETTINGS, PAIRING_BYE_PLAYER_ID, type Match, type Player } from "@/lib/types"
+
+function makePlayer(id: string, overrides: Partial<Player> = {}): Player {
+  return {
+    id,
+    name: id,
+    score: 0,
+    gamesPlayed: 0,
+    streak: 0,
+    performance: 0,
+    active: true,
+    paused: false,
+    joinedAt: 0,
+    opponentIds: [],
+    gameResults: [],
+    pieceColors: [],
+    pointsEarned: [],
+    tableNumbers: [],
+    ...overrides,
+  }
+}
+
+const swissSettings = {
+  ...DEFAULT_SETTINGS,
+  pairingAlgorithm: "swiss",
+  plannedSwissRounds: 5,
+  swissLastCompletedRound: 0,
+}
+
+describe("Club Swiss round gate", () => {
+  it("allows round 1 when no matches exist", () => {
+    expect(nextSwissRoundToPair(swissSettings, [])).toBe(1)
+    expect(canPairNextSwissRound(swissSettings, [])).toBe(true)
+  })
+
+  it("blocks when current round already has pairings", () => {
+    const a = makePlayer("a")
+    const b = makePlayer("b")
+    const matches: Match[] = [
+      {
+        id: "m1",
+        player1: a,
+        player2: b,
+        swissRound: 1,
+        matchKind: "play",
+        tableNumber: 1,
+      },
+    ]
+    expect(nextSwissRoundToPair(swissSettings, matches)).toBeNull()
+  })
+
+  it("allows next round only after prior play matches complete", () => {
+    const a = makePlayer("a")
+    const b = makePlayer("b")
+    const open: Match[] = [
+      {
+        id: "m1",
+        player1: a,
+        player2: b,
+        swissRound: 1,
+        matchKind: "play",
+        tableNumber: 1,
+      },
+    ]
+    expect(nextSwissRoundToPair({ ...swissSettings, swissLastCompletedRound: 0 }, open)).toBeNull()
+
+    const done: Match[] = [
+      {
+        ...open[0]!,
+        result: { winnerId: "a", isDraw: false, completed: true, completedAt: 1 },
+      },
+    ]
+    expect(nextSwissRoundToPair({ ...swissSettings, swissLastCompletedRound: 1 }, done)).toBe(2)
+  })
+
+  it("advances swissLastCompletedRound when all round matches finish", () => {
+    const a = makePlayer("a")
+    const b = makePlayer("b")
+    const matches: Match[] = [
+      {
+        id: "m1",
+        player1: a,
+        player2: b,
+        swissRound: 1,
+        matchKind: "play",
+        tableNumber: 1,
+        result: { winnerId: "a", isDraw: false, completed: true, completedAt: 1 },
+      },
+    ]
+    const advanced = maybeAdvanceSwissLastCompletedRound(swissSettings, matches)
+    expect(advanced.swissLastCompletedRound).toBe(1)
+  })
+})
+
+describe("createSwissRoundPairings", () => {
+  it("pairs even field and assigns tables", () => {
+    const players = [makePlayer("a"), makePlayer("b"), makePlayer("c"), makePlayer("d")]
+    const out = createSwissRoundPairings(players, [], swissSettings, 4)
+    expect(out.filter((m) => m.matchKind === "play")).toHaveLength(2)
+    expect(out.every((m) => m.swissRound === 1)).toBe(true)
+    expect(out.some(isPairingByeMatch)).toBe(false)
+  })
+
+  it("gives a pairing bye to odd field", () => {
+    const players = [makePlayer("a"), makePlayer("b"), makePlayer("c")]
+    const out = createSwissRoundPairings(players, [], swissSettings, 4)
+    expect(out.filter((m) => m.matchKind === "play")).toHaveLength(1)
+    const bye = out.find(isPairingByeMatch)
+    expect(bye).toBeTruthy()
+    expect(bye!.player2.id).toBe(PAIRING_BYE_PLAYER_ID)
+    expect(bye!.result?.completed).toBe(true)
+
+    const withBye = applyPairingByeToPlayers(bye!, players, swissSettings)
+    const recipient = withBye.find((p) => p.id === bye!.player1.id)!
+    expect(recipient.receivedPairingBye).toBe(true)
+    expect(recipient.score).toBe(1)
+  })
+
+  it("returns empty when rematch cannot be avoided", () => {
+    const a = makePlayer("a", { score: 1 })
+    const b = makePlayer("b", { score: 1 })
+    const history: Match[] = [
+      {
+        id: "prev",
+        player1: a,
+        player2: b,
+        swissRound: 1,
+        matchKind: "play",
+        tableNumber: 1,
+        result: { winnerId: "a", isDraw: false, completed: true, completedAt: 1 },
+      },
+    ]
+    const out = createSwissRoundPairings(
+      [a, b],
+      history,
+      { ...swissSettings, swissLastCompletedRound: 1, plannedSwissRounds: 3 },
+      4,
+    )
+    expect(out).toEqual([])
+  })
+
+  it("returns empty when not enough tables", () => {
+    const players = [makePlayer("a"), makePlayer("b"), makePlayer("c"), makePlayer("d")]
+    expect(createSwissRoundPairings(players, [], swissSettings, 1)).toEqual([])
+  })
+})

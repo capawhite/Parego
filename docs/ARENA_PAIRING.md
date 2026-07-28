@@ -40,11 +40,11 @@ Within each table’s queue, sort prefers **fewer games played**, then **longer 
 - **T3** (courtesy time to reach the board) — not modeled in code.
 - **Online scale** — No Lichess-style global min-cost matching; pairing stays table-list based per ARENACHESS.
 
-## Swiss (FIDE-style) — separate console
+## Club Swiss — round-gated in ArenaPanel
 
-Swiss tournaments use **`/tournament/[id]/swiss`** (the main tournament URL redirects when `pairingAlgorithm` is `fide-swiss`). Pairing is **manual per round** from the Swiss console, not the arena polling loop.
+Swiss tournaments use the same **`/tournament/[id]`** Arena shell. Pairing is **manual per round** via **Pair next round** (organizer server action), not the arena polling loop.
 
 - **Check-in** — If the tournament has a venue (lat/lon), only players with `checkedInAt` set count as eligible for pairing (same rule as arena eligibility).
 - **Tables** — You need at least `ceil(eligiblePlayers / 2)` table slots for a full round (`effectiveTableSlotsForPairing`).
 - **Scoring** — Swiss does **not** apply streak multipliers (`lib/points.ts`).
-- **Pairing module** — `lib/pairing/fide-swiss.ts`; schema: `matches.swiss_round`, `matches.match_kind`, optional bye flags on `players`.
+- **Pairing module** — `lib/pairing/swiss.ts` (Club Swiss v1; not FIDE/USCF certified). Schema: `matches.swiss_round`, `matches.match_kind`, optional bye flags on `players`. Legacy `fide-swiss` ids normalize to `swiss`.

@@ -1,3 +1,5 @@
+import { isSwissAlgorithm } from "@/lib/pairing/swiss"
+
 /**
  * Whether the client (or organizer poller) should run a pairing tick.
  * Pairing authority is organizer-only until a server ticker exists.
@@ -11,7 +13,7 @@ export function shouldRunPairingLoop(opts: {
   if (!opts.isOrganizer) return false
   if (!opts.isActive) return false
   if (opts.waitingForFinalResults) return false
-  if (opts.pairingAlgorithm === "fide-swiss") return false
+  if (isSwissAlgorithm(opts.pairingAlgorithm)) return false
   return true
 }
 

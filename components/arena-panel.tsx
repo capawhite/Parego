@@ -40,6 +40,14 @@ import {
 } from "@/lib/guest-session-history"
 import { ConversionPrompt, type ConversionTrigger } from "@/components/conversion-prompt"
 import { deleteTournament } from "@/app/actions/delete-tournament"
+import { pairSwissRound } from "@/app/actions/pair-swiss-round"
+import {
+  canPairNextSwissRound,
+  isSwissAlgorithm,
+  maybeAdvanceSwissLastCompletedRound,
+  nextSwissRoundToPair,
+} from "@/lib/pairing/swiss"
+import { loadPlayers, loadMatches } from "@/lib/database/tournament-db"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
 import { useRealtime } from "@/hooks/tournament/use-realtime"
@@ -101,12 +109,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [deletingTournament, setDeletingTournament] = useState(false)
   const [isFullScreenPairings, setIsFullScreenPairings] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  useEffect(() => {
-    if (isLoading || !tournamentId) return
-    if (arenaState.settings.pairingAlgorithm === "fide-swiss") {
-      router.replace(`/tournament/${tournamentId}/swiss`)
-    }
-  }, [isLoading, tournamentId, arenaState.settings.pairingAlgorithm, router])
   const [activeTab, setActiveTab] = useState("players")
   const [hasNewPairing, setHasNewPairing] = useState(false)
   // const [effectivePlayerView, setIsPlayerView] = useState(false) // Moved to props
@@ -119,6 +121,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [showEndDialog, setShowEndDialog] = useState(false)
   const [waitingForFinalResults, setWaitingForFinalResults] = useState(false)
   const [showSimulator, setShowSimulator] = useState(false)
+  const [swissPairBusy, setSwissPairBusy] = useState(false)
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [organizerId, setOrganizerId] = useState<string | null>(null)
@@ -508,6 +511,54 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     return 0
   })
 
+  const isSwiss = isSwissAlgorithm(arenaState.settings.pairingAlgorithm)
+  const allMatchesForSwiss = [...arenaState.pairedMatches, ...arenaState.allTimeMatches]
+  const nextSwissRound = isSwiss ? nextSwissRoundToPair(arenaState.settings, allMatchesForSwiss) : null
+  const plannedSwissRounds = arenaState.settings.plannedSwissRounds ?? 1
+  const openSwissRound = allMatchesForSwiss.reduce<number | null>((max, m) => {
+    if (m.swissRound == null || m.result?.completed || m.matchKind === "pairing-bye") return max
+    return max == null ? m.swissRound : Math.max(max, m.swissRound)
+  }, null)
+  const swissCurrentRound =
+    openSwissRound ??
+    nextSwissRound ??
+    Math.min(Math.max(arenaState.settings.swissLastCompletedRound ?? 0, 1), plannedSwissRounds)
+
+  const swissCanPair =
+    isOrganizer &&
+    arenaState.isActive &&
+    isSwiss &&
+    canPairNextSwissRound(arenaState.settings, allMatchesForSwiss)
+
+  const handlePairSwissRound = useCallback(async () => {
+    if (!tournamentId || !isOrganizer) return
+    setSwissPairBusy(true)
+    try {
+      const res = await pairSwissRound(tournamentId)
+      if (!res.success) {
+        toast.error(res.error || t("swiss.pairingFailed"))
+        return
+      }
+      toast.success(t("swiss.pairedRound", { round: res.round ?? "" }))
+      const [players, matches] = await Promise.all([loadPlayers(tournamentId), loadMatches(tournamentId)])
+      setArenaState((prev) => {
+        const settings = maybeAdvanceSwissLastCompletedRound(
+          { ...prev.settings, pairingAlgorithm: "swiss" },
+          matches,
+        )
+        return {
+          ...prev,
+          players,
+          pairedMatches: matches.filter((m) => !m.result?.completed),
+          allTimeMatches: matches.filter((m) => !!m.result?.completed),
+          settings,
+        }
+      })
+    } finally {
+      setSwissPairBusy(false)
+    }
+  }, [tournamentId, isOrganizer, setArenaState, t])
+
   const handleUpdateSettings = async (newSettings: TournamentSettings) => {
     setArenaState((prev) => ({
       ...prev,
@@ -692,7 +743,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             completionRatio={completionRatio}
             canEndTournament={permissions.canEndTournament}
             canAccessSettings={permissions.canAccessSettings}
-            showPairingStatusTab={isOrganizer && arenaState.isActive}
+            showPairingStatusTab={isOrganizer && arenaState.isActive && !isSwiss}
             onEndTournament={endTournament}
             onOpenDeleteDialog={() => setShowDeleteDialog(true)}
             onOpenSettings={() => setShowSettings(true)}
@@ -735,11 +786,22 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             <ArenaPairingsTab
               matches={sortedPendingMatches}
               onOpenFullScreen={() => setIsFullScreenPairings(true)}
+              swissControls={
+                isSwiss && isOrganizer
+                  ? {
+                      currentRound: swissCurrentRound,
+                      plannedRounds: plannedSwissRounds,
+                      canPairNext: swissCanPair,
+                      pairingBusy: swissPairBusy,
+                      onPairNextRound: handlePairSwissRound,
+                    }
+                  : null
+              }
             />
           </TabsContent>
 
           <TabsContent value="pairingStatus" className="space-y-3">
-            {isOrganizer && arenaState.isActive ? (
+            {isOrganizer && arenaState.isActive && !isSwiss ? (
               <ArenaPairingStatusPanel
                 arenaState={arenaState}
                 tournamentMetadata={tournamentMetadata}

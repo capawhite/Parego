@@ -1,7 +1,7 @@
 import type { PairingAlgorithm } from "./types"
 import { allVsAllAlgorithm } from "./all-vs-all"
 import { balancedStrengthAlgorithm } from "./balanced-strength"
-import { fideSwissAlgorithm } from "./fide-swiss"
+import { swissAlgorithm } from "./swiss"
 
 /**
  * Registry of all available pairing algorithms
@@ -9,7 +9,9 @@ import { fideSwissAlgorithm } from "./fide-swiss"
 export const pairingAlgorithms: Record<string, PairingAlgorithm> = {
   [allVsAllAlgorithm.id]: allVsAllAlgorithm,
   [balancedStrengthAlgorithm.id]: balancedStrengthAlgorithm,
-  [fideSwissAlgorithm.id]: fideSwissAlgorithm,
+  [swissAlgorithm.id]: swissAlgorithm,
+  // Legacy id — same engine during transition
+  "fide-swiss": swissAlgorithm,
 }
 
 /**
@@ -26,5 +28,4 @@ export function getPairingAlgorithm(algorithmId: string): PairingAlgorithm {
   return algorithm
 }
 
-// Re-export types
 export type { PairingAlgorithm } from "./types"

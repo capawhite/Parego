@@ -91,22 +91,26 @@ describe("recordOrganizerMatchResult", () => {
   })
 })
 
-describe("saveSwissRoundState", () => {
+describe("pairSwissRound", () => {
   it("rejects non-organizers", async () => {
     await mockClients(
       { user: { id: "random-user" } },
       {
         tables: {
-          tournaments: { data: { organizer_id: "org-1", owner_id: null, settings: {} } },
+          tournaments: {
+            data: {
+              organizer_id: "org-1",
+              owner_id: null,
+              status: "active",
+              settings: { pairingAlgorithm: "swiss", plannedSwissRounds: 5 },
+              tables_count: 8,
+            },
+          },
         },
       },
     )
-    const { saveSwissRoundState } = await import("@/app/actions/save-swiss-round")
-    const out = await saveSwissRoundState({
-      tournamentId: "t1",
-      players: [],
-      matches: [],
-    })
+    const { pairSwissRound } = await import("@/app/actions/pair-swiss-round")
+    const out = await pairSwissRound("t1")
     expect(out.success).toBe(false)
     expect(out.error).toMatch(/organizer/i)
   })

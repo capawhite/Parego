@@ -1,6 +1,6 @@
 import { ArenaPanel } from "@/components/arena-panel"
-import { loadTournamentServer, parseTournamentSettings } from "@/lib/database/tournament-db-server"
-import { notFound, redirect } from "next/navigation"
+import { loadTournamentServer } from "@/lib/database/tournament-db-server"
+import { notFound } from "next/navigation"
 
 export default async function TournamentPage({
   params,
@@ -13,11 +13,6 @@ export default async function TournamentPage({
 
   if (!tournament) {
     notFound()
-  }
-
-  const settings = parseTournamentSettings(tournament)
-  if (settings.pairingAlgorithm === "fide-swiss") {
-    redirect(`/tournament/${id}/swiss`)
   }
 
   return (

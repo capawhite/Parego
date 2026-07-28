@@ -44,6 +44,7 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
           }
 
           const hasDoublePointStreak =
+            settings.pairingAlgorithm !== "swiss" &&
             settings.pairingAlgorithm !== "fide-swiss" &&
             settings.streakEnabled &&
             streakBeforeThisGame >= 2

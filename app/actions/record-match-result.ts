@@ -88,6 +88,25 @@ export async function recordOrganizerMatchResult(input: {
     }
   }
 
+  // Advance Swiss completed-round counter when all games in a round are done
+  const { isSwissAlgorithm, maybeAdvanceSwissLastCompletedRound } = await import("@/lib/pairing/swiss")
+  const { settingsForPersistence } = await import("@/lib/tournament-settings")
+  if (isSwissAlgorithm(input.settings.pairingAlgorithm)) {
+    const advanced = maybeAdvanceSwissLastCompletedRound(
+      { ...input.settings, pairingAlgorithm: "swiss" },
+      allMatches,
+    )
+    if (advanced.swissLastCompletedRound !== input.settings.swissLastCompletedRound) {
+      await admin
+        .from("tournaments")
+        .update({
+          settings: settingsForPersistence(advanced),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", input.tournamentId)
+    }
+  }
+
   return { success: true }
 }
 

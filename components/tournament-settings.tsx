@@ -10,8 +10,6 @@ import { X } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
 import type { TournamentSettings } from "@/lib/types"
 
-const SWISS_UI_ENABLED = false
-
 interface TournamentSettingsProps {
   settings: TournamentSettings
   onUpdateSettings: (settings: TournamentSettings) => void
@@ -33,7 +31,7 @@ export function TournamentSettingsPanel({
   embedded = false,
 }: TournamentSettingsProps) {
   const { t } = useI18n()
-  const showSwissOption = SWISS_UI_ENABLED || settings.pairingAlgorithm === "fide-swiss"
+  const showSwissOption = true
   const updateSetting = <K extends keyof TournamentSettings>(key: K, value: TournamentSettings[K]) => {
     onUpdateSettings({ ...settings, [key]: value })
   }
@@ -61,7 +59,7 @@ export function TournamentSettingsPanel({
             <div className="space-y-3">
               <h3 className="text-base font-semibold">{t("settings.scoringSection")}</h3>
 
-              {settings.pairingAlgorithm === "fide-swiss" ? (
+              {settings.pairingAlgorithm === "swiss" ? (
                 <>
                   <p className="text-xs text-muted-foreground">{t("settings.swissScoringHelp")}</p>
                   <div className="grid grid-cols-3 gap-3 max-w-sm">
@@ -249,11 +247,10 @@ export function TournamentSettingsPanel({
                 <Select
                   value={settings.pairingAlgorithm || "all-vs-all"}
                   onValueChange={(v) => {
-                    if (v === "fide-swiss" && !SWISS_UI_ENABLED) return
-                    if (v === "fide-swiss") {
+                    if (v === "swiss") {
                       onUpdateSettings({
                         ...settings,
-                        pairingAlgorithm: "fide-swiss",
+                        pairingAlgorithm: "swiss",
                         plannedSwissRounds:
                           typeof settings.plannedSwissRounds === "number" && settings.plannedSwissRounds >= 1
                             ? settings.plannedSwissRounds
@@ -276,7 +273,7 @@ export function TournamentSettingsPanel({
                     <SelectItem value="all-vs-all">{t("settings.pairingAlgoAllVsAll")}</SelectItem>
                     <SelectItem value="balanced-strength">{t("settings.pairingAlgoArena")}</SelectItem>
                     {showSwissOption && (
-                      <SelectItem value="fide-swiss" disabled={!SWISS_UI_ENABLED}>
+                      <SelectItem value="swiss">
                         {t("settings.pairingAlgoSwiss")}
                       </SelectItem>
                     )}
@@ -285,7 +282,7 @@ export function TournamentSettingsPanel({
                 <p className="text-xs text-muted-foreground">
                   {settings.pairingAlgorithm === "balanced-strength"
                     ? t("settings.pairingAlgoHelpArena")
-                    : settings.pairingAlgorithm === "fide-swiss"
+                    : settings.pairingAlgorithm === "swiss"
                       ? t("settings.pairingAlgoHelpSwiss")
                       : t("settings.pairingAlgoHelpAllVsAll")}
                 </p>
@@ -306,7 +303,7 @@ export function TournamentSettingsPanel({
                 <p className="text-xs text-muted-foreground">{t("settings.tableSlotsHelp")}</p>
               </div>
 
-              {settings.pairingAlgorithm === "fide-swiss" && (
+              {settings.pairingAlgorithm === "swiss" && (
                 <div className="space-y-3 rounded-md border p-3 bg-muted/30">
                   <p className="text-sm font-medium">{t("settings.swissOptionsTitle")}</p>
                   <div className="space-y-1.5 max-w-[140px]">

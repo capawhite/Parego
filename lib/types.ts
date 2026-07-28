@@ -48,7 +48,7 @@ export interface Match {
   id: string
   player1: Player
   player2: Player
-  /** 1-based Swiss round when using fide-swiss */
+  /** 1-based Swiss round when using swiss pairing */
   swissRound?: number
   /** Normal game vs pairing-allocated bye (player2 is sentinel) */
   matchKind?: "play" | "pairing-bye"
@@ -123,7 +123,7 @@ export interface TournamentSettings {
   /** Arena T1 cap profile used to bound post-game cool-down. */
   t1CapPreset?: "fast" | "balanced" | "strict"
 
-  /** When pairingAlgorithm is fide-swiss: total rounds (e.g. 5). */
+  /** When pairingAlgorithm is swiss: total rounds (e.g. 5). */
   plannedSwissRounds?: number
   /** Rounds fully completed (all games in that round finished). */
   swissLastCompletedRound?: number

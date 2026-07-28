@@ -1,5 +1,6 @@
 import type { ArenaState, Match, Player, TournamentSettings } from "@/lib/types"
 import { getPairingAlgorithm } from "@/lib/pairing"
+import { isSwissAlgorithm } from "@/lib/pairing/swiss"
 import { isPlayerAvailableForPairing } from "@/lib/pairing/player-eligibility"
 import { effectiveTableSlotsForPairing } from "@/lib/tournament/effective-table-count"
 import { assignTablesToMatchesForState } from "@/lib/tournament/merge-matches"
@@ -26,7 +27,7 @@ export type PairTickResult = {
  */
 export function runPairTick(input: PairTickInput): PairTickResult {
   const algorithmId = input.settings.pairingAlgorithm || "all-vs-all"
-  if (algorithmId === "fide-swiss") {
+  if (isSwissAlgorithm(algorithmId)) {
     return { wouldPair: false, newMatches: [] }
   }
 

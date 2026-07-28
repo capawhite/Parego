@@ -1,7 +1,7 @@
 import type { Match, Player, TournamentSettings } from "@/lib/types"
 import { PAIRING_BYE_PLAYER_ID } from "@/lib/types"
 import { calculatePointsFromSettings } from "@/lib/points"
-import { isPairingByeMatch } from "@/lib/pairing/fide-swiss"
+import { isPairingByeMatch, isSwissAlgorithm } from "@/lib/pairing/swiss"
 
 export type ApplyMatchResultInput = {
   pairedMatches: Match[]
@@ -84,7 +84,7 @@ export function applyMatchResultToState(input: ApplyMatchResultInput): ApplyMatc
     const isWinner = input.winnerId === player.id
     const opponent = isPlayer1 ? match.player2 : match.player1
     const currentStreak = player.streak
-    const swiss = input.settings.pairingAlgorithm === "fide-swiss"
+    const swiss = isSwissAlgorithm(input.settings.pairingAlgorithm)
     let newStreak = player.streak
 
     if (swiss) {

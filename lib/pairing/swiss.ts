@@ -1,10 +1,17 @@
-import type { Player, Match, TournamentSettings } from "@/lib/types"
+/**
+ * Club Swiss v1 — score order, no rematch, upper↔lower half, colors, pairing bye.
+ * Not FIDE Dutch or USCF-certified. Round-gated: call only when the previous round is complete.
+ */
+
+import type { Match, Player, TournamentSettings } from "@/lib/types"
 import { PAIRING_BYE_PLAYER_ID } from "@/lib/types"
 import type { PairingAlgorithm } from "./types"
 import { bestOrientationForPair } from "./color-consecutive-cap"
 import { calculatePointsFromSettings } from "@/lib/points"
 
-export { PAIRING_BYE_PLAYER_ID }
+export function isSwissAlgorithm(algorithmId: string | undefined | null): boolean {
+  return algorithmId === "swiss" || algorithmId === "fide-swiss"
+}
 
 export function isPairingByeMatch(m: Match): boolean {
   return m.matchKind === "pairing-bye" || m.player2?.id === PAIRING_BYE_PLAYER_ID
@@ -34,45 +41,57 @@ function playedPairKey(aId: string, bId: string): string {
 function hasPlayedEachOther(a: Player, b: Player, historical: Match[]): boolean {
   const key = playedPairKey(a.id, b.id)
   for (const m of historical) {
-    if (m.matchKind === "pairing-bye" || isPairingByeMatch(m)) continue
+    if (isPairingByeMatch(m)) continue
     if (!m.player1?.id || !m.player2?.id) continue
-    const mk = playedPairKey(m.player1.id, m.player2.id)
-    if (mk === key) return true
+    if (playedPairKey(m.player1.id, m.player2.id) === key) return true
   }
   return false
 }
 
-/** Merge paired + all-time for Swiss round completion checks */
-export function mergeMatchesForSwiss(paired: Match[], allTime: Match[]): Match[] {
-  const map = new Map<string, Match>()
-  for (const m of paired) map.set(m.id, m)
-  for (const m of allTime) map.set(m.id, m)
-  return [...map.values()]
+function rankPlayers(players: Player[]): Player[] {
+  return [...players].sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score
+    const ra = a.rating ?? 0
+    const rb = b.rating ?? 0
+    if (rb !== ra) return rb - ra
+    return a.name.localeCompare(b.name)
+  })
 }
 
+/** Next round number to pair, or null if blocked / finished. */
 export function nextSwissRoundToPair(settings: TournamentSettings, allMatches: Match[]): number | null {
-  if (settings.pairingAlgorithm !== "fide-swiss") return null
+  if (!isSwissAlgorithm(settings.pairingAlgorithm)) return null
   const planned = settings.plannedSwissRounds ?? 1
   const last = settings.swissLastCompletedRound ?? 0
   const next = last + 1
   if (next > planned) return null
+
   const inRound = allMatches.filter((m) => m.swissRound === next)
-  if (inRound.some((m) => !m.result?.completed)) return null
   if (inRound.length > 0) return null
+
+  const priorPlay = allMatches.filter(
+    (m) => (m.swissRound ?? 0) > 0 && (m.swissRound ?? 0) < next && !isPairingByeMatch(m),
+  )
+  if (priorPlay.some((m) => !m.result?.completed)) return null
+
   return next
+}
+
+export function canPairNextSwissRound(settings: TournamentSettings, allMatches: Match[]): boolean {
+  return nextSwissRoundToPair(settings, allMatches) != null
 }
 
 export function maybeAdvanceSwissLastCompletedRound(
   settings: TournamentSettings,
   allMatches: Match[],
 ): TournamentSettings {
-  if (settings.pairingAlgorithm !== "fide-swiss") return settings
+  if (!isSwissAlgorithm(settings.pairingAlgorithm)) return settings
   const planned = settings.plannedSwissRounds ?? 1
   let completed = 0
   for (let r = 1; r <= planned; r++) {
     const inRound = allMatches.filter((m) => m.swissRound === r)
     if (inRound.length === 0) break
-    if (inRound.every((m) => m.result?.completed)) completed = r
+    if (inRound.every((m) => m.result?.completed || isPairingByeMatch(m))) completed = r
     else break
   }
   return { ...settings, swissLastCompletedRound: completed }
@@ -84,24 +103,32 @@ function pickByeRecipient(sortedByScore: Player[]): Player {
   return pool[pool.length - 1]!
 }
 
+/**
+ * Greedy Swiss pairing: walk score-sorted list; each player takes the next
+ * unpaired opponent who is as close in score as possible and not a rematch.
+ */
 function pairPlayMatches(
   pool: Player[],
   historical: Match[],
   settings: TournamentSettings,
   round: number,
   maxTables: number,
-): Match[] {
-  const remaining = [...pool]
+): Match[] | null {
+  const remaining = rankPlayers(pool)
   const matches: Match[] = []
   let table = 1
-  const capMode = settings.swissLastRoundColorRelax && round === (settings.plannedSwissRounds ?? 1) ? "relaxed" : "strict"
-  const longestWait = new Set(pool.map((p) => p.id))
   const priority = settings.colorBalancePriority ?? "high"
+  const capMode =
+    settings.swissLastRoundColorRelax && round === (settings.plannedSwissRounds ?? 1) ? "relaxed" : "strict"
+  const longestWait = new Set(pool.map((p) => p.id))
 
   while (remaining.length >= 2 && matches.length < maxTables) {
     const a = remaining.shift()!
     let bi = remaining.findIndex((p) => !hasPlayedEachOther(a, p, historical))
-    if (bi < 0) bi = 0
+    if (bi < 0) {
+      // Cannot avoid rematch for this player — fail the whole round
+      return null
+    }
     const b = remaining.splice(bi, 1)[0]!
     const orient =
       bestOrientationForPair(a, b, priority, capMode, longestWait) ??
@@ -110,9 +137,8 @@ function pairPlayMatches(
         blackPlayer: b,
         cost: 0,
       }
-    const id = `swiss-r${round}-${orient.whitePlayer.id}-${orient.blackPlayer.id}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
     matches.push({
-      id,
+      id: `swiss-r${round}-${orient.whitePlayer.id}-${orient.blackPlayer.id}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       player1: orient.whitePlayer,
       player2: orient.blackPlayer,
       swissRound: round,
@@ -121,22 +147,22 @@ function pairPlayMatches(
       startTime: Date.now(),
     })
   }
+
+  if (remaining.length > 0) return null
   return matches
 }
 
-export function createSwissPairingsForRound(
+export function createSwissRoundPairings(
   availablePlayers: Player[],
   allHistoricalMatches: Match[],
   settings: TournamentSettings,
   maxTables: number,
 ): Match[] {
-  const round = (settings.swissLastCompletedRound ?? 0) + 1
-  const planned = settings.plannedSwissRounds ?? 1
-  if (round > planned) return []
+  const round = nextSwissRoundToPair(settings, allHistoricalMatches)
+  if (round == null) return []
 
   let pool = availablePlayers.filter((p) => !p.hasLeft && !p.paused)
-  pool = [...pool].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-
+  pool = rankPlayers(pool)
   if (pool.length < 1) return []
 
   const playSlotsNeeded = Math.floor(pool.length / 2)
@@ -150,12 +176,12 @@ export function createSwissPairingsForRound(
   }
 
   const playMatches = pairPlayMatches(playPool, allHistoricalMatches, settings, round, maxTables)
-  if (playMatches.length < playSlotsNeeded) return []
+  if (!playMatches || playMatches.length !== playSlotsNeeded) return []
 
   const out: Match[] = [...playMatches]
   if (byePlayer) {
     const now = Date.now()
-    const byeMatch: Match = {
+    out.push({
       id: `swiss-bye-r${round}-${byePlayer.id}-${now}-${Math.random().toString(36).slice(2, 7)}`,
       player1: byePlayer,
       player2: byeOpponentPlayer(),
@@ -169,93 +195,54 @@ export function createSwissPairingsForRound(
         completed: true,
         completedAt: now,
       },
-    }
-    out.push(byeMatch)
+    })
   }
   return out
 }
 
-export const fideSwissAlgorithm: PairingAlgorithm = {
-  id: "fide-swiss",
-  name: "Swiss (FIDE-style)",
-  description: "Round-based Swiss pairings; use the Swiss console to pair each round",
-
-  createPairings(
-    availablePlayers: Player[],
-    allHistoricalMatches: Match[],
-    settings: TournamentSettings,
-    maxMatches?: number,
-    _totalPlayers?: number,
-  ): Match[] {
-    const tables = maxMatches ?? Math.ceil(availablePlayers.length / 2)
-    return createSwissPairingsForRound(availablePlayers, allHistoricalMatches, settings, tables)
-  },
-
-  shouldPair(): boolean {
-    return false
-  },
-
-  getPollingInterval(): number {
-    return 60_000
-  },
-
-  validateSettings(settings: TournamentSettings): { valid: boolean; errors: string[] } {
-    const errors: string[] = []
-    const n = settings.plannedSwissRounds ?? 0
-    if (n < 1) errors.push("Planned Swiss rounds must be at least 1")
-    return { valid: errors.length === 0, errors }
-  },
-}
-
-export function applyPairingByeToPlayers(byeMatch: Match, players: Player[], settings: TournamentSettings): Player[] {
+export function applyPairingByeToPlayers(
+  byeMatch: Match,
+  players: Player[],
+  settings: TournamentSettings,
+): Player[] {
   if (!isPairingByeMatch(byeMatch) || !byeMatch.result?.completed) return players
-  const pid = byeMatch.player1.id
-  const swiss = settings.pairingAlgorithm === "fide-swiss"
+  const winnerId = byeMatch.result.winnerId
+  if (!winnerId) return players
+
   return players.map((p) => {
-    if (p.id !== pid) return p
-    const pts = calculatePointsFromSettings(true, false, p.streak, settings)
+    if (p.id !== winnerId) return p
+    const points = calculatePointsFromSettings(true, false, 0, settings)
     return {
       ...p,
-      score: p.score + pts,
+      score: p.score + points,
       gamesPlayed: p.gamesPlayed + 1,
-      streak: swiss ? 0 : p.streak + 1,
-      gameResults: [...p.gameResults, "W"],
+      streak: 0,
       opponentIds: [...p.opponentIds, PAIRING_BYE_PLAYER_ID],
-      pointsEarned: [...(p.pointsEarned ?? []), pts],
-      tableNumbers: [...(p.tableNumbers ?? []), 0],
+      gameResults: [...p.gameResults, "W" as const],
+      pointsEarned: [...(p.pointsEarned || []), points],
+      tableNumbers: [...(p.tableNumbers || []), 0],
       receivedPairingBye: true,
     }
   })
 }
 
-export function getSwissPairingBlockReason(input: {
-  settings: TournamentSettings
-  players: Player[]
-  hasVenue: boolean
-  tableSlots: number
-  allMatches: Match[]
-}): string | null {
-  const { settings, players, hasVenue, tableSlots, allMatches } = input
-  if (settings.pairingAlgorithm !== "fide-swiss") return null
-  const planned = settings.plannedSwissRounds ?? 1
-  const last = settings.swissLastCompletedRound ?? 0
-  if (last >= planned) return "swiss.blockAllRoundsComplete"
-
-  const next = last + 1
-  const inNext = allMatches.filter((m) => m.swissRound === next)
-  if (inNext.some((m) => !m.result?.completed)) return "swiss.blockFinishCurrentRound"
-
-  const nextR = nextSwissRoundToPair(settings, allMatches)
-  if (nextR === null) return "swiss.blockUnknown"
-
-  const active = players.filter((p) => !p.hasLeft && !p.paused)
-  const eligible = active.filter((p) => !hasVenue || p.checkedInAt != null)
-  if (active.length >= 2 && eligible.length === 0) return "swiss.blockCheckIn"
-
-  if (eligible.length < 2) return "swiss.blockNeedTwoPlayers"
-
-  const needTables = Math.ceil(eligible.length / 2)
-  if (tableSlots < needTables) return "swiss.blockNotEnoughTables"
-
-  return null
+export const swissAlgorithm: PairingAlgorithm = {
+  id: "swiss",
+  name: "Swiss",
+  description: "Round-based club Swiss: pair after each round completes. Not FIDE/USCF certified.",
+  createPairings(availablePlayers, allHistoricalMatches, settings, maxMatches) {
+    return createSwissRoundPairings(availablePlayers, allHistoricalMatches, settings, maxMatches ?? 999)
+  },
+  shouldPair() {
+    return false
+  },
+  getPollingInterval() {
+    return 60_000
+  },
+  validateSettings(settings) {
+    const errors: string[] = []
+    const planned = settings.plannedSwissRounds ?? 0
+    if (planned < 1 || planned > 99) errors.push("plannedSwissRounds must be 1–99")
+    return { valid: errors.length === 0, errors }
+  },
 }

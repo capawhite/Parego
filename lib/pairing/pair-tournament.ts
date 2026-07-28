@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS } from "@/lib/types"
 import { parseTournamentSettings } from "@/lib/tournament-settings"
 import { mapDbPlayerRow, mapDbMatchRow, matchesToDbRows } from "@/lib/database/row-mappers"
 import { runPairTick } from "@/lib/pairing/run-pair-tick"
+import { isSwissAlgorithm } from "@/lib/pairing/swiss"
 import { createAdminClient, adminClientMissingReason } from "@/lib/supabase/admin"
 import {
   claimPairingLease,
@@ -66,8 +67,8 @@ export async function pairTournamentImpl(
     ...parseTournamentSettings(tournament),
   }
 
-  if (settings.pairingAlgorithm === "fide-swiss") {
-    return { success: false, error: "Swiss pairings are created from the Swiss console" }
+  if (isSwissAlgorithm(settings.pairingAlgorithm)) {
+    return { success: false, error: "Swiss pairings use Pair next round" }
   }
 
   const holder = pairingLeaseHolderId(mode, organizerUserId)
@@ -200,7 +201,7 @@ export async function pairActiveTournamentsImpl(
 
   const arenaIds = (rows ?? []).filter((row) => {
     const settings = parseTournamentSettings(row)
-    return settings.pairingAlgorithm !== "fide-swiss"
+    return !isSwissAlgorithm(settings.pairingAlgorithm)
   })
 
   const results: PairActiveSummary["results"] = []

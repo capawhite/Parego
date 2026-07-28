@@ -53,7 +53,10 @@ export function parseTournamentSettings(raw: {
       typeof s.autoEndAtCompletion === "boolean" ? s.autoEndAtCompletion : DEFAULT_SETTINGS.autoEndAtCompletion,
     completionThreshold:
       typeof s.completionThreshold === "number" ? s.completionThreshold : DEFAULT_SETTINGS.completionThreshold,
-    pairingAlgorithm: typeof s.pairingAlgorithm === "string" ? s.pairingAlgorithm : DEFAULT_SETTINGS.pairingAlgorithm,
+    pairingAlgorithm: (() => {
+      const rawAlgo = typeof s.pairingAlgorithm === "string" ? s.pairingAlgorithm : DEFAULT_SETTINGS.pairingAlgorithm
+      return rawAlgo === "fide-swiss" ? "swiss" : rawAlgo
+    })(),
     allowRematchToReduceWait:
       typeof s.allowRematchToReduceWait === "boolean"
         ? s.allowRematchToReduceWait

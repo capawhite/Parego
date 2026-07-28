@@ -28,13 +28,13 @@ describe("shouldRunPairingLoop", () => {
     ).toBe(true)
   })
 
-  it("skips fide-swiss and waiting-for-final", () => {
+  it("skips swiss and waiting-for-final", () => {
     expect(
       shouldRunPairingLoop({
         isOrganizer: true,
         isActive: true,
         waitingForFinalResults: false,
-        pairingAlgorithm: "fide-swiss",
+        pairingAlgorithm: "swiss",
       }),
     ).toBe(false)
     expect(

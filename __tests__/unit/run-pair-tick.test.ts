@@ -21,12 +21,12 @@ function p(id: string): Player {
 }
 
 describe("runPairTick", () => {
-  it("returns empty for fide-swiss", () => {
+  it("returns empty for swiss", () => {
     const out = runPairTick({
       players: [p("a"), p("b")],
       pairedMatches: [],
       allTimeMatches: [],
-      settings: { ...DEFAULT_SETTINGS, pairingAlgorithm: "fide-swiss" },
+      settings: { ...DEFAULT_SETTINGS, pairingAlgorithm: "swiss" },
       tableCount: 4,
       hasVenue: false,
     })

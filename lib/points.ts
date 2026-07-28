@@ -1,8 +1,9 @@
 import type { TournamentSettings } from "@/lib/types"
+import { isSwissAlgorithm } from "@/lib/pairing/swiss"
 
 /** Win / draw / loss for the active pairing mode (Swiss vs arena). */
 export function activeScoringTriple(settings: TournamentSettings): { win: number; draw: number; loss: number } {
-  if (settings.pairingAlgorithm === "fide-swiss") {
+  if (isSwissAlgorithm(settings.pairingAlgorithm)) {
     return {
       win: settings.swissWinPoints ?? 1,
       draw: settings.swissDrawPoints ?? 0.5,
@@ -18,7 +19,7 @@ export function activeScoringTriple(settings: TournamentSettings): { win: number
 
 /**
  * Calculate points for a single game result from tournament settings.
- * Swiss uses swiss* points (default FIDE-style); arena uses win/draw/loss + optional streak.
+ * Swiss uses swiss* points; arena uses win/draw/loss + optional streak.
  */
 export function calculatePointsFromSettings(
   isWinner: boolean,
@@ -35,7 +36,7 @@ export function calculatePointsFromSettings(
   } else {
     basePoints = loss
   }
-  if (settings.pairingAlgorithm === "fide-swiss") {
+  if (isSwissAlgorithm(settings.pairingAlgorithm)) {
     return basePoints
   }
   if (settings.streakEnabled && currentStreak >= 2) {
@@ -52,7 +53,7 @@ export function pointsEarnedFromGameResults(
   settings: TournamentSettings,
 ): number[] {
   const out: number[] = []
-  const swiss = settings.pairingAlgorithm === "fide-swiss"
+  const swiss = isSwissAlgorithm(settings.pairingAlgorithm)
   let streak = 0
   for (const r of gameResults) {
     const isDraw = r === "D"
