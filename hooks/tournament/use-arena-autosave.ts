@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect } from "react"
-import { savePlayers, saveTournament } from "@/lib/database/tournament-db"
+import { saveTournament } from "@/lib/database/tournament-db"
+import { settingsForPersistence } from "@/lib/tournament-settings"
 import type { ArenaState } from "@/lib/types"
 
 const DEBUG = process.env.NODE_ENV === "development"
@@ -26,7 +27,9 @@ type UseArenaAutosaveOptions = {
   suppressRealtime: () => void
 }
 
-/** Debounced organizer autosave of tournament + players. */
+/** Debounced organizer autosave of tournament metadata/settings only.
+ * Player scores are never written here (server-owned via match APIs / organizer actions).
+ */
 export function useArenaAutosave({
   tournamentId,
   isLoading,
@@ -38,6 +41,9 @@ export function useArenaAutosave({
   currentUserId,
   suppressRealtime,
 }: UseArenaAutosaveOptions): void {
+  // Exclude ephemeral heartbeat so pair ticks don't retrigger settings writes.
+  const settingsPersistKey = JSON.stringify(settingsForPersistence(arenaState.settings))
+
   useEffect(() => {
     if (!tournamentId || isLoading || !isOrganizer) return
 
@@ -58,7 +64,7 @@ export function useArenaAutosave({
           displayName,
           statusToSave,
           arenaState.tableCount,
-          arenaState.settings,
+          settingsForPersistence(arenaState.settings),
           tournamentMetadata?.city,
           tournamentMetadata?.country,
           organizerId ?? currentUserId ?? undefined,
@@ -67,7 +73,6 @@ export function useArenaAutosave({
           tournamentMetadata?.visibility ?? "public",
           startTimeIso,
         )
-        await savePlayers(tournamentId, arenaState.players, arenaState.settings)
         if (DEBUG) console.log("[v0] Tournament auto-saved to database")
       } catch (error) {
         console.error("[v0] Error auto-saving tournament:", error)
@@ -76,13 +81,13 @@ export function useArenaAutosave({
 
     const debounceTimer = setTimeout(saveToDatabase, 1000)
     return () => clearTimeout(debounceTimer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- settingsPersistKey stands in for settings
   }, [
     tournamentId,
     displayName,
-    arenaState.players,
     arenaState.isActive,
     arenaState.tableCount,
-    arenaState.settings,
+    settingsPersistKey,
     arenaState.tournamentDuration,
     arenaState.status,
     arenaState.tournamentStartTime,

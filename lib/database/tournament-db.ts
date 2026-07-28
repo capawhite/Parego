@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/client"
 import { haversineKm } from "@/lib/geo"
 import { pointsEarnedFromGameResults } from "@/lib/points"
-import { parseTournamentSettings } from "@/lib/tournament-settings"
+import { parseTournamentSettings, settingsForPersistence } from "@/lib/tournament-settings"
 import { DEFAULT_SETTINGS, type Player, type Match, type TournamentSettings } from "@/lib/types"
 
 /** Extract readable message from Supabase/PostgrestError (whose props may be non-enumerable). */
@@ -30,6 +30,7 @@ export interface TournamentData {
   visibility?: "public" | "private"
   start_time?: string
   presence_radius_m?: number | null // GPS check-in radius in meters; null = app default
+  pairing_heartbeat_at?: string | null
 }
 
 // Save tournament to database
@@ -56,7 +57,7 @@ export async function saveTournament(
       name,
       status,
       tables_count: tablesCount,
-      settings,
+      settings: settingsForPersistence(settings),
       city,
       country,
       organizer_id: organizerId,
@@ -107,7 +108,7 @@ export async function listTournaments(
 ): Promise<TournamentData[]> {
   const supabase = createClient()
 
-  let query = supabase.from("tournaments").select("*")
+  let query = supabase.from("tournaments").select("*").eq("visibility", "public")
 
   if (filters?.country) {
     query = query.eq("country", filters.country)

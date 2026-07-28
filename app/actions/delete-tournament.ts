@@ -26,7 +26,7 @@ export async function deleteTournament(tournamentId: string): Promise<DeleteTour
 
   const { data: tournament, error: fetchError } = await supabase
     .from("tournaments")
-    .select("organizer_id")
+    .select("organizer_id, owner_id")
     .eq("id", tournamentId)
     .maybeSingle()
 
@@ -34,7 +34,7 @@ export async function deleteTournament(tournamentId: string): Promise<DeleteTour
     return { success: false, error: "Tournament not found" }
   }
 
-  if (tournament.organizer_id !== user.id) {
+  if (tournament.organizer_id !== user.id && tournament.owner_id !== user.id) {
     return { success: false, error: "Only the tournament organizer can delete this tournament" }
   }
 

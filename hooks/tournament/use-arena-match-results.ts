@@ -2,13 +2,13 @@
 
 import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from "react"
 import { toast } from "sonner"
+import { recordOrganizerMatchResult, saveOrganizerPlayerScores } from "@/app/actions/record-match-result"
 import { beginMatchResultRecording, releaseMatchResultRecording } from "@/lib/match-result-recording"
 import { applyMatchResultToState } from "@/lib/tournament/apply-match-result"
-import { mergeMatchesForSave } from "@/lib/tournament/merge-matches"
 import { calculatePointsFromSettings } from "@/lib/points"
-import { formatSupabaseError, loadPlayers, saveMatches, savePlayers } from "@/lib/database/tournament-db"
+import { loadPlayers } from "@/lib/database/tournament-db"
 import { messageForSubmitResponse } from "@/lib/submit-client-message"
-import type { ArenaState, Match, MatchResult, Player } from "@/lib/types"
+import type { ArenaState, Match, Player } from "@/lib/types"
 import type { ConversionTrigger } from "@/components/conversion-prompt"
 import type { useI18n } from "@/components/i18n-provider"
 import { getConversionPromptDismissed } from "@/lib/guest-session-history"
@@ -58,6 +58,7 @@ type UseArenaMatchResultsOptions = {
 
 /**
  * Match result recording / player dual-submit / organizer override for ArenaPanel.
+ * Organizer score writes go through service-role actions; player dual-agree via submit API.
  */
 export function useArenaMatchResults({
   tournamentId,
@@ -77,7 +78,7 @@ export function useArenaMatchResults({
   t,
 }: UseArenaMatchResultsOptions) {
   const recordResult = useCallback(
-    async (matchId: string, winnerId: string | undefined, isDraw: boolean, skipDbWrite = false) => {
+    async (matchId: string, winnerId: string | undefined, isDraw: boolean) => {
       if (DEBUG) console.log("[v0] Recording result for match:", matchId, "isDraw:", isDraw, "winnerId:", winnerId)
 
       if (!beginMatchResultRecording(matchId, recordedCompletedMatchIdsRef.current)) return
@@ -85,6 +86,8 @@ export function useArenaMatchResults({
       let newPairedMatches: Match[] = []
       let newAllTimeMatches: Match[] = []
       let newPlayers: Player[] = []
+      let settingsSnapshot = arenaState.settings
+      let appliedOk = false
 
       setArenaState((prev) => {
         const applied = applyMatchResultToState({
@@ -105,9 +108,11 @@ export function useArenaMatchResults({
           return prev
         }
 
+        appliedOk = true
         newPairedMatches = applied.pairedMatches
         newAllTimeMatches = applied.allTimeMatches
         newPlayers = applied.players
+        settingsSnapshot = prev.settings
 
         if (waitingForFinalResults) {
           const remainingMatches = newPairedMatches.filter((m) => m.id !== matchId && !m.result?.completed)
@@ -117,15 +122,6 @@ export function useArenaMatchResults({
           }
         }
 
-        if (tournamentId && isOrganizer && !skipDbWrite) {
-          savePlayers(tournamentId, newPlayers, prev.settings).catch((err) => {
-            console.error("[v0] Error saving players after match completion:", formatSupabaseError(err))
-          })
-          saveMatches(tournamentId, mergeMatchesForSave(newPairedMatches, newAllTimeMatches)).catch((err) => {
-            console.error("[v0] Error saving matches after match completion:", formatSupabaseError(err))
-          })
-        }
-
         return {
           ...prev,
           pairedMatches: newPairedMatches,
@@ -133,6 +129,22 @@ export function useArenaMatchResults({
           players: newPlayers,
         }
       })
+
+      if (tournamentId && isOrganizer && appliedOk) {
+        const res = await recordOrganizerMatchResult({
+          tournamentId,
+          matchId,
+          winnerId,
+          isDraw,
+          players: newPlayers,
+          pairedMatches: newPairedMatches,
+          allTimeMatches: newAllTimeMatches,
+          settings: settingsSnapshot,
+        })
+        if (!res.success) {
+          toast.error(res.error || t("arena.toastResultSubmitFailed"))
+        }
+      }
     },
     [
       recordedCompletedMatchIdsRef,
@@ -141,6 +153,8 @@ export function useArenaMatchResults({
       isOrganizer,
       finalizeEndTournament,
       tournamentId,
+      arenaState.settings,
+      t,
     ],
   )
 
@@ -275,21 +289,7 @@ export function useArenaMatchResults({
             }
           }),
         }))
-
-        if (
-          updatedMatch.player1_submission &&
-          updatedMatch.player2_submission &&
-          updatedMatch.player1_submission === updatedMatch.player2_submission &&
-          !response.matchCompleted
-        ) {
-          const isDraw = updatedMatch.player1_submission === "draw"
-          const winnerId = isDraw
-            ? undefined
-            : updatedMatch.player1_submission === "player1-win"
-              ? updatedMatch.player1_id
-              : updatedMatch.player2_id
-          await recordResult(matchId, winnerId, isDraw)
-        }
+        // Dual-agree completion is server-owned; no client recordResult fallback.
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
         console.error("[result-submit] Request failed:", msg, error)
@@ -316,7 +316,6 @@ export function useArenaMatchResults({
       tournamentId,
       setArenaState,
       setPlayerSubmissions,
-      recordResult,
     ],
   )
 
@@ -333,6 +332,8 @@ export function useArenaMatchResults({
 
   const overrideResult = useCallback(
     async (playerId: string, gameIndex: number, newResult: "W" | "D" | "L") => {
+      let updatedPlayers: Player[] | null = null
+
       setArenaState((prev) => {
         const player = prev.players.find((p) => p.id === playerId)
         if (!player || gameIndex >= player.gameResults.length) return prev
@@ -386,7 +387,7 @@ export function useArenaMatchResults({
         oppResults[opponentGameIndex] = newOpponentResult
         const o = recalcAll(oppResults)
 
-        const updatedPlayers = prev.players.map((pl) => {
+        updatedPlayers = prev.players.map((pl) => {
           if (pl.id === playerId) {
             return { ...pl, score: p.total, streak: p.streak, gameResults: playerResults, pointsEarned: p.earned }
           }
@@ -396,60 +397,17 @@ export function useArenaMatchResults({
           return pl
         })
 
-        if (tournamentId) {
-          savePlayers(tournamentId, updatedPlayers, prev.settings).catch((err) => {
-            console.error("[v0] Error saving players after override:", formatSupabaseError(err))
-          })
-        }
-
         return { ...prev, players: updatedPlayers }
       })
-    },
-    [setArenaState, tournamentId],
-  )
 
-  const completeMatch = useCallback(
-    (matchId: string, result: MatchResult) => {
-      setArenaState((prev) => {
-        const updated = { ...prev }
-        const matchIndex = updated.pairedMatches.findIndex((m) => m.id === matchId)
-        if (matchIndex !== -1) {
-          updated.pairedMatches[matchIndex].result = result
+      if (tournamentId && isOrganizer && updatedPlayers) {
+        const res = await saveOrganizerPlayerScores({ tournamentId, players: updatedPlayers })
+        if (!res.success) {
+          toast.error(res.error || t("arena.toastResultSubmitFailed"))
         }
-
-        updated.players = updated.players.map((player) => {
-          const hadMatchJustCompleted = updated.pairedMatches.some(
-            (m) =>
-              m.id === matchId && m.result?.completed && (m.player1.id === player.id || m.player2.id === player.id),
-          )
-          if (hadMatchJustCompleted) {
-            if (player.markedForRemoval) {
-              return { ...player, hasLeft: true, active: false }
-            }
-            if (player.markedForPause) {
-              return { ...player, paused: true, markedForPause: false }
-            }
-          }
-          return player
-        })
-
-        updated.players = updated.players.filter((p) => !p.markedForRemoval || p.hasLeft)
-
-        if (tournamentId && isOrganizer) {
-          savePlayers(tournamentId, updated.players, updated.settings).catch((err) => {
-            console.error("[v0] Error saving players after match completion:", formatSupabaseError(err))
-          })
-          saveMatches(tournamentId, mergeMatchesForSave(updated.pairedMatches, updated.allTimeMatches)).catch(
-            (err) => {
-              console.error("[v0] Error saving matches after match completion:", formatSupabaseError(err))
-            },
-          )
-        }
-
-        return updated
-      })
+      }
     },
-    [setArenaState, tournamentId, isOrganizer],
+    [setArenaState, tournamentId, isOrganizer, t],
   )
 
   return {
@@ -458,6 +416,5 @@ export function useArenaMatchResults({
     handlePlayerConfirm,
     handlePlayerCancel,
     overrideResult,
-    completeMatch,
   }
 }

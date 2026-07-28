@@ -37,6 +37,7 @@ export type JoinTournamentResult = {
     | "UNAUTHORIZED"
     | "MISCONFIGURED"
     | "INSERT_FAILED"
+    | "DEVICE_REQUIRED"
   playerId?: string
 }
 
@@ -111,17 +112,29 @@ export async function joinTournamentAction(input: JoinTournamentInput): Promise<
     }
   }
 
+  const deviceId =
+    typeof input.deviceId === "string" && input.deviceId.trim() ? input.deviceId.trim() : null
+
+  // Guest joins must carry device_id (uniqueness + rate limits). Organizer-added guests may omit.
+  if (!asOrganizer && input.isGuest && !deviceId) {
+    return {
+      success: false,
+      error: "Device id required to join as guest",
+      errorCode: "DEVICE_REQUIRED",
+    }
+  }
+
   // Rate limits (public joins only — organizers adding field may batch)
   if (!asOrganizer) {
     const sinceWindow = new Date(Date.now() - WINDOW_MS).toISOString()
     const sinceMinute = new Date(Date.now() - 60_000).toISOString()
     const ipKey = hashIp(await clientIp())
 
-    if (input.deviceId) {
+    if (deviceId) {
       const { count } = await admin
         .from("players")
         .select("id", { count: "exact", head: true })
-        .eq("device_id", input.deviceId)
+        .eq("device_id", deviceId)
         .gte("created_at", sinceWindow)
       if ((count ?? 0) >= MAX_JOINS_PER_DEVICE_WINDOW) {
         return { success: false, error: "Too many joins from this device. Try again later.", errorCode: "RATE_LIMITED" }
@@ -161,12 +174,12 @@ export async function joinTournamentAction(input: JoinTournamentInput): Promise<
     }
   }
 
-  if (input.deviceId && !asOrganizer) {
+  if (deviceId && !asOrganizer) {
     const { data: existingDevice } = await admin
       .from("players")
       .select("id")
       .eq("tournament_id", input.tournamentId)
-      .eq("device_id", input.deviceId)
+      .eq("device_id", deviceId)
       .maybeSingle()
     if (existingDevice) {
       return {
@@ -213,7 +226,7 @@ export async function joinTournamentAction(input: JoinTournamentInput): Promise<
     checked_in_at: input.checkedInAt,
     presence_source: input.presenceSource ?? null,
     rating: input.rating ?? null,
-    device_id: input.deviceId || null,
+    device_id: deviceId,
     is_paused: false,
     is_removed: false,
   }

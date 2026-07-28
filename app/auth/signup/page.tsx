@@ -12,7 +12,8 @@ import { signUp, checkEmailAvailable } from "./actions"
 import { ChevronLeft, ChevronRight, Loader2, Home, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
-import { claimGuestHistory } from "@/app/actions/claim-guest-history"
+import { claimGuestHistoryForDevice } from "@/app/actions/claim-guest-history"
+import { getDeviceId } from "@/lib/device-id"
 import { getGuestSessionHistory, clearGuestSessionHistory } from "@/lib/guest-session-history"
 import { useI18n } from "@/components/i18n-provider"
 import { SIMPLE_LEVELS, type SimpleLevelValue } from "@/lib/rating-bands"
@@ -97,7 +98,7 @@ export default function SignUpPage() {
       const guestSessions = getGuestSessionHistory()
       if (guestSessions.length > 0) {
         const playerIds = guestSessions.map((s) => s.playerId)
-        const claim = await claimGuestHistory(playerIds)
+        const claim = await claimGuestHistoryForDevice(playerIds, getDeviceId())
         clearGuestSessionHistory()
         if (claim.success && claim.claimedCount && claim.claimedCount > 0) {
           const key = claim.claimedCount === 1 ? "auth.loginClaimSingle" : "auth.loginClaimMultiple"

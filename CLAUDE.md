@@ -16,7 +16,7 @@ Live at: https://parego.onrender.com
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 14 (App Router, RSC enabled) |
+| Framework | Next.js 16 (App Router, RSC enabled) |
 | Language | TypeScript (strict) |
 | UI Components | shadcn/ui — "new-york" style |
 | Icons | Lucide React |

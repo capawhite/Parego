@@ -37,7 +37,7 @@ The pairing logic lives in `lib/` (the `OldPairingAlgo/` directory contains the 
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 14 (App Router) |
+| Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
 | Database & Auth | Supabase (PostgreSQL + Row Level Security) |
 | DB Migrations | PLpgSQL (managed in `/supabase`) |

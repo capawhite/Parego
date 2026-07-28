@@ -39,12 +39,7 @@ export async function claimPairingLease(
   })
   if (error) {
     console.error("[pairing-lease] claim failed:", error)
-    // Fail open only if RPC missing (migration not applied yet) — prefer skip? Fail closed is safer
-    // once shipped; during rollout without SQL, pairings would stop. Fail open with warning:
-    if (error.message?.includes("claim_pairing_lease") || error.code === "PGRST202") {
-      console.warn("[pairing-lease] RPC missing — pairing without lease (apply migration)")
-      return true
-    }
+    // Fail closed — missing/broken lease RPC must not allow concurrent pair ticks.
     return false
   }
   return data === true

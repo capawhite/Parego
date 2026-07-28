@@ -211,11 +211,11 @@ export async function pairTournamentImpl(
     })
 
     const heartbeatAt = new Date().toISOString()
-    const nextSettings = { ...settings, pairingHeartbeatAt: heartbeatAt }
 
+    // Dedicated column — avoids settings JSON churn that used to trigger client autosave.
     await admin
       .from("tournaments")
-      .update({ settings: nextSettings })
+      .update({ pairing_heartbeat_at: heartbeatAt })
       .eq("id", tournamentId)
 
     if (tick.newMatches.length === 0) {

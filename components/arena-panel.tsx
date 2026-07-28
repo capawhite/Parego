@@ -44,7 +44,6 @@ import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
 import { useRealtime } from "@/hooks/tournament/use-realtime"
 import { usePairingLoop } from "@/hooks/tournament/use-pairing-loop"
-import { useMatchPersistence } from "@/hooks/tournament/use-match-persistence"
 import { usePlayerSubmit } from "@/hooks/tournament/use-player-submit"
 import { useTournamentLifecycle } from "@/hooks/tournament/use-tournament-lifecycle"
 import { useArenaPlayers } from "@/hooks/tournament/use-arena-players"
@@ -264,15 +263,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     waitingForFinalResults,
     pairingAlgorithm: arenaState.settings.pairingAlgorithm,
     useServerPairing: true,
-  })
-
-  useMatchPersistence({
-    tournamentId,
-    isOrganizer,
-    isActive: arenaState.isActive,
-    pairedMatches: arenaState.pairedMatches,
-    suppressRealtime,
-    serverOwnsPairingWrites: true,
   })
 
   const { submitResult } = usePlayerSubmit()

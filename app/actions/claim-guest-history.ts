@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient, adminClientMissingReason } from "@/lib/supabase/admin"
 
 const MAX_CLAIM = 20
 
@@ -12,12 +13,14 @@ export interface ClaimGuestHistoryResult {
 
 /**
  * Link past guest player records to the current user.
- * Call after signup/sign-in so the user can reclaim their guest history.
- * Only updates rows where user_id is null (guest records); max MAX_CLAIM ids per call.
+ * Requires device_id match (proof this browser created the guest seat).
+ * Only claims seats from completed tournaments; only sets user_id via service role.
  */
-export async function claimGuestHistory(playerIds: string[]): Promise<ClaimGuestHistoryResult> {
+export async function claimGuestHistoryForDevice(
+  playerIds: string[],
+  deviceId: string | null | undefined,
+): Promise<ClaimGuestHistoryResult> {
   const supabase = await createClient()
-
   const {
     data: { user },
     error: authError,
@@ -28,16 +31,53 @@ export async function claimGuestHistory(playerIds: string[]): Promise<ClaimGuest
   }
 
   const ids = Array.isArray(playerIds) ? playerIds.slice(0, MAX_CLAIM) : []
-
   if (ids.length === 0) {
     return { success: true, claimedCount: 0 }
   }
 
-  const { data: updated, error: updateError } = await supabase
+  const trimmedDevice = typeof deviceId === "string" ? deviceId.trim() : ""
+  if (!trimmedDevice) {
+    return { success: false, error: "Device id required to claim guest history" }
+  }
+
+  const admin = createAdminClient()
+  if (!admin) {
+    return { success: false, error: adminClientMissingReason() }
+  }
+
+  const { data: rows, error: fetchError } = await admin
     .from("players")
-    .update({ user_id: user.id })
+    .select("id, tournament_id, user_id, device_id")
     .in("id", ids)
     .is("user_id", null)
+
+  if (fetchError) {
+    console.error("[claim-guest-history] fetch error:", fetchError)
+    return { success: false, error: "Could not link past play" }
+  }
+
+  const candidates = (rows ?? []).filter((r) => r.device_id === trimmedDevice)
+  if (candidates.length === 0) {
+    return { success: true, claimedCount: 0 }
+  }
+
+  const tournamentIds = [...new Set(candidates.map((c) => c.tournament_id))]
+  const { data: tournaments } = await admin.from("tournaments").select("id, status").in("id", tournamentIds)
+  const completedIds = new Set(
+    (tournaments ?? []).filter((t) => t.status === "completed").map((t) => t.id),
+  )
+
+  const claimableIds = candidates.filter((c) => completedIds.has(c.tournament_id)).map((c) => c.id)
+  if (claimableIds.length === 0) {
+    return { success: true, claimedCount: 0 }
+  }
+
+  const { data: updated, error: updateError } = await admin
+    .from("players")
+    .update({ user_id: user.id, is_guest: false })
+    .in("id", claimableIds)
+    .is("user_id", null)
+    .eq("device_id", trimmedDevice)
     .select("id")
 
   if (updateError) {
@@ -46,4 +86,9 @@ export async function claimGuestHistory(playerIds: string[]): Promise<ClaimGuest
   }
 
   return { success: true, claimedCount: updated?.length ?? 0 }
+}
+
+/** @deprecated Use claimGuestHistoryForDevice with getDeviceId() */
+export async function claimGuestHistory(playerIds: string[]): Promise<ClaimGuestHistoryResult> {
+  return claimGuestHistoryForDevice(playerIds, null)
 }

@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { joinTournamentAction } from "@/app/actions/join-tournament"
 import { verifyAndCheckIn, markPresentOverride, checkVenueProximity } from "@/app/actions/check-in"
+import { updatePlayerPauseState } from "@/app/actions/update-player-pause"
 import { renamePlayer } from "@/app/actions/rename-player"
 import { generateGuestUsername } from "@/lib/guest-names"
 import { addGuestSession } from "@/lib/guest-session-history"
@@ -564,22 +565,21 @@ export function useArenaPlayers({
       )
 
       if (!player.paused && isCurrentlyPaired) {
+        const nextMarked = !player.markedForPause
         setArenaState((prev) => ({
           ...prev,
           players: prev.players.map((p) =>
-            p.id === playerId ? { ...p, markedForPause: !p.markedForPause } : p,
+            p.id === playerId ? { ...p, markedForPause: nextMarked } : p,
           ),
         }))
         if (tournamentId) {
-          const supabase = createClient()
-          supabase
-            .from("players")
-            .update({ is_paused: !player.markedForPause })
-            .eq("id", playerId)
-            .eq("tournament_id", tournamentId)
-            .then(({ error }) => {
-              if (error) console.error("[v0] Failed to persist is_paused:", error)
-            })
+          void updatePlayerPauseState({
+            tournamentId,
+            playerId,
+            isPaused: nextMarked,
+          }).then((res) => {
+            if (!res.ok) console.error("[v0] Failed to persist is_paused:", res.error)
+          })
         }
       } else {
         const newPaused = !player.paused
@@ -590,15 +590,14 @@ export function useArenaPlayers({
           ),
         }))
         if (tournamentId) {
-          const supabase = createClient()
-          supabase
-            .from("players")
-            .update({ paused: newPaused, is_paused: false })
-            .eq("id", playerId)
-            .eq("tournament_id", tournamentId)
-            .then(({ error }) => {
-              if (error) console.error("[v0] Failed to persist pause:", error)
-            })
+          void updatePlayerPauseState({
+            tournamentId,
+            playerId,
+            paused: newPaused,
+            isPaused: false,
+          }).then((res) => {
+            if (!res.ok) console.error("[v0] Failed to persist pause:", res.error)
+          })
         }
       }
     },

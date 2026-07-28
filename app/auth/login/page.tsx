@@ -12,7 +12,8 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Home } from "lucide-react"
 import { toast } from "sonner"
-import { claimGuestHistory } from "@/app/actions/claim-guest-history"
+import { claimGuestHistoryForDevice } from "@/app/actions/claim-guest-history"
+import { getDeviceId } from "@/lib/device-id"
 import { getGuestSessionHistory, clearGuestSessionHistory } from "@/lib/guest-session-history"
 import { useI18n } from "@/components/i18n-provider"
 
@@ -44,7 +45,7 @@ export default function LoginPage() {
       const guestSessions = getGuestSessionHistory()
       if (guestSessions.length > 0) {
         const playerIds = guestSessions.map((s) => s.playerId)
-        const claim = await claimGuestHistory(playerIds)
+        const claim = await claimGuestHistoryForDevice(playerIds, getDeviceId())
         clearGuestSessionHistory()
         if (claim.success && claim.claimedCount && claim.claimedCount > 0) {
           const key = claim.claimedCount === 1 ? "auth.loginClaimSingle" : "auth.loginClaimMultiple"

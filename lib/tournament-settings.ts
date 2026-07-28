@@ -1,12 +1,26 @@
 import { DEFAULT_SETTINGS, type TournamentSettings } from "@/lib/types"
 
+/** Settings JSON for DB writes — exclude ephemeral pairing heartbeat. */
+export function settingsForPersistence(settings: TournamentSettings): TournamentSettings {
+  const { pairingHeartbeatAt: _omit, ...rest } = settings
+  void _omit
+  return rest
+}
+
 /**
  * Parse and validate tournament settings from a DB row, filling in defaults
  * for any missing or invalid fields.
  */
-export function parseTournamentSettings(raw: { settings?: unknown }): TournamentSettings {
+export function parseTournamentSettings(raw: {
+  settings?: unknown
+  pairing_heartbeat_at?: string | null
+}): TournamentSettings {
   const s = raw.settings as Record<string, unknown> | undefined
-  if (!s || typeof s !== "object") return { ...DEFAULT_SETTINGS }
+  if (!s || typeof s !== "object") {
+    const fromColumnOnly =
+      typeof raw.pairing_heartbeat_at === "string" ? raw.pairing_heartbeat_at : undefined
+    return { ...DEFAULT_SETTINGS, pairingHeartbeatAt: fromColumnOnly }
+  }
 
   const colorOk = (v: unknown): v is TournamentSettings["colorBalancePriority"] =>
     v === "low" || v === "medium" || v === "high"
@@ -67,6 +81,11 @@ export function parseTournamentSettings(raw: { settings?: unknown }): Tournament
       typeof s.swissLastRoundColorRelax === "boolean"
         ? s.swissLastRoundColorRelax
         : DEFAULT_SETTINGS.swissLastRoundColorRelax,
-    pairingHeartbeatAt: typeof s.pairingHeartbeatAt === "string" ? s.pairingHeartbeatAt : undefined,
+    pairingHeartbeatAt:
+      typeof raw.pairing_heartbeat_at === "string"
+        ? raw.pairing_heartbeat_at
+        : typeof s.pairingHeartbeatAt === "string"
+          ? s.pairingHeartbeatAt
+          : undefined,
   }
 }

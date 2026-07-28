@@ -30,7 +30,7 @@ export async function renamePlayer(
 
   const { data: tournament, error: tournamentError } = await supabase
     .from("tournaments")
-    .select("organizer_id, status")
+    .select("organizer_id, owner_id, status")
     .eq("id", tournamentId)
     .single()
 
@@ -38,7 +38,7 @@ export async function renamePlayer(
     return { success: false, error: "Tournament not found" }
   }
 
-  if (tournament.organizer_id !== user.id) {
+  if (tournament.organizer_id !== user.id && tournament.owner_id !== user.id) {
     return { success: false, error: "Only the tournament organizer can rename players" }
   }
 

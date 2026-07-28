@@ -38,12 +38,6 @@ export interface UseRealtimeOptions {
    * Use this to fire toast / browser notifications.
    */
   onNewPairing?: (match: Match) => void
-  /**
-   * Called (on the organizer's client only) when both players in a match
-   * have submitted the same result and the match hasn't been completed yet.
-   * The organizer should call recordResult in response to persist to DB.
-   */
-  onAutoComplete?: (matchId: string, winnerId: string | undefined, isDraw: boolean) => void
 }
 
 /**
@@ -60,11 +54,8 @@ export function useRealtime({
   onTournamentStatusChange,
   currentPlayerId,
   onNewPairing,
-  onAutoComplete,
 }: UseRealtimeOptions): { suppressRealtime: () => void } {
   const suppressUntil = useRef<number>(0)
-  // Track match IDs we've already auto-completed to avoid double-firing
-  const autoCompletedIds = useRef<Set<string>>(new Set())
 
   const suppressRealtime = useCallback(() => {
     suppressUntil.current = Date.now() + SUPPRESS_WINDOW_MS
@@ -161,31 +152,6 @@ export function useRealtime({
                 }
               }
 
-              // Detect matches where both submissions agree and not yet completed —
-              // fire onAutoComplete so the organizer can persist the result to DB.
-              if (onAutoComplete) {
-                for (const m of pairedMatches) {
-                  if (
-                    m.player1Submission?.confirmed &&
-                    m.player2Submission?.confirmed &&
-                    m.player1Submission.result === m.player2Submission.result &&
-                    !m.result?.completed &&
-                    !autoCompletedIds.current.has(m.id)
-                  ) {
-                    autoCompletedIds.current.add(m.id)
-                    const agreedResult = m.player1Submission.result
-                    const isDraw = agreedResult === "draw"
-                    const winnerId = isDraw
-                      ? undefined
-                      : agreedResult === "player1-win"
-                        ? m.player1.id
-                        : m.player2.id
-                    if (DEBUG) console.log("[realtime] auto-completing match", m.id, "result:", agreedResult)
-                    setTimeout(() => onAutoComplete(m.id, winnerId, isDraw), 0)
-                  }
-                }
-              }
-
               return { ...prev, pairedMatches, allTimeMatches }
             })
           } catch (err) {
@@ -222,13 +188,16 @@ export function useRealtime({
                 isActive: newStatus === "active",
               }
             }
-            if (row.settings != null) {
-              const settings = parseTournamentSettings({ settings: row.settings })
-              if (settings.pairingHeartbeatAt !== prev.settings.pairingHeartbeatAt) {
-                next = {
-                  ...next,
-                  settings: { ...next.settings, pairingHeartbeatAt: settings.pairingHeartbeatAt },
-                }
+            const heartbeat =
+              typeof row.pairing_heartbeat_at === "string"
+                ? row.pairing_heartbeat_at
+                : row.settings != null
+                  ? parseTournamentSettings({ settings: row.settings }).pairingHeartbeatAt
+                  : undefined
+            if (heartbeat && heartbeat !== prev.settings.pairingHeartbeatAt) {
+              next = {
+                ...next,
+                settings: { ...next.settings, pairingHeartbeatAt: heartbeat },
               }
             }
             return next

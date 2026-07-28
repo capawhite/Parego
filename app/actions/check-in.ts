@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient, adminClientMissingReason } from "@/lib/supabase/admin"
 import { haversineMeters } from "@/lib/geo"
 
 const DEFAULT_PRESENCE_RADIUS_M = 150
@@ -79,9 +80,14 @@ export async function verifyAndCheckIn(
     return { ok: false, error: "Sign in to check in" }
   }
 
-  const { data: tournament, error: tError } = await supabase
+  const admin = createAdminClient()
+  if (!admin) {
+    return { ok: false, error: adminClientMissingReason() }
+  }
+
+  const { data: tournament, error: tError } = await admin
     .from("tournaments")
-    .select("latitude, longitude, presence_radius_m, organizer_id")
+    .select("latitude, longitude, presence_radius_m")
     .eq("id", tournamentId)
     .maybeSingle()
 
@@ -104,7 +110,7 @@ export async function verifyAndCheckIn(
     }
   }
 
-  const { data: player, error: pError } = await supabase
+  const { data: player, error: pError } = await admin
     .from("players")
     .select("id")
     .eq("tournament_id", tournamentId)
@@ -116,7 +122,7 @@ export async function verifyAndCheckIn(
   }
 
   const now = new Date().toISOString()
-  const { error: updateError } = await supabase
+  const { error: updateError } = await admin
     .from("players")
     .update({ checked_in_at: now, presence_source: "gps" })
     .eq("id", player.id)
@@ -152,18 +158,27 @@ export async function markPresentOverride(
     return { ok: false, error: "Sign in required" }
   }
 
-  const { data: tournament, error: tError } = await supabase
+  const admin = createAdminClient()
+  if (!admin) {
+    return { ok: false, error: adminClientMissingReason() }
+  }
+
+  const { data: tournament, error: tError } = await admin
     .from("tournaments")
-    .select("organizer_id")
+    .select("organizer_id, owner_id")
     .eq("id", tournamentId)
     .maybeSingle()
 
-  if (tError || !tournament || tournament.organizer_id !== user.id) {
+  if (
+    tError ||
+    !tournament ||
+    (tournament.organizer_id !== user.id && tournament.owner_id !== user.id)
+  ) {
     return { ok: false, error: "Only the organizer can mark players present" }
   }
 
   const now = new Date().toISOString()
-  const { error: updateError } = await supabase
+  const { error: updateError } = await admin
     .from("players")
     .update({ checked_in_at: now, presence_source: "override" })
     .eq("id", playerId)
