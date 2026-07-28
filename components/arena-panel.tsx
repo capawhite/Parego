@@ -8,15 +8,13 @@ import { Leaderboard } from "./leaderboard"
 import { TournamentPodium } from "./tournament-podium"
 import { TournamentSettingsPanel } from "./tournament-settings"
 import { AlgorithmComparisonPanel } from "./algorithm-comparison-panel"
-import type { ArenaState, Player, Match, MatchResult, TournamentSettings } from "@/lib/types"
-import { calculatePointsFromSettings } from "@/lib/points"
-import { beginMatchResultRecording, releaseMatchResultRecording } from "@/lib/match-result-recording"
+import type { ArenaState, Player, Match, TournamentSettings } from "@/lib/types"
 import { logArenaPairing } from "@/lib/pairing/arena-pairing-debug"
 import { isPlayerAvailableForPairing } from "@/lib/pairing/player-eligibility"
 import { isArenaT1Eligible, setArenaCooldownReductions } from "@/lib/pairing/arena-t1"
 import { mergeMatchesForSave, assignTablesToMatchesForState } from "@/lib/tournament/merge-matches"
-import { applyMatchResultToState } from "@/lib/tournament/apply-match-result"
 import { isPairingHeartbeatStale } from "@/lib/tournament/pairing-loop-gate"
+import { analyzeRematches as analyzeRematchesPure } from "@/lib/tournament/rematch-analysis"
 import {
   X,
   Trophy,
@@ -44,11 +42,10 @@ import {
   savePlayers,
   saveMatches,
   loadMatches,
-  playerNameExistsInTournament,
   getAvatarUrls,
   formatSupabaseError,
 } from "@/lib/database/tournament-db"
-import { fetchTournamentById, joinTournamentAction } from "@/app/actions/join-tournament"
+import { fetchTournamentById } from "@/app/actions/join-tournament"
 import { useRouter } from "next/navigation"
 import { ArenaPlayersTab } from "@/components/tournament/arena-players-tab"
 import { ArenaPairingsTab } from "@/components/tournament/arena-pairings-tab"
@@ -57,19 +54,14 @@ import { ArenaResultsTab } from "@/components/tournament/arena-results-tab"
 import { ArenaTournamentHeader } from "@/components/tournament/arena-tournament-header"
 import { PairingMatchCard } from "@/components/tournament/pairing-match-card"
 import { createClient } from "@/lib/supabase/client" // Import createClient for Supabase
-import { generateGuestUsername } from "@/lib/guest-names" // Import memorable guest name generator
 import {
-  addGuestSession,
   getGuestSessionHistory,
   getConversionPromptDismissed,
   type GuestSessionEntry,
 } from "@/lib/guest-session-history"
 import { ConversionPrompt, type ConversionTrigger } from "@/components/conversion-prompt"
 import { cn } from "@/lib/utils"
-import { verifyAndCheckIn, markPresentOverride, checkVenueProximity } from "@/app/actions/check-in"
-import { renamePlayer } from "@/app/actions/rename-player"
 import { deleteTournament } from "@/app/actions/delete-tournament"
-import { resolveRating, type RatingBandValue } from "@/lib/rating-bands"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
 import { useRealtime } from "@/hooks/tournament/use-realtime"
@@ -77,8 +69,8 @@ import { usePairingLoop } from "@/hooks/tournament/use-pairing-loop"
 import { useMatchPersistence } from "@/hooks/tournament/use-match-persistence"
 import { usePlayerSubmit } from "@/hooks/tournament/use-player-submit"
 import { useTournamentLifecycle } from "@/hooks/tournament/use-tournament-lifecycle"
-import { getDeviceId } from "@/lib/device-id"
-import { messageForSubmitResponse } from "@/lib/submit-client-message"
+import { useArenaPlayers } from "@/hooks/tournament/use-arena-players"
+import { useArenaMatchResults } from "@/hooks/tournament/use-arena-match-results"
 
 const TOURNAMENT_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
 
@@ -96,10 +88,6 @@ interface ArenaSessionData {
   playerName?: string
   playerId?: string
   role?: "organizer" | "player"
-}
-
-function generateTournamentId(): string {
-  return Math.random().toString(36).substring(2, 8).toUpperCase()
 }
 
 export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, isPlayerView }: ArenaPanelProps) {
@@ -171,10 +159,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [userRatingBand, setUserRatingBand] = useState<string | null>(null) // rating_band from profile
   const [userCountry, setUserCountry] = useState<string | null>(null)
 
-  const [checkingIn, setCheckingIn] = useState(false)
-  const [markingPresentPlayerId, setMarkingPresentPlayerId] = useState<string | null>(null)
-  const [renamingPlayerId, setRenamingPlayerId] = useState<string | null>(null)
-  const [joiningSelf, setJoiningSelf] = useState(false)
   const [pastGuestSessions, setPastGuestSessions] = useState<GuestSessionEntry[]>([])
   const [showConversionPrompt, setShowConversionPrompt] = useState<ConversionTrigger | null>(null)
 
@@ -315,6 +299,38 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
   const { submitResult } = usePlayerSubmit()
   const { start: startTournamentLifecycle } = useTournamentLifecycle({ tournamentId })
+
+  const {
+    checkingIn,
+    markingPresentPlayerId,
+    renamingPlayerId,
+    joiningSelf,
+    addPlayer,
+    handleSelectUser,
+    handleAddGuestPlayer,
+    handleCheckIn,
+    handleMarkPresent,
+    handleRenamePlayer,
+    joinAsSelf,
+    removePlayer,
+    togglePause,
+  } = useArenaPlayers({
+    tournamentId,
+    arenaState,
+    setArenaState,
+    isOrganizer,
+    isCurrentUserInTournament,
+    currentUserId,
+    currentPlayerInTournament,
+    playerSession,
+    userName,
+    userRating,
+    userRatingBand,
+    userCountry,
+    tournamentMetadata,
+    t,
+    onPlayerNameCleared: () => setPlayerNameInput(""),
+  })
 
   useEffect(() => {
     if (activeTab === "pairingStatus" && (!isOrganizer || !arenaState.isActive)) {
@@ -746,448 +762,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
 
-  const addPlayer = async (name: string, userId?: string, isGuest = false, addToGuestHistory = false) => {
-    if (!name.trim()) return
-
-    const isDuplicate = arenaState.players.some((player) => {
-      if (userId && player.userId === userId) {
-        return true // Same registered user
-      }
-      if (player.name.toLowerCase() === name.toLowerCase()) {
-        return true // Same name
-      }
-      return false
-    })
-
-    if (isDuplicate) {
-      toast.error(t("arena.alertPlayerAlreadyInTournament"))
-      return
-    }
-
-    if (arenaState.isActive && !arenaState.settings.allowLateJoin) {
-      toast.error(t("arena.alertLateJoinsNotAllowed"))
-      return
-    }
-
-    if (arenaState.isActive) {
-      const newTotalPlayers = arenaState.players.length + 1
-      const maxSimultaneousPairings = Math.floor(newTotalPlayers / 2)
-
-      if (maxSimultaneousPairings > arenaState.tableCount) {
-        toast.error(t("arena.alertCannotAddPlayerTables", { max: maxSimultaneousPairings, tables: arenaState.tableCount }))
-        return
-      }
-    }
-
-    const newPlayer: Player = {
-      id: `p-${Date.now()}`,
-      name,
-      score: 0,
-      gamesPlayed: 0,
-      streak: 0,
-      performance: 0,
-      opponentIds: [],
-      gameResults: [],
-      pieceColors: [],
-      active: arenaState.isActive,
-      paused: false,
-      joinedAt: Date.now(),
-      userId: userId || null,
-      isGuest: isGuest,
-      rating: resolveRating(userRating, userRatingBand as RatingBandValue | null | undefined),
-      buchholz: 0,
-      sonnebornBerger: 0,
-      country: userCountry,
-    }
-
-    setArenaState((prev) => ({
-      ...prev,
-      players: [...prev.players, newPlayer],
-    }))
-    setPlayerNameInput("")
-
-    if (tournamentId) {
-      let savedPlayerId = newPlayer.id
-      try {
-        const deviceId = addToGuestHistory ? getDeviceId() : null
-        const joinResult = await joinTournamentAction({
-          tournamentId,
-          name: newPlayer.name,
-          userId: userId || null,
-          isGuest,
-          rating: newPlayer.rating,
-          deviceId,
-          asOrganizer: isOrganizer,
-          playerId: newPlayer.id,
-        })
-        if (!joinResult.success) {
-          if (joinResult.errorCode === "ALREADY_JOINED") {
-            toast.error(t("arena.toastAlreadyJoinedFromDevice"))
-            setArenaState((prev) => ({
-              ...prev,
-              players: prev.players.filter((p) => p.id !== newPlayer.id),
-            }))
-            return
-          }
-          console.error("[v0] Error saving player to database:", joinResult.error)
-          toast.error(joinResult.error || t("arena.toastFailedToAddPlayer"))
-          setArenaState((prev) => ({
-            ...prev,
-            players: prev.players.filter((p) => p.id !== newPlayer.id),
-          }))
-          return
-        }
-        if (joinResult.playerId && joinResult.playerId !== newPlayer.id) {
-          savedPlayerId = joinResult.playerId
-          setArenaState((prev) => ({
-            ...prev,
-            players: prev.players.map((p) =>
-              p.id === newPlayer.id ? { ...p, id: joinResult.playerId! } : p,
-            ),
-          }))
-        }
-      } catch (error) {
-        const err = error as Record<string, unknown>
-        const msg = (err?.message as string) ?? (error instanceof Error ? error.message : String(error))
-        console.error("[v0] Error saving player to database:", msg, error)
-        toast.error(msg || t("arena.toastFailedToAddPlayer"))
-        setArenaState((prev) => ({
-          ...prev,
-          players: prev.players.filter((p) => p.id !== newPlayer.id),
-        }))
-        return
-      }
-      if (isGuest && tournamentId && addToGuestHistory) {
-        addGuestSession({
-          tournamentId,
-          playerId: savedPlayerId,
-          displayName: name,
-        })
-      }
-    }
-  }
-
-  const handleSelectUser = async (user: { id: string; name: string; rating: number | null }) => {
-    await addPlayer(user.name, user.id, false)
-  }
-
-  // The following function is updated to use the new helper
-  const handleAddGuestPlayer = async () => {
-    const existingNames = arenaState.players.map((p) => p.name)
-    const guestUsername = generateGuestUsername(existingNames)
-    // Only add to guest history when the visitor adds themselves (!currentUserId), not when organizer adds a guest
-    await addPlayer(guestUsername, undefined, true, !currentUserId)
-  }
-
-  const handleCheckIn = async () => {
-    if (!tournamentId) return
-    setCheckingIn(true)
-    const tryCheckIn = (): Promise<boolean> =>
-      new Promise((resolve) => {
-        if (!navigator.geolocation) {
-          toast.error(t("arena.toastLocationNotAvailable"))
-          resolve(false)
-          return
-        }
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const result = await verifyAndCheckIn(tournamentId, position.coords.latitude, position.coords.longitude)
-            if (!result.ok) {
-              toast.error(result.error)
-              resolve(false)
-              return
-            }
-            toast.success(t("arena.toastYouAreCheckedIn"))
-            setArenaState((prev) => ({
-              ...prev,
-              players: prev.players.map((p) =>
-                p.userId === currentUserId
-                  ? { ...p, checkedInAt: Date.now(), presenceSource: "gps" as const }
-                  : p,
-              ),
-            }))
-            resolve(true)
-          },
-          () => {
-            toast.info("Location unavailable. Ask the organizer to mark you present at the venue.")
-            resolve(false)
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-        )
-      })
-    const ok = await tryCheckIn()
-    if (!ok) {
-      toast.info(t("arena.toastRetryingInSeconds"))
-      await new Promise((r) => setTimeout(r, 2000))
-      await tryCheckIn()
-    }
-    setCheckingIn(false)
-  }
-
-  const handleMarkPresent = async (playerId: string) => {
-    if (!tournamentId) return
-    setMarkingPresentPlayerId(playerId)
-    try {
-      const result = await markPresentOverride(tournamentId, playerId)
-      if (!result.ok) {
-        toast.error(result.error)
-        return
-      }
-      toast.success(t("arena.toastPlayerMarkedPresent"))
-      const now = Date.now()
-      setArenaState((prev) => ({
-        ...prev,
-        players: prev.players.map((p) =>
-          p.id === playerId ? { ...p, checkedInAt: now, presenceSource: "override" as const } : p,
-        ),
-      }))
-    } finally {
-      setMarkingPresentPlayerId(null)
-    }
-  }
-
-  const handleRenamePlayer = async (playerId: string, newName: string) => {
-    if (!tournamentId) return
-    setRenamingPlayerId(playerId)
-    try {
-      const result = await renamePlayer(tournamentId, playerId, newName)
-      if (!result.success) throw new Error(result.error)
-      toast.success(t("arena.toastPlayerRenamed"))
-      setArenaState((prev) => ({
-        ...prev,
-        players: prev.players.map((p) => (p.id === playerId ? { ...p, name: newName } : p)),
-        pairedMatches: prev.pairedMatches.map((m) => ({
-          ...m,
-          player1: m.player1.id === playerId ? { ...m.player1, name: newName } : m.player1,
-          player2: m.player2.id === playerId ? { ...m.player2, name: newName } : m.player2,
-        })),
-      }))
-    } finally {
-      setRenamingPlayerId(null)
-    }
-  }
-
-  const joinAsSelf = async () => {
-    if (!currentUserId || !userName) return
-
-    if (arenaState.status === "completed") {
-      toast.error(t("arena.toastTournamentEndedNoJoin"))
-      return
-    }
-
-    if (arenaState.isActive && !arenaState.settings.allowLateJoin) {
-      toast.error(t("arena.alertLateJoinsNotAllowed"))
-      return
-    }
-
-    if (arenaState.isActive) {
-      const newTotalPlayers = arenaState.players.filter((p) => !p.hasLeft).length + 1
-      const maxPairings = Math.floor(newTotalPlayers / 2)
-      if (maxPairings > arenaState.tableCount) {
-        toast.error(t("arena.toastTablesFull", { count: arenaState.tableCount }))
-        return
-      }
-    }
-
-    if (isCurrentUserInTournament) {
-      toast.error(t("arena.toastAlreadyInTournament"))
-      return
-    }
-
-    const existingPlayer = arenaState.players.find(
-      (p) => p.name.toLowerCase() === userName.toLowerCase() && !p.hasLeft,
-    )
-    if (existingPlayer) {
-      toast.error(t("arena.toastPlayerNameAlreadyInTournament"))
-      return
-    }
-
-    const nameTaken = tournamentId ? await playerNameExistsInTournament(tournamentId, userName) : false
-    if (nameTaken) {
-      toast.error(t("arena.toastNameExistsTryDifferent", { name: userName }))
-      return
-    }
-
-    const hasVenue =
-      tournamentMetadata?.latitude != null && tournamentMetadata?.longitude != null
-    let checkedInAt: number | null = null
-    let presenceSource: "gps" | null = null
-
-    if (hasVenue && tournamentId) {
-      setJoiningSelf(true)
-      const runProximity = (): Promise<{ checkedInAt: number | null; presenceSource: "gps" | null }> =>
-        new Promise((resolve) => {
-          if (!navigator.geolocation) {
-            toast.info(t("arena.toastLocationUnavailableStillJoin"))
-            resolve({ checkedInAt: null, presenceSource: null })
-            return
-          }
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const result = await checkVenueProximity(
-                tournamentId!,
-                position.coords.latitude,
-                position.coords.longitude,
-              )
-              if (!result.ok) {
-                toast.info(t("arena.toastNotAtVenueYet"))
-                resolve({ checkedInAt: null, presenceSource: null })
-                return
-              }
-              resolve({ checkedInAt: Date.now(), presenceSource: "gps" })
-            },
-            () => {
-              toast.info(t("arena.toastLocationUnavailableStillJoin"))
-              resolve({ checkedInAt: null, presenceSource: null })
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-          )
-        })
-      const proximity = await runProximity()
-      checkedInAt = proximity.checkedInAt
-      presenceSource = proximity.presenceSource
-      setJoiningSelf(false)
-    }
-
-    const newPlayer: Player = {
-      id: crypto.randomUUID(),
-      name: userName,
-      rating: resolveRating(userRating, userRatingBand as RatingBandValue | null | undefined),
-      score: 0,
-      buchholz: 0,
-      sonnebornBerger: 0,
-      country: userCountry,
-      isGuest: false,
-      userId: currentUserId,
-      gamesPlayed: 0,
-      streak: 0,
-      performance: 0,
-      opponentIds: [],
-      gameResults: [],
-      pieceColors: [],
-      active: arenaState.isActive,
-      paused: false,
-      joinedAt: Date.now(),
-      checkedInAt: checkedInAt,
-      presenceSource: presenceSource,
-    }
-
-    setArenaState((prev) => ({
-      ...prev,
-      players: [...prev.players, newPlayer],
-    }))
-
-    if (tournamentId) {
-      try {
-        const joinResult = await joinTournamentAction({
-          tournamentId,
-          name: newPlayer.name,
-          userId: currentUserId,
-          isGuest: false,
-          rating: newPlayer.rating,
-          checkedInAt: checkedInAt != null ? new Date(checkedInAt).toISOString() : null,
-          presenceSource,
-          playerId: newPlayer.id,
-        })
-        if (!joinResult.success) {
-          console.error("[v0] Error saving player to database:", joinResult.error)
-          toast.error(joinResult.error || t("arena.toastFailedToAddPlayer"))
-          setArenaState((prev) => ({
-            ...prev,
-            players: prev.players.filter((p) => p.id !== newPlayer.id),
-          }))
-        }
-      } catch (error) {
-        console.error("[v0] Error saving player to database:", error)
-        setArenaState((prev) => ({
-          ...prev,
-          players: prev.players.filter((p) => p.id !== newPlayer.id),
-        }))
-      }
-    }
-  }
-
-  const removePlayer = (playerId: string) => {
-    if (DEBUG) console.log("[v0] Attempting to remove player:", playerId)
-
-    // Check if user has permission to remove this player
-    const playerToRemove = arenaState.players.find((p) => p.id === playerId)
-
-    if (!playerToRemove) {
-      if (DEBUG) console.log("[v0] Player not found:", playerId)
-      return
-    }
-
-    if (DEBUG) console.log("[v0] Player to remove:", playerToRemove.name, "isOrganizer:", isOrganizer)
-
-    // Only organizer can remove others, players can only remove themselves
-    if (!isOrganizer) {
-      // Check if this is the current player removing themselves
-      const isRemovingSelf = currentPlayerInTournament?.id === playerId
-      if (!isRemovingSelf) {
-        if (DEBUG) console.log("[v0] Permission denied: only organizer can remove other players")
-        return
-      }
-    }
-
-    if (arenaState.status === "active" && playerToRemove) {
-      if (DEBUG) console.log("[v0] Marking player as removed (tournament active)")
-      setArenaState((prev) => ({
-        ...prev,
-        players: prev.players.map((p) => (p.id === playerId ? { ...p, markedForRemoval: true, paused: true } : p)),
-      }))
-    } else {
-      // During setup, actually remove the player
-      if (DEBUG) console.log("[v0] Removing player from list (tournament setup)")
-      setArenaState((prev) => ({
-        ...prev,
-        players: prev.players.filter((p) => p.id !== playerId),
-      }))
-    }
-
-    if (tournamentId) {
-      setTimeout(async () => {
-        try {
-          const supabase = createClient()
-
-          if (arenaState.status === "active") {
-            if (DEBUG) console.log("[v0] Marking player as removed in database")
-            const { error } = await supabase
-              .from("players")
-              .update({
-                paused: true,
-                is_removed: true,
-              })
-              .eq("id", playerId)
-              .eq("tournament_id", tournamentId)
-
-            if (error) {
-              console.error("[v0] Failed to mark player as removed in database:", error)
-            } else {
-              if (DEBUG) console.log("[v0] Player marked as removed in database successfully")
-            }
-          } else {
-            // Delete player from database during setup
-            if (DEBUG) console.log("[v0] Deleting player from database")
-            const { error } = await supabase
-              .from("players")
-              .delete()
-              .eq("id", playerId)
-              .eq("tournament_id", tournamentId)
-
-            if (error) {
-              console.error("[v0] Failed to delete player from database:", error)
-            } else {
-              if (DEBUG) console.log("[v0] Player deleted from database successfully")
-            }
-          }
-        } catch (error) {
-          console.error("[v0] Error saving player removal:", error)
-        }
-      }, 100)
-    }
-  }
-
   const handleStartTournament = async () => {
     if (arenaState.status === "completed") {
       toast.error(t("arena.alertTournamentAlreadyCompleted"))
@@ -1342,168 +916,47 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     setShowPodium(false)
   }
 
-  const recordResult = async (matchId: string, winnerId: string | undefined, isDraw: boolean, skipDbWrite = false) => {
-    if (DEBUG) console.log("[v0] Recording result for match:", matchId, "isDraw:", isDraw, "winnerId:", winnerId)
-
-    if (!beginMatchResultRecording(matchId, recordedCompletedMatchIdsRef.current)) return
-
-    let newPairedMatches: Match[] = []
-    let newAllTimeMatches: Match[] = []
-    let newPlayers: Player[] = []
-
-    setArenaState((prev) => {
-      const applied = applyMatchResultToState({
-        pairedMatches: prev.pairedMatches,
-        allTimeMatches: prev.allTimeMatches,
-        players: prev.players,
-        settings: prev.settings,
-        matchId,
-        winnerId,
-        isDraw,
-        removeCompletedFromPaired: prev.settings.pairingAlgorithm === "balanced-strength",
-      })
-
-      if (!applied.ok) {
-        if (applied.reason === "not_found" || applied.reason === "pairing_bye") {
-          releaseMatchResultRecording(matchId, recordedCompletedMatchIdsRef.current)
-        }
-        return prev
-      }
-
-      newPairedMatches = applied.pairedMatches
-      newAllTimeMatches = applied.allTimeMatches
-      newPlayers = applied.players
-
-      if (waitingForFinalResults) {
-        const remainingMatches = newPairedMatches.filter((m) => m.id !== matchId && !m.result?.completed)
-        if (remainingMatches.length === 0 && isOrganizer) {
-          if (DEBUG) console.log("[v0] All final results entered, ending tournament")
-          setTimeout(() => finalizeEndTournament(), 500)
-        }
-      }
-
-      if (tournamentId && isOrganizer && !skipDbWrite) {
-        savePlayers(tournamentId, newPlayers, prev.settings).catch((err) => {
-          console.error("[v0] Error saving players after match completion:", formatSupabaseError(err))
-        })
-        saveMatches(tournamentId, mergeMatchesForSave(newPairedMatches, newAllTimeMatches)).catch((err) => {
-          console.error("[v0] Error saving matches after match completion:", formatSupabaseError(err))
-        })
-      }
-
-      return {
-        ...prev,
-        pairedMatches: newPairedMatches,
-        allTimeMatches: newAllTimeMatches,
-        players: newPlayers,
-      }
-    })
-  }
-
+  const {
+    recordResult,
+    handlePlayerSubmit,
+    handlePlayerConfirm,
+    handlePlayerCancel,
+    overrideResult,
+    completeMatch,
+  } = useArenaMatchResults({
+    tournamentId,
+    arenaState,
+    setArenaState,
+    isOrganizer,
+    playerSession,
+    playerSubmissions,
+    setPlayerSubmissions,
+    recordedCompletedMatchIdsRef,
+    waitingForFinalResults,
+    finalizeEndTournament,
+    submitResult,
+    userRole,
+    showConversionPrompt,
+    setShowConversionPrompt,
+    t,
+  })
 
   const analyzeRematches = () => {
-    const pairings = new Map<string, number>()
-
-    arenaState.players.forEach((player) => {
-      player.opponentIds.forEach((opponentId, index) => {
-        const pair = [player.id, opponentId].sort().join(" vs ")
-        pairings.set(pair, (pairings.get(pair) || 0) + 1)
-      })
-    })
-
-    const uniquePairings = new Map<string, number>()
-    pairings.forEach((count, pair) => {
-      uniquePairings.set(pair, Math.ceil(count / 2))
-    })
-
-    const rematches = Array.from(uniquePairings.entries())
-      .filter(([_, count]) => count > 1)
-      .map(([pair, count]) => {
-        const [id1, id2] = pair.split(" vs ")
-        const player1 = arenaState.players.find((p) => p.id === id1)
-        const player2 = arenaState.players.find((p) => p.id === id2)
-        return {
-          players: `${player1?.name} vs ${player2?.name}`,
-          count,
-        }
-      })
-
+    const { uniquePairings, rematches } = analyzeRematchesPure(arenaState.players)
     if (DEBUG) console.log("[v0] REMATCH ANALYSIS:", {
-      totalUniquePairings: uniquePairings.size,
+      totalUniquePairings: uniquePairings,
       totalRematches: rematches.length,
       rematchDetails: rematches.length > 0 ? rematches : "No rematches detected",
     })
-
     const rematchDetail =
       rematches.length > 0
         ? rematches.map((r) => `${r.players}: ${r.count} times`).join("\n")
         : "No rematches detected!"
     toast.info(t("arena.rematchAnalysisTitle"), {
-      description: `Unique pairings: ${uniquePairings.size}\nRematches: ${rematches.length}\n\n${rematchDetail}`,
+      description: `Unique pairings: ${uniquePairings}\nRematches: ${rematches.length}\n\n${rematchDetail}`,
       duration: 20_000,
     })
-
     return rematches
-  }
-
-  const togglePause = (playerId: string) => {
-    const player = arenaState.players.find((p) => p.id === playerId)
-    if (!player) return
-
-    if (
-      !player.paused &&
-      !player.markedForPause &&
-      !confirm(t("arena.confirmPausePlayer", { name: player.name }))
-    ) {
-      return
-    }
-
-    const isSelfPause = !isOrganizer && (playerId === currentPlayerInTournament?.id || playerId === playerSession?.playerId)
-
-    if (!player.paused && isSelfPause && !arenaState.settings.allowSelfPause) {
-      toast.error(t("arena.alertSelfPauseNotAllowed"))
-      return
-    }
-
-    if (!player.paused && isSelfPause && player.gamesPlayed < arenaState.settings.minGamesBeforePause) {
-      toast.error(t("arena.alertMinGamesBeforePause", { count: arenaState.settings.minGamesBeforePause }))
-      return
-    }
-
-    const isCurrentlyPaired = arenaState.pairedMatches.some(
-      (m) => !m.result?.completed && (m.player1.id === playerId || m.player2.id === playerId),
-    )
-
-    if (!player.paused && isCurrentlyPaired) {
-      setArenaState((prev) => ({
-        ...prev,
-        players: prev.players.map((p) => (p.id === playerId ? { ...p, markedForPause: !p.markedForPause } : p)),
-      }))
-      if (tournamentId) {
-        const supabase = createClient()
-        supabase
-          .from("players")
-          .update({ is_paused: !player.markedForPause })
-          .eq("id", playerId)
-          .eq("tournament_id", tournamentId)
-          .then(({ error }) => { if (error) console.error("[v0] Failed to persist is_paused:", error) })
-      }
-    } else {
-      const newPaused = !player.paused
-      setArenaState((prev) => ({
-        ...prev,
-        players: prev.players.map((p) => (p.id === playerId ? { ...p, paused: newPaused, markedForPause: false } : p)),
-      }))
-      if (tournamentId) {
-        const supabase = createClient()
-        supabase
-          .from("players")
-          .update({ paused: newPaused, is_paused: false })
-          .eq("id", playerId)
-          .eq("tournament_id", tournamentId)
-          .then(({ error }) => { if (error) console.error("[v0] Failed to persist pause:", error) })
-      }
-    }
   }
 
   const getOccupiedTables = () => {
@@ -1535,353 +988,12 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     return 0
   })
 
-
-  const handlePlayerSubmit = async (matchId: string, result: "player1-win" | "draw" | "player2-win") => {
-    if (DEBUG) console.log("[v0] Player submitting result:", matchId, result)
-    if (!playerSession) {
-      if (DEBUG) console.log("[v0] No player session, rejecting submission")
-      return
-    }
-
-    const match = arenaState.pairedMatches.find((m) => m.id === matchId)
-    if (!match) {
-      if (DEBUG) console.log("[v0] Match not found, rejecting submission")
-      return
-    }
-
-    const isPlayerInMatch = match.player1.id === playerSession.playerId || match.player2.id === playerSession.playerId
-    if (!isPlayerInMatch) {
-      if (DEBUG) console.log("[v0] Player not in match, rejecting submission")
-      toast.error(t("arena.alertOnlyOwnMatches"))
-      return
-    }
-
-    // Store temporary submission (not yet confirmed)
-    setPlayerSubmissions((prev) => ({
-      ...prev,
-      [matchId]: { result, confirmed: false },
-    }))
-  }
-
-  const handlePlayerConfirm = async (
-    matchId: string,
-    result?: "player1-win" | "draw" | "player2-win",
-  ) => {
-    const effectiveResult = result ?? playerSubmissions[matchId]?.result
-    if (DEBUG) console.log("[v0] Player confirming result:", matchId, "result:", effectiveResult, "from arg:", !!result, "playerId:", playerSession?.playerId)
-    if (!playerSession?.playerId) {
-      toast.error(t("arena.alertMissingPlayerSession"))
-      return
-    }
-
-    const match = arenaState.pairedMatches.find((m) => m.id === matchId)
-    if (!match) {
-      if (DEBUG) console.log("[v0] Match not found:", matchId)
-      return
-    }
-
-    const isPlayerInMatch = match.player1.id === playerSession.playerId || match.player2.id === playerSession.playerId
-    if (!isPlayerInMatch) {
-      if (DEBUG) console.log("[v0] Player not in match, rejecting confirmation")
-      return
-    }
-
-    if (!effectiveResult) {
-      console.warn("[v0] No result to submit (pass result to onConfirm or set via onSubmit first):", matchId)
-      return
-    }
-
-    // Mark as confirmed in local state
-    setPlayerSubmissions((prev) => ({
-      ...prev,
-      [matchId]: { result: effectiveResult, confirmed: true },
-    }))
-
-    try {
-      if (DEBUG) console.log("[v0] Sending POST /api/tournament/match/submit", { matchId, result: effectiveResult, playerId: playerSession.playerId })
-      const response = await submitResult(matchId, effectiveResult, true)
-      console.log("[result-submit] Response:", JSON.stringify(response))
-
-      if (!response.success) {
-        console.error("[v0] Server rejected submission:", response.error, response.errorCode)
-        toast.error(messageForSubmitResponse(t, response, "arena.toastResultSubmitFailed"))
-        setPlayerSubmissions((prev) => ({
-          ...prev,
-          [matchId]: { ...prev[matchId], confirmed: false },
-        }))
-        return
-      }
-
-      // Trigger 2: Result affects rankings - guest submits result
-      if (
-        userRole === "guest-player" &&
-        !getConversionPromptDismissed("result_rankings") &&
-        !showConversionPrompt
-      ) {
-        setShowConversionPrompt("result_rankings")
-      }
-
-      const updatedMatch = response.match
-
-      if (updatedMatch) {
-        if (DEBUG) console.log("[v0] Match submission saved:", updatedMatch, "matchCompleted:", response.matchCompleted, "updatedPlayers:", response.updatedPlayers?.length)
-
-        // Server may have already completed the match and updated player scores
-        if (response.matchCompleted) {
-          const isDraw = updatedMatch.player1_submission === "draw"
-          const winnerId = isDraw
-            ? undefined
-            : updatedMatch.player1_submission === "player1-win"
-              ? updatedMatch.player1_id
-              : updatedMatch.player2_id
-          const completedAt = Date.now()
-
-          let dbPlayers: Player[] | null = null
-          if (tournamentId) {
-            try {
-              dbPlayers = await loadPlayers(tournamentId)
-            } catch (err) {
-              console.error("[result-submit] Failed to reload players after completion:", err)
-            }
-          }
-
-          setArenaState((prev) => {
-            const match = prev.pairedMatches.find((m) => m.id === matchId)
-            const completedMatch =
-              match &&
-              ({
-                ...match,
-                endTime: completedAt,
-                result: { winnerId, isDraw, completed: true, completedAt },
-              } as typeof match)
-
-            const players =
-              dbPlayers ??
-              prev.players.map((p) => {
-                const u = (response.updatedPlayers as
-                  | { id: string; points: number; games_played: number; streak: number }[]
-                  | undefined)?.find((x) => x.id === p.id)
-                if (!u) return p
-                return { ...p, score: u.points, gamesPlayed: u.games_played, streak: u.streak }
-              })
-
-            return {
-              ...prev,
-              players,
-              pairedMatches: prev.pairedMatches.filter((m) => m.id !== matchId),
-              allTimeMatches: completedMatch ? [...prev.allTimeMatches, completedMatch] : prev.allTimeMatches,
-            }
-          })
-          return
-        }
-
-        // Immediately reflect the submission in arenaState so the UI
-        // shows it without waiting for Realtime
-        setArenaState((prev) => ({
-          ...prev,
-          pairedMatches: prev.pairedMatches.map((m) => {
-            if (m.id !== matchId) return m
-            return {
-              ...m,
-              player1Submission: updatedMatch.player1_submission
-                ? { result: updatedMatch.player1_submission, confirmed: true, timestamp: Date.now() }
-                : m.player1Submission,
-              player2Submission: updatedMatch.player2_submission
-                ? { result: updatedMatch.player2_submission, confirmed: true, timestamp: Date.now() }
-                : m.player2Submission,
-            }
-          }),
-        }))
-
-        // If both agreed but server didn't complete (e.g. old deployment), organizer path can still run
-        if (
-          updatedMatch.player1_submission &&
-          updatedMatch.player2_submission &&
-          updatedMatch.player1_submission === updatedMatch.player2_submission &&
-          !response.matchCompleted
-        ) {
-          const isDraw = updatedMatch.player1_submission === "draw"
-          const winnerId = isDraw
-            ? undefined
-            : updatedMatch.player1_submission === "player1-win"
-              ? updatedMatch.player1_id
-              : updatedMatch.player2_id
-          recordResult(matchId, winnerId, isDraw)
-        }
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error)
-      console.error("[result-submit] Request failed:", msg, error)
-      toast.error(
-        msg.includes("fetch") || msg.includes("Network")
-          ? t("arena.toastResultSubmitFailedNetwork")
-          : t("arena.toastResultSubmitFailed"),
-      )
-      setPlayerSubmissions((prev) => ({
-        ...prev,
-        [matchId]: { ...prev[matchId], confirmed: false },
-      }))
-    }
-  }
-
-  const handlePlayerCancel = (matchId: string) => {
-    if (DEBUG) console.log("[v0] Player canceling submission:", matchId)
-    // Remove temporary submission
-    setPlayerSubmissions((prev) => {
-      const updated = { ...prev }
-      delete updated[matchId]
-      return updated
-    })
-  }
-
-  const overrideResult = async (playerId: string, gameIndex: number, newResult: "W" | "D" | "L") => {
-    if (DEBUG) console.log("[v0] Overriding result for player:", playerId, "game:", gameIndex, "new result:", newResult)
-
-    setArenaState((prev) => {
-      const player = prev.players.find((p) => p.id === playerId)
-      if (!player || gameIndex >= player.gameResults.length) {
-        console.error("[v0] Invalid player or game index")
-        return prev
-      }
-
-      const oldResult = player.gameResults[gameIndex]
-      if (oldResult === newResult) {
-        if (DEBUG) console.log("[v0] Result unchanged, no update needed")
-        return prev
-      }
-
-      const opponentId = player.opponentIds[gameIndex]
-      const opponent = prev.players.find((p) => p.id === opponentId)
-      if (!opponent) {
-        console.error("[v0] Opponent not found")
-        return prev
-      }
-
-      // C4 fix: find opponent's game by counting occurrences of this matchup,
-      // not by positional index comparison (which breaks for rematches).
-      let pairOccurrence = 0
-      for (let i = 0; i <= gameIndex; i++) {
-        if (player.opponentIds[i] === opponentId) pairOccurrence++
-      }
-      let opponentGameIndex = -1
-      let count = 0
-      for (let j = 0; j < opponent.opponentIds.length; j++) {
-        if (opponent.opponentIds[j] === playerId) {
-          count++
-          if (count === pairOccurrence) {
-            opponentGameIndex = j
-            break
-          }
-        }
-      }
-
-      if (opponentGameIndex === -1) {
-        console.error("[v0] Could not find corresponding game in opponent's history")
-        return prev
-      }
-
-      const newOpponentResult: "W" | "D" | "L" = newResult === "W" ? "L" : newResult === "L" ? "W" : "D"
-
-      // C5 fix: recalculate ALL points from scratch for both players
-      // so streak changes cascade correctly to subsequent games.
-      const recalcAll = (results: ("W" | "D" | "L")[]) => {
-        let streak = 0
-        let total = 0
-        const earned: number[] = []
-        for (const r of results) {
-          const isW = r === "W"
-          const isD = r === "D"
-          const pts = calculatePointsFromSettings(isW, isD, streak, prev.settings)
-          earned.push(pts)
-          total += pts
-          streak = isD ? 0 : isW ? streak + 1 : 0
-        }
-        return { total, streak, earned }
-      }
-
-      const playerResults = [...player.gameResults]
-      playerResults[gameIndex] = newResult
-      const p = recalcAll(playerResults)
-
-      const oppResults = [...opponent.gameResults]
-      oppResults[opponentGameIndex] = newOpponentResult
-      const o = recalcAll(oppResults)
-
-      const updatedPlayers = prev.players.map((pl) => {
-        if (pl.id === playerId) {
-          return { ...pl, score: p.total, streak: p.streak, gameResults: playerResults, pointsEarned: p.earned }
-        }
-        if (pl.id === opponentId) {
-          return { ...opponent, score: o.total, streak: o.streak, gameResults: oppResults, pointsEarned: o.earned }
-        }
-        return pl
-      })
-
-      if (tournamentId) {
-        savePlayers(tournamentId, updatedPlayers, prev.settings).catch((err) => {
-          console.error("[v0] Error saving players after override:", formatSupabaseError(err))
-        })
-      }
-
-      return { ...prev, players: updatedPlayers }
-    })
-  }
-
-  // New handler for settings update, toggles simulator visibility
   const handleUpdateSettings = async (newSettings: TournamentSettings) => {
     setArenaState((prev) => ({
       ...prev,
       settings: newSettings,
-      tableCount: newSettings.tableCount, // Ensure tableCount is synced
+      tableCount: newSettings.tableCount,
     }))
-    // Closing the settings dialog is handled by the caller (TournamentSettingsPanel)
-    // setShowSettings(false); // Removed, handled in TournamentSettingsPanel
-  }
-
-  // Helper to consolidate match completion and applying marked actions
-  const completeMatch = (matchId: string, result: MatchResult) => {
-    setArenaState((prev) => {
-      const updated = { ...prev }
-      // Find and update the match
-      const matchIndex = updated.pairedMatches.findIndex((m) => m.id === matchId)
-      if (matchIndex !== -1) {
-        updated.pairedMatches[matchIndex].result = result
-      }
-
-      updated.players = updated.players.map((player) => {
-        // Check if this player had a match that just completed
-        const hadMatchJustCompleted = updated.pairedMatches.some(
-          (m) => m.id === matchId && m.result?.completed && (m.player1.id === player.id || m.player2.id === player.id),
-        )
-
-        if (hadMatchJustCompleted) {
-          // Apply marked for removal
-          if (player.markedForRemoval) {
-            return { ...player, hasLeft: true, active: false } // Keep in list but mark as left
-          }
-          // Apply marked for pause
-          if (player.markedForPause) {
-            return { ...player, paused: true, markedForPause: false }
-          }
-        }
-        return player
-      })
-
-      // Remove players that are marked as left
-      updated.players = updated.players.filter((p) => !p.markedForRemoval || p.hasLeft)
-
-      // Save updated player and match states (organizer only — players lack RLS write access)
-      if (tournamentId && isOrganizer) {
-        savePlayers(tournamentId, updated.players, updated.settings).catch((err) => {
-          console.error("[v0] Error saving players after match completion:", formatSupabaseError(err))
-        })
-        saveMatches(tournamentId, mergeMatchesForSave(updated.pairedMatches, updated.allTimeMatches)).catch((err) => {
-          console.error("[v0] Error saving matches after match completion:", formatSupabaseError(err))
-        })
-      }
-
-      return updated
-    })
   }
 
   if (isLoading) {
