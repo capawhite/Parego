@@ -16,11 +16,12 @@ If users see **"Bucket not found"** or avatar upload fails after signup, the `av
 
 ## 2. Add storage policies (SQL)
 
-In the same project, go to **SQL Editor** and run the contents of:
+The storage policies are part of the baseline migration
+(**`supabase/migrations/20260310000000_baseline_schema.sql`**, storage section). If the baseline
+is already applied, no extra SQL is needed. Otherwise run that migration's storage policies in
+**SQL Editor**.
 
-**`scripts/016_storage_avatars_bucket.sql`**
-
-That script adds policies so:
+Those policies ensure:
 
 - Authenticated users can upload/update/delete only their own file under `avatars/<user_id>/`.
 - Anyone can read (public URLs for profile avatars).

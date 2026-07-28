@@ -75,12 +75,16 @@ Implementation plan for the guest identity spec: self-entered names, stable inte
 - [x] Signup flow: after location, step "Have you played before?"
 - [x] If yes: show recent guest identities from localStorage (tournament + display name)
 - [x] User selects which to claim; on account creation, set `user_id` on those player rows
-- [x] Server action: `claimGuestHistory(playerIds[])` with auth checks
+- [x] Server action: `claimGuestHistoryForDevice(playerIds[], deviceId)` with auth + device checks
 
 **Files:**
 - `app/auth/signup/page.tsx` — add claim step (step 7)
-- New: `app/actions/claim-guest-history.ts`
-- New: `scripts/019_claim_guest_players_policy.sql` — RLS policy so users can update guest rows to set `user_id` (run in Supabase after 018)
+- `app/actions/claim-guest-history.ts`
+
+> **Superseded (2026-07 security sprint):** the open claim RLS policy
+> (`scripts/legacy-sql/019_claim_guest_players_policy.sql`) was dropped by
+> `supabase/migrations/20260728180000_security_sprint.sql`. Claims now run through an
+> admin-validated server action requiring a matching `device_id` and a completed tournament.
 
 **Edge cases:**
 - Player already has user_id (already claimed) — don't show, or show as "already linked"
