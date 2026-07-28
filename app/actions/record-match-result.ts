@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient, adminClientMissingReason } from "@/lib/supabase/admin"
+import { matchesToDbRows } from "@/lib/database/row-mappers"
 import { mergeMatchesForSave } from "@/lib/tournament/merge-matches"
 import type { Match, Player, TournamentSettings } from "@/lib/types"
 
@@ -66,31 +67,9 @@ export async function recordOrganizerMatchResult(input: {
   if (!admin) return { success: false, error: adminClientMissingReason() }
 
   const allMatches = mergeMatchesForSave(input.pairedMatches, input.allTimeMatches)
-  const dbMatches = allMatches.map((m) => ({
-    id: m.id,
-    tournament_id: input.tournamentId,
-    player1_id: m.player1.id,
-    player2_id: m.player2.id,
-    player1_data: JSON.stringify(m.player1),
-    player2_data: JSON.stringify(m.player2),
-    table_number: m.tableNumber || null,
-    result: m.result ? JSON.stringify(m.result) : null,
-    completed: m.result?.completed || false,
-    completed_at: m.result?.completedAt ? new Date(m.result.completedAt).toISOString() : null,
-    player1_submission: m.player1Submission?.confirmed ? m.player1Submission.result : null,
-    player2_submission: m.player2Submission?.confirmed ? m.player2Submission.result : null,
-    player1_submission_time: m.player1Submission?.confirmed
-      ? new Date(m.player1Submission.timestamp).toISOString()
-      : null,
-    player2_submission_time: m.player2Submission?.confirmed
-      ? new Date(m.player2Submission.timestamp).toISOString()
-      : null,
-    dispute_status: m.disputeStatus || "none",
-    swiss_round: m.swissRound ?? null,
-    match_kind: m.matchKind ?? "play",
-  }))
-
-  const { error: upsertErr } = await admin.from("matches").upsert(dbMatches)
+  const { error: upsertErr } = await admin
+    .from("matches")
+    .upsert(matchesToDbRows(input.tournamentId, allMatches))
   if (upsertErr) {
     console.error("[recordOrganizerMatchResult] matches upsert failed:", upsertErr)
     return { success: false, error: "Failed to save matches" }
