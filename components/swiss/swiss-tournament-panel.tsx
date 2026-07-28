@@ -12,12 +12,12 @@ import { createClient } from "@/lib/supabase/client"
 import {
   loadPlayers,
   loadMatches,
-  savePlayers,
-  saveMatches,
   saveTournament,
   formatSupabaseError,
 } from "@/lib/database/tournament-db"
 import { fetchTournamentById, joinTournamentAction } from "@/app/actions/join-tournament"
+import { saveSwissRoundState } from "@/app/actions/save-swiss-round"
+import { removePlayerAction } from "@/app/actions/remove-player"
 import { parseTournamentSettings } from "@/lib/tournament-settings"
 import {
   effectiveTableCountFromDb,
@@ -347,8 +347,15 @@ export function SwissTournamentPanel({ tournamentId }: { tournamentId: string })
         nextPlayers = applyPairingByeToPlayers(bm, nextPlayers, settings)
       }
       suppressUntil.current = Date.now() + 2000
-      await savePlayers(tournamentId, nextPlayers, settings)
-      await saveMatches(tournamentId, mergeMatchesForSave(matches, newMatches))
+      const saveRes = await saveSwissRoundState({
+        tournamentId,
+        players: nextPlayers,
+        matches: mergeMatchesForSave(matches, newMatches),
+      })
+      if (!saveRes.success) {
+        toast.error(saveRes.error || t("swiss.pairingFailed"))
+        return
+      }
       toast.success(t("swiss.pairedRound", { round: nextRound }))
       await refresh()
     } catch (e) {
@@ -375,24 +382,15 @@ export function SwissTournamentPanel({ tournamentId }: { tournamentId: string })
       )
       const advanced = maybeAdvanceSwissLastCompletedRound(settings, merged)
       suppressUntil.current = Date.now() + 2000
-      await savePlayers(tournamentId, nextPlayers, advanced)
-      await saveMatches(tournamentId, nextMatches)
-      const trow = await fetchTournamentById(tournamentId)
-      if (trow) {
-        await saveTournament(
-          tournamentId,
-          trow.name,
-          trow.status,
-          trow.tables_count,
-          advanced,
-          trow.city,
-          trow.country,
-          trow.organizer_id,
-          trow.latitude,
-          trow.longitude,
-          trow.visibility ?? "public",
-          trow.start_time,
-        )
+      const saveRes = await saveSwissRoundState({
+        tournamentId,
+        players: nextPlayers,
+        matches: nextMatches,
+        settings: advanced,
+      })
+      if (!saveRes.success) {
+        toast.error(saveRes.error || t("common.errorGeneric"))
+        return
       }
       toast.success(t("swiss.resultSaved"))
       await refresh()
@@ -483,9 +481,8 @@ export function SwissTournamentPanel({ tournamentId }: { tournamentId: string })
   const handleRemovePlayerSetup = async (playerId: string) => {
     if (!isOrganizer || status !== "setup") return
     try {
-      const supabase = createClient()
-      const { error } = await supabase.from("players").delete().eq("id", playerId).eq("tournament_id", tournamentId)
-      if (error) throw error
+      const res = await removePlayerAction({ tournamentId, playerId })
+      if (!res.ok) throw new Error(res.error || "Could not remove player")
       toast.success(t("swiss.playerRemoved"))
       await refresh()
     } catch (e) {

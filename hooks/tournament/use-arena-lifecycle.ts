@@ -2,8 +2,8 @@
 
 import { useCallback, type Dispatch, type SetStateAction } from "react"
 import { toast } from "sonner"
-import { formatSupabaseError, saveMatches, saveTournament } from "@/lib/database/tournament-db"
-import { mergeMatchesForSave } from "@/lib/tournament/merge-matches"
+import { finalizeTournament } from "@/app/actions/finalize-tournament"
+import { formatSupabaseError, saveTournament } from "@/lib/database/tournament-db"
 import type { ArenaState } from "@/lib/types"
 import type { useI18n } from "@/components/i18n-provider"
 
@@ -190,49 +190,25 @@ export function useArenaLifecycle({
 
     try {
       suppressRealtime?.()
-      const startTimeIso =
-        arenaState.tournamentStartTime != null
-          ? typeof arenaState.tournamentStartTime === "number"
-            ? new Date(arenaState.tournamentStartTime).toISOString()
-            : String(arenaState.tournamentStartTime)
-          : undefined
-
-      await saveTournament(
-        tournamentId,
-        displayName,
-        "completed",
-        arenaState.tableCount,
-        arenaState.settings,
-        tournamentMetadata?.city,
-        tournamentMetadata?.country,
-        organizerId ?? currentUserId ?? undefined,
-        tournamentMetadata?.latitude,
-        tournamentMetadata?.longitude,
-        tournamentMetadata?.visibility ?? "public",
-        startTimeIso,
-      )
-
-      const allMatchesToSave = mergeMatchesForSave(arenaState.pairedMatches, arenaState.allTimeMatches)
-      await saveMatches(tournamentId, allMatchesToSave)
+      // Status-only server finalize: match results and scores are already
+      // persisted server-side, so no client match snapshot is written here.
+      const res = await finalizeTournament(tournamentId)
+      if (!res.success) {
+        console.error("[v0] Error finalizing tournament:", res.error)
+        toast.error(res.error || t("arena.alertStartTournamentFailed"))
+        return
+      }
       if (DEBUG) console.log("[v0] Tournament ended and saved as completed")
     } catch (error) {
       console.error("[v0] Error saving tournament end:", error)
     }
   }, [
     tournamentId,
-    arenaState.tournamentStartTime,
-    arenaState.tableCount,
-    arenaState.settings,
-    arenaState.pairedMatches,
-    arenaState.allTimeMatches,
-    displayName,
-    tournamentMetadata,
-    organizerId,
-    currentUserId,
     suppressRealtime,
     setShowPodium,
     setArenaState,
     setWaitingForFinalResults,
+    t,
   ])
 
   const handleEndImmediately = useCallback(async () => {
