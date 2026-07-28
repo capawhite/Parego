@@ -6,3 +6,12 @@ services:
     runtime: node
     buildCommand: npm ci && npm run build
     startCommand: npm run start
+
+  # Background pairing ticker — keeps arena boards moving without organizer laptop.
+  # Set PAIRING_CRON_SECRET + PAREGO_APP_URL (+ same Supabase keys if needed) in Dashboard.
+  - type: cron
+    name: parego-pair-active
+    runtime: node
+    schedule: "*/1 * * * *"
+    buildCommand: "npm ci --omit=dev"
+    startCommand: "node scripts/cron-pair-active.mjs"

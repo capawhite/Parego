@@ -115,13 +115,17 @@ export type PairTournamentResult = {
 }
 
 /**
- * Organizer-authorized pairing tick: load state, run algorithm, upsert new matches, heartbeat.
+ * Pairing tick for one tournament.
+ * - organizer mode: requires organizerUserId to match organizer/owner
+ * - system mode: used by authenticated cron (no user id)
  */
 export async function pairTournamentImpl(
   tournamentId: string,
-  organizerUserId: string,
+  organizerUserId: string | null,
   adminClient?: SupabaseClient | null,
+  options?: { mode?: "organizer" | "system" },
 ): Promise<PairTournamentResult> {
+  const mode = options?.mode ?? "organizer"
   const admin = adminClient ?? createAdminClient()
   if (!admin) {
     return { success: false, error: adminClientMissingReason() }
@@ -137,8 +141,13 @@ export async function pairTournamentImpl(
     return { success: false, error: "Tournament not found" }
   }
 
-  if (tournament.organizer_id !== organizerUserId && tournament.owner_id !== organizerUserId) {
-    return { success: false, error: "Only the organizer can create pairings" }
+  if (mode === "organizer") {
+    if (!organizerUserId) {
+      return { success: false, error: "Only the organizer can create pairings" }
+    }
+    if (tournament.organizer_id !== organizerUserId && tournament.owner_id !== organizerUserId) {
+      return { success: false, error: "Only the organizer can create pairings" }
+    }
   }
 
   if (tournament.status !== "active") {
@@ -217,5 +226,78 @@ export async function pairTournamentImpl(
     createdCount: tick.newMatches.length,
     matchIds: tick.newMatches.map((m) => m.id),
     pairingHeartbeatAt: heartbeatAt,
+  }
+}
+
+export type PairActiveSummary = {
+  success: boolean
+  error?: string
+  scanned: number
+  paired: number
+  createdMatches: number
+  results: { tournamentId: string; createdCount: number; error?: string }[]
+}
+
+/**
+ * System tick across all active non-Swiss tournaments.
+ */
+export async function pairActiveTournamentsImpl(
+  adminClient?: SupabaseClient | null,
+): Promise<PairActiveSummary> {
+  const admin = adminClient ?? createAdminClient()
+  if (!admin) {
+    return {
+      success: false,
+      error: adminClientMissingReason(),
+      scanned: 0,
+      paired: 0,
+      createdMatches: 0,
+      results: [],
+    }
+  }
+
+  const { data: rows, error } = await admin
+    .from("tournaments")
+    .select("id, settings, status")
+    .eq("status", "active")
+
+  if (error) {
+    console.error("[pair-active] list failed:", error)
+    return {
+      success: false,
+      error: "Failed to list active tournaments",
+      scanned: 0,
+      paired: 0,
+      createdMatches: 0,
+      results: [],
+    }
+  }
+
+  const arenaIds = (rows ?? []).filter((row) => {
+    const settings = parseTournamentSettings(row)
+    return settings.pairingAlgorithm !== "fide-swiss"
+  })
+
+  const results: PairActiveSummary["results"] = []
+  let createdMatches = 0
+  let paired = 0
+
+  for (const row of arenaIds) {
+    const out = await pairTournamentImpl(row.id, null, admin, { mode: "system" })
+    if (out.success) {
+      paired += 1
+      createdMatches += out.createdCount ?? 0
+      results.push({ tournamentId: row.id, createdCount: out.createdCount ?? 0 })
+    } else {
+      results.push({ tournamentId: row.id, createdCount: 0, error: out.error })
+    }
+  }
+
+  return {
+    success: true,
+    scanned: arenaIds.length,
+    paired,
+    createdMatches,
+    results,
   }
 }
