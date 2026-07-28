@@ -12,7 +12,7 @@ import type { ArenaState, Player, Match, TournamentSettings } from "@/lib/types"
 import { logArenaPairing } from "@/lib/pairing/arena-pairing-debug"
 import { isPlayerAvailableForPairing } from "@/lib/pairing/player-eligibility"
 import { isArenaT1Eligible, setArenaCooldownReductions } from "@/lib/pairing/arena-t1"
-import { mergeMatchesForSave, assignTablesToMatchesForState } from "@/lib/tournament/merge-matches"
+import { assignTablesToMatchesForState } from "@/lib/tournament/merge-matches"
 import { isPairingHeartbeatStale } from "@/lib/tournament/pairing-loop-gate"
 import { analyzeRematches as analyzeRematchesPure } from "@/lib/tournament/rematch-analysis"
 import {
@@ -31,21 +31,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { DEFAULT_SETTINGS } from "@/lib/types"
-import { parseTournamentSettings } from "@/lib/tournament-settings"
-import {
-  effectiveTableCountFromDb,
-  effectiveTableSlotsForPairing,
-} from "@/lib/tournament/effective-table-count"
-import {
-  saveTournament,
-  loadPlayers,
-  savePlayers,
-  saveMatches,
-  loadMatches,
-  getAvatarUrls,
-  formatSupabaseError,
-} from "@/lib/database/tournament-db"
-import { fetchTournamentById } from "@/app/actions/join-tournament"
+import { effectiveTableSlotsForPairing } from "@/lib/tournament/effective-table-count"
+import { loadPlayers } from "@/lib/database/tournament-db"
 import { useRouter } from "next/navigation"
 import { ArenaPlayersTab } from "@/components/tournament/arena-players-tab"
 import { ArenaPairingsTab } from "@/components/tournament/arena-pairings-tab"
@@ -53,7 +40,6 @@ import { ArenaPairingStatusPanel } from "@/components/tournament/arena-pairing-s
 import { ArenaResultsTab } from "@/components/tournament/arena-results-tab"
 import { ArenaTournamentHeader } from "@/components/tournament/arena-tournament-header"
 import { PairingMatchCard } from "@/components/tournament/pairing-match-card"
-import { createClient } from "@/lib/supabase/client" // Import createClient for Supabase
 import {
   getGuestSessionHistory,
   getConversionPromptDismissed,
@@ -71,6 +57,10 @@ import { usePlayerSubmit } from "@/hooks/tournament/use-player-submit"
 import { useTournamentLifecycle } from "@/hooks/tournament/use-tournament-lifecycle"
 import { useArenaPlayers } from "@/hooks/tournament/use-arena-players"
 import { useArenaMatchResults } from "@/hooks/tournament/use-arena-match-results"
+import { useArenaLifecycle } from "@/hooks/tournament/use-arena-lifecycle"
+import { useArenaTournamentLoad } from "@/hooks/tournament/use-arena-tournament-load"
+import { useArenaAutosave } from "@/hooks/tournament/use-arena-autosave"
+import { formatDurationClock } from "@/lib/tournament/format-duration"
 
 const TOURNAMENT_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
 
@@ -375,187 +365,34 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     }
   }, [guestHasMatch, tournamentUsesRatings, showConversionPrompt])
 
-  useEffect(() => {
-    const loadFromDatabase = async () => {
-      if (!tournamentId) return
-
-      if (DEBUG) console.log("[v0] Loading tournament from database:", tournamentId)
-
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (user) {
-        setCurrentUserId(user.id)
-        const { data: profileData } = await supabase
-          .from("users")
-          .select("name, rating, rating_band, country")
-          .eq("id", user.id)
-          .maybeSingle()
-        if (profileData) {
-          setUserName(profileData.name || "")
-          setUserRating(profileData.rating ?? null)
-          setUserRatingBand(profileData.rating_band ?? null)
-          setUserCountry(profileData.country || null)
-        }
-      }
-
-      const tournament = await fetchTournamentById(tournamentId)
-      if (tournament) {
-        if (DEBUG) console.log("[v0] Found tournament:", tournament.name, "Status:", tournament.status)
-
-        if (tournament.name?.trim()) {
-          setDisplayName(tournament.name.trim())
-        }
-
-        setOrganizerId(tournament.organizer_id || null)
-        setTournamentMetadata({
-          city: tournament.city,
-          country: tournament.country,
-          latitude: tournament.latitude,
-          longitude: tournament.longitude,
-          visibility: tournament.visibility || "public",
-        })
-
-        if (tournament.organizer_id) {
-          const { data: organizerData } = await supabase
-            .from("users")
-            .select("name")
-            .eq("id", tournament.organizer_id)
-            .maybeSingle()
-          if (organizerData) {
-            setOrganizerName(organizerData.name)
-          }
-        }
-
-        const dbPlayers = await loadPlayers(tournamentId)
-        const dbMatches = await loadMatches(tournamentId)
-
-        // Separate active matches (no result) from completed matches
-        const activeMatches = dbMatches.filter((m) => !m.result?.completed)
-        const completedMatches = dbMatches.filter((m) => m.result?.completed)
-
-        if (DEBUG)
-          console.log(
-            "[v0] Loaded",
-            dbPlayers.length,
-            "players,",
-            activeMatches.length,
-            "active matches,",
-            completedMatches.length,
-            "completed matches",
-          )
-
-        if (user) {
-          const playerMatch = dbPlayers.find((p) => p.userId === user.id)
-          setCurrentPlayerInTournament(playerMatch || null)
-        }
-
-        // Fetch avatar URLs for players with userId
-        const userIds = dbPlayers.map((p) => p.userId).filter((id): id is string => !!id)
-        const avatarUrls = userIds.length > 0 ? await getAvatarUrls(userIds) : {}
-        const enrichedPlayers = dbPlayers.map((p) =>
-          p.userId && avatarUrls[p.userId]
-            ? { ...p, avatarUrl: avatarUrls[p.userId] }
-            : { ...p, avatarUrl: null }
-        )
-
-        // Convert start_time from ISO string to numeric timestamp
-        const startTimeMs = tournament.start_time
-          ? new Date(tournament.start_time).getTime()
-          : null
-
-        const validatedSettings = parseTournamentSettings(tournament)
-        const resolvedTables = effectiveTableCountFromDb({
-          tables_count: tournament.tables_count,
-          settings: validatedSettings,
-          status: tournament.status,
-        })
-
-        setArenaState((prev) => ({
-          ...prev,
-          players: enrichedPlayers.length > 0 ? enrichedPlayers : prev.players,
-          tableCount: resolvedTables,
-          settings: {
-            ...validatedSettings,
-            tableCount: resolvedTables,
-          },
-          status: tournament.status,
-          isActive: tournament.status === "active",
-          pairedMatches: activeMatches,
-          allTimeMatches: completedMatches,
-          tournamentDuration: TOURNAMENT_DURATION,
-          tournamentStartTime: startTimeMs,
-        }))
-      } else {
-        if (DEBUG) console.log("[v0] Tournament not found, initializing fresh state")
-        setArenaState((prev) => ({
-          ...prev,
-          status: "setup",
-        }))
-      }
-
-      setIsLoading(false)
-    }
-
-    loadFromDatabase()
-  }, [tournamentId])
-
-  useEffect(() => {
-    if (!tournamentId || isLoading || !isOrganizer) return
-
-    const saveToDatabase = async () => {
-      try {
-        suppressRealtime()
-        const statusToSave = arenaState.status === "completed" ? "completed" : arenaState.isActive ? "active" : "setup"
-        const startTimeIso =
-          arenaState.tournamentStartTime != null
-            ? typeof arenaState.tournamentStartTime === "number"
-              ? new Date(arenaState.tournamentStartTime).toISOString()
-              : String(arenaState.tournamentStartTime)
-            : undefined
-
-        // RLS requires organizer_id = auth.uid() on insert/update; use current user when organizer not yet set (e.g. new tournament)
-        await saveTournament(
-          tournamentId,
-          displayName,
-          statusToSave,
-          arenaState.tableCount,
-          arenaState.settings,
-          tournamentMetadata?.city,
-          tournamentMetadata?.country,
-          organizerId ?? currentUserId ?? undefined,
-          tournamentMetadata?.latitude,
-          tournamentMetadata?.longitude,
-          tournamentMetadata?.visibility ?? "public",
-          startTimeIso,
-        )
-        await savePlayers(tournamentId, arenaState.players, arenaState.settings)
-        if (DEBUG) console.log("[v0] Tournament auto-saved to database")
-      } catch (error) {
-        console.error("[v0] Error auto-saving tournament:", error)
-      }
-    }
-
-    const debounceTimer = setTimeout(saveToDatabase, 1000)
-    return () => clearTimeout(debounceTimer)
-  }, [
+  useArenaTournamentLoad({
     tournamentId,
+    tournamentDurationMs: TOURNAMENT_DURATION,
+    setArenaState,
+    setIsLoading,
+    setCurrentUserId,
+    setUserName,
+    setUserRating,
+    setUserRatingBand,
+    setUserCountry,
+    setDisplayName,
+    setOrganizerId,
+    setOrganizerName,
+    setTournamentMetadata,
+    setCurrentPlayerInTournament,
+  })
+
+  useArenaAutosave({
+    tournamentId,
+    isLoading,
+    isOrganizer,
     displayName,
-    arenaState.players,
-    arenaState.isActive,
-    arenaState.tableCount,
-    arenaState.settings,
-    arenaState.tournamentDuration,
-    arenaState.status,
-    arenaState.tournamentStartTime,
+    arenaState,
     tournamentMetadata,
     organizerId,
     currentUserId,
-    isLoading,
-    isOrganizer,
     suppressRealtime,
-  ])
+  })
 
   useEffect(() => {
     if (!arenaState.isActive || !arenaState.tournamentStartTime) return
@@ -756,161 +593,31 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     }
   }, [tournamentId, arenaState.status, activeTab, isLoading])
 
-  const formatTime = (ms: number) => {
-    const minutes = Math.floor(ms / 60000)
-    const seconds = Math.floor((ms % 60000) / 1000)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
-  }
-
-  const handleStartTournament = async () => {
-    if (arenaState.status === "completed") {
-      toast.error(t("arena.alertTournamentAlreadyCompleted"))
-      return
-    }
-
-    if (arenaState.players.length < 2) {
-      toast.error(t("arena.alertNeedAtLeastTwoPlayers"))
-      return
-    }
-
-    const tableCount = Number.parseInt(tableCountInput)
-    if (!tableCount || tableCount < 1) {
-      toast.error(t("arena.alertInvalidTableCount"))
-      return
-    }
-
-    const maxSimultaneousPairings = Math.floor(arenaState.players.length / 2)
-    if (tableCount < maxSimultaneousPairings) {
-      toast.error(t("arena.alertNotEnoughTables", { players: arenaState.players.length, tables: maxSimultaneousPairings }))
-      return
-    }
-
-    const durationMinutes = Number.parseInt(tournamentDurationInput)
-    if (!durationMinutes || durationMinutes < 1) {
-      toast.error(t("arena.alertInvalidDurationMinutes"))
-      return
-    }
-    const durationMs = durationMinutes * 60 * 1000
-
-    if (!tournamentId) {
-      console.error("[v0] No tournament ID available - this should not happen with new routing")
-      return
-    }
-
-    // Call server action to start tournament (validates auth + sets DB status)
-    try {
-      const result = await startTournamentLifecycle()
-
-      if (!result.success) {
-        toast.error(result.error || t("arena.alertStartTournamentFailed"))
-        return
-      }
-    } catch (error) {
-      console.error("[v0] Error calling startTournament action:", error)
-      toast.error(t("arena.alertStartTournamentFailed"))
-      return
-    }
-
-    const newTables = tableCount > 0 ? tableCount : Math.floor(arenaState.players.length / 2)
-    const startTimeMs = Date.now()
-
-    try {
-      suppressRealtime?.()
-      await saveTournament(
-        tournamentId,
-        displayName,
-        "active",
-        newTables,
-        {
-          ...arenaState.settings,
-          tableCount: newTables,
-        },
-        tournamentMetadata?.city,
-        tournamentMetadata?.country,
-        organizerId ?? currentUserId ?? undefined,
-        tournamentMetadata?.latitude,
-        tournamentMetadata?.longitude,
-        tournamentMetadata?.visibility ?? "public",
-        new Date(startTimeMs).toISOString(),
-      )
-    } catch (err) {
-      console.error("[v0] Failed to persist tables_count after start:", formatSupabaseError(err))
-    }
-
-    setArenaState((prev) => ({
-      ...prev,
-      status: "active",
-      isActive: true,
-      tableCount: newTables,
-      settings: {
-        ...prev.settings,
-        tableCount: newTables,
-      },
-      tournamentStartTime: startTimeMs,
-      tournamentDuration: durationMs,
-    }))
-    setTimeRemaining(durationMs)
-
-    setActiveTab("pairings")
-  }
-
-  const endTournament = () => {
-    setShowEndDialog(true)
-  }
-
-  const handleEndImmediately = async () => {
-    setShowEndDialog(false)
-    await finalizeEndTournament()
-  }
-
-  const handleWaitForFinalResults = () => {
-    setShowEndDialog(false)
-    setWaitingForFinalResults(true)
-  }
-
-  const finalizeEndTournament = async () => {
-    setShowPodium(true)
-    setArenaState((prev) => ({
-      ...prev,
-      isActive: false,
-      status: "completed",
-      pairedMatches: [], // Clear active matches when ending tournament
-    }))
-    setWaitingForFinalResults(false)
-
-    if (tournamentId) {
-      try {
-        suppressRealtime?.() // avoid Realtime echo overwriting local state on organizer's client
-        const startTimeIso =
-          arenaState.tournamentStartTime != null
-            ? typeof arenaState.tournamentStartTime === "number"
-              ? new Date(arenaState.tournamentStartTime).toISOString()
-              : String(arenaState.tournamentStartTime)
-            : undefined
-
-        await saveTournament(
-          tournamentId,
-          displayName,
-          "completed",
-          arenaState.tableCount,
-          arenaState.settings,
-          tournamentMetadata?.city,
-          tournamentMetadata?.country,
-          organizerId ?? currentUserId ?? undefined,
-          tournamentMetadata?.latitude,
-          tournamentMetadata?.longitude,
-          tournamentMetadata?.visibility ?? "public",
-          startTimeIso,
-        )
-
-        const allMatchesToSave = mergeMatchesForSave(arenaState.pairedMatches, arenaState.allTimeMatches)
-        await saveMatches(tournamentId, allMatchesToSave)
-        if (DEBUG) console.log("[v0] Tournament ended and saved as completed")
-      } catch (error) {
-        console.error("[v0] Error saving tournament end:", error)
-      }
-    }
-  }
+  const {
+    handleStartTournament,
+    endTournament,
+    handleEndImmediately,
+    handleWaitForFinalResults,
+    finalizeEndTournament,
+  } = useArenaLifecycle({
+    tournamentId,
+    arenaState,
+    setArenaState,
+    displayName,
+    tableCountInput,
+    tournamentDurationInput,
+    tournamentMetadata,
+    organizerId,
+    currentUserId,
+    suppressRealtime,
+    startTournamentLifecycle,
+    setTimeRemaining,
+    setActiveTab,
+    setShowEndDialog,
+    setWaitingForFinalResults,
+    setShowPodium,
+    t,
+  })
 
   const closePodium = () => {
     setShowPodium(false)
@@ -1192,7 +899,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             pairedMatches={arenaState.pairedMatches}
             pairingAlgorithm={arenaState.settings.pairingAlgorithm}
             hasNewPairing={hasNewPairing}
-            timeRemainingFormatted={formatTime(timeRemaining)}
+            timeRemainingFormatted={formatDurationClock(timeRemaining)}
             completionRatio={completionRatio}
             canEndTournament={permissions.canEndTournament}
             canAccessSettings={permissions.canAccessSettings}
