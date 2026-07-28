@@ -4,6 +4,11 @@ import { DEFAULT_SETTINGS } from "@/lib/types"
 import { parseTournamentSettings } from "@/lib/tournament-settings"
 import { runPairTick } from "@/lib/pairing/run-pair-tick"
 import { createAdminClient, adminClientMissingReason } from "@/lib/supabase/admin"
+import {
+  claimPairingLease,
+  pairingLeaseHolderId,
+  releasePairingLease,
+} from "@/lib/pairing/pairing-lease"
 
 function mapDbPlayer(p: Record<string, unknown>): Player {
   return {
@@ -112,6 +117,8 @@ export type PairTournamentResult = {
   createdCount?: number
   matchIds?: string[]
   pairingHeartbeatAt?: string
+  /** True when another worker held the pairing lease — not an error. */
+  skippedDueToLease?: boolean
 }
 
 /**
@@ -163,69 +170,80 @@ export async function pairTournamentImpl(
     return { success: false, error: "Swiss pairings are created from the Swiss console" }
   }
 
-  const [{ data: playerRows }, { data: matchRows }] = await Promise.all([
-    admin.from("players").select("*").eq("tournament_id", tournamentId),
-    admin.from("matches").select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: true }),
-  ])
+  const holder = pairingLeaseHolderId(mode, organizerUserId)
+  const claimed = await claimPairingLease(admin, tournamentId, holder)
+  if (!claimed) {
+    return { success: true, createdCount: 0, matchIds: [], skippedDueToLease: true }
+  }
 
-  const players = (playerRows ?? []).map((p) => mapDbPlayer(p as Record<string, unknown>))
-  const allMatches = (matchRows ?? []).map((m) => mapDbMatch(m as Record<string, unknown>))
-  const pairedMatches = allMatches.filter((m) => !m.result?.completed)
-  const allTimeMatches = allMatches.filter((m) => !!m.result?.completed)
+  try {
+    // Re-read field after lease so we don't pair on a stale snapshot.
+    const [{ data: playerRows }, { data: matchRows }] = await Promise.all([
+      admin.from("players").select("*").eq("tournament_id", tournamentId),
+      admin.from("matches").select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: true }),
+    ])
 
-  const dbActivePlayerIds = new Set(
-    pairedMatches.flatMap((m) => [m.player1.id, m.player2.id]),
-  )
+    const players = (playerRows ?? []).map((p) => mapDbPlayer(p as Record<string, unknown>))
+    const allMatches = (matchRows ?? []).map((m) => mapDbMatch(m as Record<string, unknown>))
+    const pairedMatches = allMatches.filter((m) => !m.result?.completed)
+    const allTimeMatches = allMatches.filter((m) => !!m.result?.completed)
 
-  const hasVenue = tournament.latitude != null && tournament.longitude != null
-  const tableCount =
-    typeof tournament.table_count === "number"
-      ? tournament.table_count
-      : typeof settings.tableCount === "number"
-        ? settings.tableCount
-        : 0
+    const dbActivePlayerIds = new Set(
+      pairedMatches.flatMap((m) => [m.player1.id, m.player2.id]),
+    )
 
-  const tick = runPairTick({
-    players,
-    pairedMatches,
-    allTimeMatches,
-    settings,
-    tableCount,
-    hasVenue,
-    dbActivePlayerIds,
-  })
+    const hasVenue = tournament.latitude != null && tournament.longitude != null
+    const tableCount =
+      typeof tournament.table_count === "number"
+        ? tournament.table_count
+        : typeof settings.tableCount === "number"
+          ? settings.tableCount
+          : 0
 
-  const heartbeatAt = new Date().toISOString()
-  const nextSettings = { ...settings, pairingHeartbeatAt: heartbeatAt }
+    const tick = runPairTick({
+      players,
+      pairedMatches,
+      allTimeMatches,
+      settings,
+      tableCount,
+      hasVenue,
+      dbActivePlayerIds,
+    })
 
-  await admin
-    .from("tournaments")
-    .update({ settings: nextSettings })
-    .eq("id", tournamentId)
+    const heartbeatAt = new Date().toISOString()
+    const nextSettings = { ...settings, pairingHeartbeatAt: heartbeatAt }
 
-  if (tick.newMatches.length === 0) {
+    await admin
+      .from("tournaments")
+      .update({ settings: nextSettings })
+      .eq("id", tournamentId)
+
+    if (tick.newMatches.length === 0) {
+      return {
+        success: true,
+        createdCount: 0,
+        matchIds: [],
+        pairingHeartbeatAt: heartbeatAt,
+      }
+    }
+
+    const { error: upsertErr } = await admin
+      .from("matches")
+      .upsert(matchesToDbRows(tournamentId, tick.newMatches))
+
+    if (upsertErr) {
+      console.error("[pair-tournament] upsert failed:", upsertErr)
+      return { success: false, error: "Failed to save pairings" }
+    }
+
     return {
       success: true,
-      createdCount: 0,
-      matchIds: [],
+      createdCount: tick.newMatches.length,
+      matchIds: tick.newMatches.map((m) => m.id),
       pairingHeartbeatAt: heartbeatAt,
     }
-  }
-
-  const { error: upsertErr } = await admin
-    .from("matches")
-    .upsert(matchesToDbRows(tournamentId, tick.newMatches))
-
-  if (upsertErr) {
-    console.error("[pair-tournament] upsert failed:", upsertErr)
-    return { success: false, error: "Failed to save pairings" }
-  }
-
-  return {
-    success: true,
-    createdCount: tick.newMatches.length,
-    matchIds: tick.newMatches.map((m) => m.id),
-    pairingHeartbeatAt: heartbeatAt,
+  } finally {
+    await releasePairingLease(admin, tournamentId, holder)
   }
 }
 
@@ -235,7 +253,8 @@ export type PairActiveSummary = {
   scanned: number
   paired: number
   createdMatches: number
-  results: { tournamentId: string; createdCount: number; error?: string }[]
+  skippedLease: number
+  results: { tournamentId: string; createdCount: number; error?: string; skippedDueToLease?: boolean }[]
 }
 
 /**
@@ -252,6 +271,7 @@ export async function pairActiveTournamentsImpl(
       scanned: 0,
       paired: 0,
       createdMatches: 0,
+      skippedLease: 0,
       results: [],
     }
   }
@@ -269,6 +289,7 @@ export async function pairActiveTournamentsImpl(
       scanned: 0,
       paired: 0,
       createdMatches: 0,
+      skippedLease: 0,
       results: [],
     }
   }
@@ -281,10 +302,14 @@ export async function pairActiveTournamentsImpl(
   const results: PairActiveSummary["results"] = []
   let createdMatches = 0
   let paired = 0
+  let skippedLease = 0
 
   for (const row of arenaIds) {
     const out = await pairTournamentImpl(row.id, null, admin, { mode: "system" })
-    if (out.success) {
+    if (out.skippedDueToLease) {
+      skippedLease += 1
+      results.push({ tournamentId: row.id, createdCount: 0, skippedDueToLease: true })
+    } else if (out.success) {
       paired += 1
       createdMatches += out.createdCount ?? 0
       results.push({ tournamentId: row.id, createdCount: out.createdCount ?? 0 })
@@ -298,6 +323,7 @@ export async function pairActiveTournamentsImpl(
     scanned: arenaIds.length,
     paired,
     createdMatches,
+    skippedLease,
     results,
   }
 }
