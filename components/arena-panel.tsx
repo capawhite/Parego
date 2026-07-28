@@ -922,7 +922,6 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     handlePlayerConfirm,
     handlePlayerCancel,
     overrideResult,
-    completeMatch,
   } = useArenaMatchResults({
     tournamentId,
     arenaState,
