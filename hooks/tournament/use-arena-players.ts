@@ -2,10 +2,10 @@
 
 import { useCallback, useState, type Dispatch, type SetStateAction } from "react"
 import { toast } from "sonner"
-import { createClient } from "@/lib/supabase/client"
 import { joinTournamentAction } from "@/app/actions/join-tournament"
 import { verifyAndCheckIn, markPresentOverride, checkVenueProximity } from "@/app/actions/check-in"
 import { updatePlayerPauseState } from "@/app/actions/update-player-pause"
+import { removePlayerAction } from "@/app/actions/remove-player"
 import { renamePlayer } from "@/app/actions/rename-player"
 import { generateGuestUsername } from "@/lib/guest-names"
 import { addGuestSession } from "@/lib/guest-session-history"
@@ -502,22 +502,8 @@ export function useArenaPlayers({
 
       setTimeout(async () => {
         try {
-          const supabase = createClient()
-          if (status === "active") {
-            const { error } = await supabase
-              .from("players")
-              .update({ paused: true, is_removed: true })
-              .eq("id", playerId)
-              .eq("tournament_id", tournamentId)
-            if (error) console.error("[v0] Failed to mark player as removed in database:", error)
-          } else {
-            const { error } = await supabase
-              .from("players")
-              .delete()
-              .eq("id", playerId)
-              .eq("tournament_id", tournamentId)
-            if (error) console.error("[v0] Failed to delete player from database:", error)
-          }
+          const res = await removePlayerAction({ tournamentId, playerId })
+          if (!res.ok) console.error("[v0] Failed to remove player in database:", res.error)
         } catch (error) {
           console.error("[v0] Error saving player removal:", error)
         }

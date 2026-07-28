@@ -408,17 +408,17 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
   // When organizer is in "wait for final results" and all matches are complete (e.g. via Realtime),
   // persist tournament as completed so players see the correct status.
+  // An empty paired list counts as complete: dual-submit completion removes matches from it.
   useEffect(() => {
     if (
       !tournamentId ||
       !isOrganizer ||
       !waitingForFinalResults ||
-      arenaState.status === "completed" ||
-      arenaState.pairedMatches.length === 0
+      arenaState.status === "completed"
     )
       return
-    const allComplete = arenaState.pairedMatches.every((m) => m.result?.completed)
-    if (!allComplete) return
+    const hasIncomplete = arenaState.pairedMatches.some((m) => !m.result?.completed)
+    if (hasIncomplete) return
     const timerId = setTimeout(() => finalizeEndTournament(), 600)
     return () => clearTimeout(timerId)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- finalizeEndTournament identity changes each render
