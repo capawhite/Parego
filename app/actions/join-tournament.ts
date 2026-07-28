@@ -224,6 +224,8 @@ export async function joinTournamentAction(input: JoinTournamentInput): Promise<
       return { success: false, error: "Already joined", errorCode: "ALREADY_JOINED" }
     }
     console.error("[joinTournamentAction] insert failed:", insertError)
+    const { captureException } = await import("@/lib/sentry")
+    captureException(insertError, { action: "joinTournament", tournamentId: input.tournamentId })
     return { success: false, error: "Failed to join", errorCode: "INSERT_FAILED" }
   }
 

@@ -42,6 +42,8 @@ export async function POST(
     return NextResponse.json(result)
   } catch (err) {
     console.error("[api/pair] error:", err)
+    const { captureException } = await import("@/lib/sentry")
+    captureException(err, { route: "api/tournament/pair" })
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 })
   }
 }

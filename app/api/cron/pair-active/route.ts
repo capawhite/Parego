@@ -28,6 +28,8 @@ export async function POST(request: Request) {
     return NextResponse.json(summary)
   } catch (err) {
     console.error("[api/cron/pair-active] error:", err)
+    const { captureException } = await import("@/lib/sentry")
+    captureException(err, { route: "api/cron/pair-active" })
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 })
   }
 }

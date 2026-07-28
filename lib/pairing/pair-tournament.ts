@@ -233,6 +233,8 @@ export async function pairTournamentImpl(
 
     if (upsertErr) {
       console.error("[pair-tournament] upsert failed:", upsertErr)
+      const { captureException } = await import("@/lib/sentry")
+      captureException(upsertErr, { tournamentId, action: "pair-upsert" })
       return { success: false, error: "Failed to save pairings" }
     }
 
@@ -283,6 +285,8 @@ export async function pairActiveTournamentsImpl(
 
   if (error) {
     console.error("[pair-active] list failed:", error)
+    const { captureException } = await import("@/lib/sentry")
+    captureException(error, { action: "pair-active-list" })
     return {
       success: false,
       error: "Failed to list active tournaments",
