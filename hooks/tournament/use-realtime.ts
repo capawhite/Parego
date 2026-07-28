@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { loadPlayers, loadMatches } from "@/lib/database/tournament-db"
+import { parseTournamentSettings } from "@/lib/tournament-settings"
 import type { ArenaState, Match, Player } from "@/lib/types"
 
 const DEBUG = process.env.NODE_ENV === "development"
@@ -213,12 +214,24 @@ export function useRealtime({
           if (DEBUG) console.log("[realtime] tournament status →", newStatus)
 
           setArenaState((prev) => {
-            if (prev.status === newStatus) return prev
-            return {
-              ...prev,
-              status: newStatus,
-              isActive: newStatus === "active",
+            let next = prev
+            if (prev.status !== newStatus) {
+              next = {
+                ...next,
+                status: newStatus,
+                isActive: newStatus === "active",
+              }
             }
+            if (row.settings != null) {
+              const settings = parseTournamentSettings({ settings: row.settings })
+              if (settings.pairingHeartbeatAt !== prev.settings.pairingHeartbeatAt) {
+                next = {
+                  ...next,
+                  settings: { ...next.settings, pairingHeartbeatAt: settings.pairingHeartbeatAt },
+                }
+              }
+            }
+            return next
           })
 
           onTournamentStatusChange?.(newStatus)

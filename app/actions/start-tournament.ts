@@ -79,6 +79,7 @@ export async function startTournament(tournamentId: string): Promise<StartTourna
 
   // 5. Revalidate the tournament page
   revalidatePath(`/tournament/${tournamentId}`)
+  revalidatePath(`/tournament/${tournamentId}/swiss`)
 
   return { success: true }
 }

@@ -165,6 +165,8 @@ export async function savePlayers(tournamentId: string, players: Player[], setti
     checked_in_at: player.checkedInAt != null ? new Date(player.checkedInAt).toISOString() : null,
     presence_source: player.presenceSource ?? null,
     rating: player.rating ?? null,
+    received_pairing_bye: player.receivedPairingBye ?? false,
+    received_forfeit_win: player.receivedForfeitWin ?? false,
   }))
 
   const { error } = await supabase.from("players").upsert(dbPlayers)
@@ -220,6 +222,8 @@ export async function loadPlayers(tournamentId: string): Promise<Player[]> {
     checkedInAt: p.checked_in_at ? new Date(p.checked_in_at).getTime() : null,
     presenceSource: p.presence_source ?? null,
     rating: p.rating ?? null,
+    receivedPairingBye: p.received_pairing_bye === true,
+    receivedForfeitWin: p.received_forfeit_win === true,
   }))
 }
 
@@ -247,6 +251,8 @@ export async function saveMatches(tournamentId: string, matches: Match[]) {
       ? new Date(match.player2Submission.timestamp).toISOString()
       : null,
     dispute_status: match.disputeStatus || "none",
+    swiss_round: match.swissRound ?? null,
+    match_kind: match.matchKind ?? "play",
   }))
 
   const { error } = await supabase.from("matches").upsert(dbMatches)
@@ -328,6 +334,9 @@ export async function loadMatches(tournamentId: string): Promise<Match[]> {
         }
       : undefined,
     disputeStatus: m.dispute_status || "none",
+    swissRound: m.swiss_round != null ? Number(m.swiss_round) : undefined,
+    matchKind:
+      m.match_kind === "pairing-bye" || m.match_kind === "play" ? m.match_kind : undefined,
   }
   })
 }

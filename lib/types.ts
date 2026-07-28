@@ -29,6 +29,11 @@ export interface Player {
   // Presence (OTB check-in at venue)
   checkedInAt?: number | null // timestamp when verified present; null = not checked in
   presenceSource?: "gps" | "qr" | "override" | null // how presence was verified
+
+  /** Swiss: already had pairing-allocated bye */
+  receivedPairingBye?: boolean
+  /** Swiss: already had forfeit win; ineligible for bye */
+  receivedForfeitWin?: boolean
 }
 
 /** Completed match result shape (non-optional) for handlers that require a finished game */
@@ -43,6 +48,10 @@ export interface Match {
   id: string
   player1: Player
   player2: Player
+  /** 1-based Swiss round when using fide-swiss */
+  swissRound?: number
+  /** Normal game vs pairing-allocated bye (player2 is sentinel) */
+  matchKind?: "play" | "pairing-bye"
   tableNumber?: number
   result?: MatchResult
   player1Submission?: {
@@ -67,10 +76,14 @@ export interface Round {
 }
 
 export interface TournamentSettings {
-  // Scoring
+  // Scoring (All vs All + Arena)
   winPoints: number
   drawPoints: number
   lossPoints: number
+  /** Swiss-only; when unset, Swiss uses 1 / 0.5 / 0 (not arena points). */
+  swissWinPoints?: number
+  swissDrawPoints?: number
+  swissLossPoints?: number
   streakEnabled: boolean
   streakMultiplier: number // e.g., 2 for double points
 
@@ -109,6 +122,16 @@ export interface TournamentSettings {
 
   /** Arena T1 cap profile used to bound post-game cool-down. */
   t1CapPreset?: "fast" | "balanced" | "strict"
+
+  /** When pairingAlgorithm is fide-swiss: total rounds (e.g. 5). */
+  plannedSwissRounds?: number
+  /** Rounds fully completed (all games in that round finished). */
+  swissLastCompletedRound?: number
+  /** Relax colour rules in the last scheduled Swiss round only. */
+  swissLastRoundColorRelax?: boolean
+
+  /** ISO timestamp of last successful server pairing tick (organizer/API heartbeat). */
+  pairingHeartbeatAt?: string
 }
 
 export const DEFAULT_SETTINGS: TournamentSettings = {
@@ -129,7 +152,13 @@ export const DEFAULT_SETTINGS: TournamentSettings = {
   pairingAlgorithm: "all-vs-all", // Default to All vs All
   allowRematchToReduceWait: false,
   t1CapPreset: "balanced",
+  plannedSwissRounds: 5,
+  swissLastCompletedRound: 0,
+  swissLastRoundColorRelax: false,
 }
+
+/** Sentinel ID for pairing bye opponent slot (FIDE-style). */
+export const PAIRING_BYE_PLAYER_ID = "__PAIRING_BYE__"
 
 export interface ArenaState {
   players: Player[]

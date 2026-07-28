@@ -10,6 +10,8 @@ import { X } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
 import type { TournamentSettings } from "@/lib/types"
 
+const SWISS_UI_ENABLED = false
+
 interface TournamentSettingsProps {
   settings: TournamentSettings
   onUpdateSettings: (settings: TournamentSettings) => void
@@ -31,6 +33,7 @@ export function TournamentSettingsPanel({
   embedded = false,
 }: TournamentSettingsProps) {
   const { t } = useI18n()
+  const showSwissOption = SWISS_UI_ENABLED || settings.pairingAlgorithm === "fide-swiss"
   const updateSetting = <K extends keyof TournamentSettings>(key: K, value: TournamentSettings[K]) => {
     onUpdateSettings({ ...settings, [key]: value })
   }
@@ -58,82 +61,133 @@ export function TournamentSettingsPanel({
             <div className="space-y-3">
               <h3 className="text-base font-semibold">{t("settings.scoringSection")}</h3>
 
-              <div className="grid grid-cols-3 gap-3 max-w-sm">
-                <div className="space-y-1.5">
-                  <Label htmlFor="winPoints" className="text-xs">
-                    {t("settings.winLabel")}
-                  </Label>
-                  <Input
-                    id="winPoints"
-                    type="number"
-                    value={settings.winPoints}
-                    onChange={(e) => updateSetting("winPoints", Number(e.target.value))}
-                    className="h-8 text-sm"
-                  />
-                </div>
+              {settings.pairingAlgorithm === "fide-swiss" ? (
+                <>
+                  <p className="text-xs text-muted-foreground">{t("settings.swissScoringHelp")}</p>
+                  <div className="grid grid-cols-3 gap-3 max-w-sm">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="swissWinPoints" className="text-xs">
+                        {t("settings.winLabel")}
+                      </Label>
+                      <Input
+                        id="swissWinPoints"
+                        type="number"
+                        step="0.5"
+                        value={settings.swissWinPoints ?? 1}
+                        onChange={(e) => updateSetting("swissWinPoints", Number(e.target.value))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="swissDrawPoints" className="text-xs">
+                        {t("settings.drawLabel")}
+                      </Label>
+                      <Input
+                        id="swissDrawPoints"
+                        type="number"
+                        step="0.5"
+                        value={settings.swissDrawPoints ?? 0.5}
+                        onChange={(e) => updateSetting("swissDrawPoints", Number(e.target.value))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="swissLossPoints" className="text-xs">
+                        {t("settings.lossLabel")}
+                      </Label>
+                      <Input
+                        id="swissLossPoints"
+                        type="number"
+                        step="0.5"
+                        value={settings.swissLossPoints ?? 0}
+                        onChange={(e) => updateSetting("swissLossPoints", Number(e.target.value))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t("settings.streakNotUsedSwiss")}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">{t("settings.arenaScoringHelp")}</p>
+                  <div className="grid grid-cols-3 gap-3 max-w-sm">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="winPoints" className="text-xs">
+                        {t("settings.winLabel")}
+                      </Label>
+                      <Input
+                        id="winPoints"
+                        type="number"
+                        value={settings.winPoints}
+                        onChange={(e) => updateSetting("winPoints", Number(e.target.value))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="drawPoints" className="text-xs">
-                    {t("settings.drawLabel")}
-                  </Label>
-                  <Input
-                    id="drawPoints"
-                    type="number"
-                    value={settings.drawPoints}
-                    onChange={(e) => updateSetting("drawPoints", Number(e.target.value))}
-                    className="h-8 text-sm"
-                  />
-                </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="drawPoints" className="text-xs">
+                        {t("settings.drawLabel")}
+                      </Label>
+                      <Input
+                        id="drawPoints"
+                        type="number"
+                        value={settings.drawPoints}
+                        onChange={(e) => updateSetting("drawPoints", Number(e.target.value))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="lossPoints" className="text-xs">
-                    {t("settings.lossLabel")}
-                  </Label>
-                  <Input
-                    id="lossPoints"
-                    type="number"
-                    value={settings.lossPoints}
-                    onChange={(e) => updateSetting("lossPoints", Number(e.target.value))}
-                    className="h-8 text-sm"
-                  />
-                </div>
-              </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="lossPoints" className="text-xs">
+                        {t("settings.lossLabel")}
+                      </Label>
+                      <Input
+                        id="lossPoints"
+                        type="number"
+                        value={settings.lossPoints}
+                        onChange={(e) => updateSetting("lossPoints", Number(e.target.value))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
 
-              <div className="flex items-center justify-between py-2">
-                <div className="space-y-0.5">
-                  <Label htmlFor="streakEnabled" className="text-sm">
-                    {t("settings.streakEnabledLabel")}
-                  </Label>
-                  <p className="text-xs text-muted-foreground">{t("settings.streakEnabledHelp")}</p>
-                </div>
-                <Switch
-                  id="streakEnabled"
-                  checked={settings.streakEnabled}
-                  onCheckedChange={(checked) => updateSetting("streakEnabled", checked)}
-                />
-              </div>
+                  <div className="flex items-center justify-between py-2">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="streakEnabled" className="text-sm">
+                        {t("settings.streakEnabledLabel")}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">{t("settings.streakEnabledHelp")}</p>
+                    </div>
+                    <Switch
+                      id="streakEnabled"
+                      checked={settings.streakEnabled}
+                      onCheckedChange={(checked) => updateSetting("streakEnabled", checked)}
+                    />
+                  </div>
 
-              {settings.streakEnabled && (
-                <div className="space-y-1.5 max-w-[140px]">
-                  <Label htmlFor="streakMultiplier" className="text-sm">
-                    {t("settings.multiplierLabel")}
-                  </Label>
-                  <Input
-                    id="streakMultiplier"
-                    type="number"
-                    min="1"
-                    step="0.5"
-                    value={settings.streakMultiplier}
-                    onChange={(e) => updateSetting("streakMultiplier", Number(e.target.value))}
-                    className="h-8 text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t("settings.multiplierPreview", {
-                      win: settings.winPoints * settings.streakMultiplier,
-                      draw: settings.drawPoints * settings.streakMultiplier,
-                    })}
-                  </p>
-                </div>
+                  {settings.streakEnabled && (
+                    <div className="space-y-1.5 max-w-[140px]">
+                      <Label htmlFor="streakMultiplier" className="text-sm">
+                        {t("settings.multiplierLabel")}
+                      </Label>
+                      <Input
+                        id="streakMultiplier"
+                        type="number"
+                        min="1"
+                        step="0.5"
+                        value={settings.streakMultiplier}
+                        onChange={(e) => updateSetting("streakMultiplier", Number(e.target.value))}
+                        className="h-8 text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t("settings.multiplierPreview", {
+                          win: settings.winPoints * settings.streakMultiplier,
+                          draw: settings.drawPoints * settings.streakMultiplier,
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -187,6 +241,116 @@ export function TournamentSettingsPanel({
             {/* Pairing Rules */}
             <div className="space-y-3">
               <h3 className="text-base font-semibold">{t("settings.pairingRulesSection")}</h3>
+
+              <div className="space-y-1.5 max-w-xs">
+                <Label htmlFor="pairingAlgorithm" className="text-sm">
+                  {t("settings.pairingAlgorithmLabel")}
+                </Label>
+                <Select
+                  value={settings.pairingAlgorithm || "all-vs-all"}
+                  onValueChange={(v) => {
+                    if (v === "fide-swiss" && !SWISS_UI_ENABLED) return
+                    if (v === "fide-swiss") {
+                      onUpdateSettings({
+                        ...settings,
+                        pairingAlgorithm: "fide-swiss",
+                        plannedSwissRounds:
+                          typeof settings.plannedSwissRounds === "number" && settings.plannedSwissRounds >= 1
+                            ? settings.plannedSwissRounds
+                            : 5,
+                        swissLastCompletedRound: settings.swissLastCompletedRound ?? 0,
+                        swissLastRoundColorRelax: settings.swissLastRoundColorRelax ?? false,
+                        swissWinPoints: settings.swissWinPoints ?? 1,
+                        swissDrawPoints: settings.swissDrawPoints ?? 0.5,
+                        swissLossPoints: settings.swissLossPoints ?? 0,
+                      })
+                    } else {
+                      onUpdateSettings({ ...settings, pairingAlgorithm: v })
+                    }
+                  }}
+                >
+                  <SelectTrigger id="pairingAlgorithm" className="h-8 text-sm w-full max-w-[280px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-vs-all">{t("settings.pairingAlgoAllVsAll")}</SelectItem>
+                    <SelectItem value="balanced-strength">{t("settings.pairingAlgoArena")}</SelectItem>
+                    {showSwissOption && (
+                      <SelectItem value="fide-swiss" disabled={!SWISS_UI_ENABLED}>
+                        {t("settings.pairingAlgoSwiss")}
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {settings.pairingAlgorithm === "balanced-strength"
+                    ? t("settings.pairingAlgoHelpArena")
+                    : settings.pairingAlgorithm === "fide-swiss"
+                      ? t("settings.pairingAlgoHelpSwiss")
+                      : t("settings.pairingAlgoHelpAllVsAll")}
+                </p>
+              </div>
+
+              <div className="space-y-1.5 max-w-[140px]">
+                <Label htmlFor="settingsTableSlots" className="text-sm">
+                  {t("settings.tableSlotsLabel")}
+                </Label>
+                <Input
+                  id="settingsTableSlots"
+                  type="number"
+                  min={0}
+                  value={settings.tableCount}
+                  onChange={(e) => updateSetting("tableCount", Math.max(0, Number(e.target.value) || 0))}
+                  className="h-8 text-sm"
+                />
+                <p className="text-xs text-muted-foreground">{t("settings.tableSlotsHelp")}</p>
+              </div>
+
+              {settings.pairingAlgorithm === "fide-swiss" && (
+                <div className="space-y-3 rounded-md border p-3 bg-muted/30">
+                  <p className="text-sm font-medium">{t("settings.swissOptionsTitle")}</p>
+                  <div className="space-y-1.5 max-w-[140px]">
+                    <Label htmlFor="plannedSwissRounds" className="text-sm">
+                      {t("settings.plannedSwissRoundsLabel")}
+                    </Label>
+                    <Input
+                      id="plannedSwissRounds"
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={settings.plannedSwissRounds ?? 5}
+                      onChange={(e) =>
+                        updateSetting(
+                          "plannedSwissRounds",
+                          Math.min(99, Math.max(1, Number.parseInt(e.target.value, 10) || 5)),
+                        )
+                      }
+                      className="h-8 text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">{t("settings.plannedSwissRoundsHelp")}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.swissCompletedRoundsHint", {
+                      n: settings.swissLastCompletedRound ?? 0,
+                    })}
+                  </p>
+                  <div className="flex items-center justify-between py-1 gap-2">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="swissLastRoundColorRelax" className="text-sm">
+                        {t("settings.swissLastRoundColorRelaxLabel")}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t("settings.swissLastRoundColorRelaxHelp")}
+                      </p>
+                    </div>
+                    <Switch
+                      id="swissLastRoundColorRelax"
+                      checked={settings.swissLastRoundColorRelax ?? false}
+                      onCheckedChange={(checked) => updateSetting("swissLastRoundColorRelax", checked)}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-1.5 max-w-[140px]">
                 <Label htmlFor="avoidRecentRematches" className="text-sm">
@@ -351,6 +515,9 @@ export function TournamentSettingsPanel({
                       winPoints: 2,
                       drawPoints: 1,
                       lossPoints: 0,
+                      swissWinPoints: 1,
+                      swissDrawPoints: 0.5,
+                      swissLossPoints: 0,
                       streakEnabled: true,
                       streakMultiplier: 2,
                       allowSelfPause: true,
@@ -367,6 +534,9 @@ export function TournamentSettingsPanel({
                       baseTimeMinutes: settings.baseTimeMinutes,
                       incrementSeconds: settings.incrementSeconds,
                       allowRematchToReduceWait: false,
+                      plannedSwissRounds: settings.plannedSwissRounds ?? 5,
+                      swissLastCompletedRound: settings.swissLastCompletedRound ?? 0,
+                      swissLastRoundColorRelax: settings.swissLastRoundColorRelax ?? false,
                     })
                     onClose()
                   }

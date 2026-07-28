@@ -43,7 +43,10 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
             }
           }
 
-          const hasDoublePointStreak = settings.streakEnabled && streakBeforeThisGame >= 2
+          const hasDoublePointStreak =
+            settings.pairingAlgorithm !== "fide-swiss" &&
+            settings.streakEnabled &&
+            streakBeforeThisGame >= 2
           const playerPoints = player.pointsEarned?.[i] ?? calculatePointsFromSettings(
             result === "W",
             result === "D",

@@ -1,8 +1,24 @@
 import type { TournamentSettings } from "@/lib/types"
 
+/** Win / draw / loss for the active pairing mode (Swiss vs arena). */
+export function activeScoringTriple(settings: TournamentSettings): { win: number; draw: number; loss: number } {
+  if (settings.pairingAlgorithm === "fide-swiss") {
+    return {
+      win: settings.swissWinPoints ?? 1,
+      draw: settings.swissDrawPoints ?? 0.5,
+      loss: settings.swissLossPoints ?? 0,
+    }
+  }
+  return {
+    win: settings.winPoints,
+    draw: settings.drawPoints,
+    loss: settings.lossPoints,
+  }
+}
+
 /**
  * Calculate points for a single game result from tournament settings.
- * Used when recording a result (win/draw/loss) and when applying streak multiplier.
+ * Swiss uses swiss* points (default FIDE-style); arena uses win/draw/loss + optional streak.
  */
 export function calculatePointsFromSettings(
   isWinner: boolean,
@@ -10,13 +26,17 @@ export function calculatePointsFromSettings(
   currentStreak: number,
   settings: TournamentSettings,
 ): number {
+  const { win, draw, loss } = activeScoringTriple(settings)
   let basePoints = 0
   if (isDraw) {
-    basePoints = settings.drawPoints
+    basePoints = draw
   } else if (isWinner) {
-    basePoints = settings.winPoints
+    basePoints = win
   } else {
-    basePoints = settings.lossPoints
+    basePoints = loss
+  }
+  if (settings.pairingAlgorithm === "fide-swiss") {
+    return basePoints
   }
   if (settings.streakEnabled && currentStreak >= 2) {
     return basePoints * settings.streakMultiplier
@@ -26,22 +46,23 @@ export function calculatePointsFromSettings(
 
 /**
  * Rebuild per-game points from W/D/L history when `pointsEarned` was not persisted.
- * Mirrors streak progression used when recording results in the arena.
  */
 export function pointsEarnedFromGameResults(
   gameResults: ("W" | "D" | "L")[],
   settings: TournamentSettings,
 ): number[] {
   const out: number[] = []
+  const swiss = settings.pairingAlgorithm === "fide-swiss"
   let streak = 0
   for (const r of gameResults) {
     const isDraw = r === "D"
     const isWinner = r === "W"
     out.push(calculatePointsFromSettings(isWinner, isDraw, streak, settings))
-    if (isDraw) streak = 0
-    else if (isWinner) streak += 1
-    else streak = 0
+    if (!swiss) {
+      if (isDraw) streak = 0
+      else if (isWinner) streak += 1
+      else streak = 0
+    }
   }
   return out
 }
-

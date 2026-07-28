@@ -19,6 +19,9 @@ export function parseTournamentSettings(raw: { settings?: unknown }): Tournament
     winPoints: typeof s.winPoints === "number" ? s.winPoints : DEFAULT_SETTINGS.winPoints,
     drawPoints: typeof s.drawPoints === "number" ? s.drawPoints : DEFAULT_SETTINGS.drawPoints,
     lossPoints: typeof s.lossPoints === "number" ? s.lossPoints : DEFAULT_SETTINGS.lossPoints,
+    swissWinPoints: typeof s.swissWinPoints === "number" ? s.swissWinPoints : undefined,
+    swissDrawPoints: typeof s.swissDrawPoints === "number" ? s.swissDrawPoints : undefined,
+    swissLossPoints: typeof s.swissLossPoints === "number" ? s.swissLossPoints : undefined,
     streakEnabled: typeof s.streakEnabled === "boolean" ? s.streakEnabled : DEFAULT_SETTINGS.streakEnabled,
     streakMultiplier: typeof s.streakMultiplier === "number" ? s.streakMultiplier : DEFAULT_SETTINGS.streakMultiplier,
     allowSelfPause: typeof s.allowSelfPause === "boolean" ? s.allowSelfPause : DEFAULT_SETTINGS.allowSelfPause,
@@ -52,5 +55,18 @@ export function parseTournamentSettings(raw: { settings?: unknown }): Tournament
         ? s.pairingStabilizationMs
         : undefined,
     t1CapPreset: t1PresetOk(s.t1CapPreset) ? s.t1CapPreset : DEFAULT_SETTINGS.t1CapPreset,
+    plannedSwissRounds:
+      typeof s.plannedSwissRounds === "number" && s.plannedSwissRounds >= 1
+        ? Math.min(99, Math.floor(s.plannedSwissRounds))
+        : DEFAULT_SETTINGS.plannedSwissRounds,
+    swissLastCompletedRound:
+      typeof s.swissLastCompletedRound === "number" && s.swissLastCompletedRound >= 0
+        ? Math.floor(s.swissLastCompletedRound)
+        : DEFAULT_SETTINGS.swissLastCompletedRound,
+    swissLastRoundColorRelax:
+      typeof s.swissLastRoundColorRelax === "boolean"
+        ? s.swissLastRoundColorRelax
+        : DEFAULT_SETTINGS.swissLastRoundColorRelax,
+    pairingHeartbeatAt: typeof s.pairingHeartbeatAt === "string" ? s.pairingHeartbeatAt : undefined,
   }
 }

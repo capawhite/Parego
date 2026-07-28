@@ -14,6 +14,8 @@ import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
 
+const SWISS_UI_ENABLED = false
+
 export default function CreateTournamentPage() {
   const router = useRouter()
   const { t } = useI18n()
@@ -24,6 +26,7 @@ export default function CreateTournamentPage() {
   const [isCreating, setIsCreating] = useState(false)
 
   const [pairingAlgorithm, setPairingAlgorithm] = useState<string>("all-vs-all")
+  const [plannedSwissRounds, setPlannedSwissRounds] = useState<number>(5)
   const [baseTimeMinutes, setBaseTimeMinutes] = useState<number>(5)
   const [incrementSeconds, setIncrementSeconds] = useState<number>(3)
 
@@ -170,18 +173,31 @@ export default function CreateTournamentPage() {
         }),
       )
 
+      const swissInitialTables = 8
       const settings = {
         ...DEFAULT_SETTINGS,
         pairingAlgorithm,
         baseTimeMinutes,
         incrementSeconds,
+        ...(pairingAlgorithm === "fide-swiss"
+          ? {
+              plannedSwissRounds,
+              swissLastCompletedRound: 0,
+              tableCount: swissInitialTables,
+              swissWinPoints: 1,
+              swissDrawPoints: 0.5,
+              swissLossPoints: 0,
+            }
+          : {}),
       }
+
+      const initialTablesCount = pairingAlgorithm === "fide-swiss" ? swissInitialTables : 0
 
       await saveTournament(
         tournamentId,
         tournamentName,
         "setup",
-        0,
+        initialTablesCount,
         settings,
         location?.city || user.city,
         location?.country || user.country,
@@ -192,7 +208,11 @@ export default function CreateTournamentPage() {
         startTime ? new Date(startTime).toISOString() : undefined,
       )
 
-      router.push(`/tournament/${tournamentId}`)
+      router.push(
+        pairingAlgorithm === "fide-swiss"
+          ? `/tournament/${tournamentId}/swiss`
+          : `/tournament/${tournamentId}`,
+      )
     } catch (error) {
       console.error("[v0] Error creating tournament:", error)
       toast.error(t("create.errorCreate"))
@@ -330,14 +350,35 @@ export default function CreateTournamentPage() {
                 <SelectContent>
                   <SelectItem value="all-vs-all">{t("create.pairingAllVsAll")}</SelectItem>
                   <SelectItem value="balanced-strength">{t("create.pairingArenaBalanced")}</SelectItem>
+                  {SWISS_UI_ENABLED && <SelectItem value="fide-swiss">{t("create.pairingSwiss")}</SelectItem>}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
                 {pairingAlgorithm === "balanced-strength"
                   ? t("create.pairingArenaBalancedDescription")
-                  : t("create.pairingAllVsAllDescription")}
+                  : pairingAlgorithm === "fide-swiss"
+                    ? t("create.pairingSwissDescription")
+                    : t("create.pairingAllVsAllDescription")}
               </p>
             </div>
+
+            {pairingAlgorithm === "fide-swiss" && (
+              <div className="space-y-2">
+                <Label htmlFor="swiss-rounds">{t("create.plannedSwissRoundsLabel")}</Label>
+                <Input
+                  id="swiss-rounds"
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={plannedSwissRounds}
+                  onChange={(e) =>
+                    setPlannedSwissRounds(Math.max(1, Math.min(99, Number.parseInt(e.target.value) || 5)))
+                  }
+                  disabled={isCreating}
+                />
+                <p className="text-xs text-muted-foreground">{t("create.plannedSwissRoundsHelp")}</p>
+              </div>
+            )}
 
             {/* Time Control */}
             <div className="space-y-2">

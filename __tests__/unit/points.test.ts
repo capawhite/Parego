@@ -43,5 +43,29 @@ describe("points (scoring when results are recorded)", () => {
       const custom = { ...settings, winPoints: 3, drawPoints: 2, lossPoints: 0.5 }
       expect(pointsEarnedFromGameResults(["W", "D", "L"], custom)).toEqual([3, 2, 0.5])
     })
+
+    it("fide-swiss ignores streak for consecutive wins", () => {
+      const swiss = { ...settings, pairingAlgorithm: "fide-swiss" as const }
+      expect(pointsEarnedFromGameResults(["W", "W", "W"], swiss)).toEqual([1, 1, 1])
+    })
+  })
+
+  describe("fide-swiss scoring", () => {
+    it("no streak multiplier on wins; uses FIDE-style default win points", () => {
+      const swiss = { ...DEFAULT_SETTINGS, pairingAlgorithm: "fide-swiss" as const }
+      expect(calculatePointsFromSettings(true, false, 5, swiss)).toBe(1)
+    })
+
+    it("uses swiss* overrides when set", () => {
+      const swiss = {
+        ...DEFAULT_SETTINGS,
+        pairingAlgorithm: "fide-swiss" as const,
+        swissWinPoints: 2,
+        swissDrawPoints: 1,
+        swissLossPoints: 0,
+      }
+      expect(calculatePointsFromSettings(true, false, 5, swiss)).toBe(2)
+      expect(calculatePointsFromSettings(false, true, 0, swiss)).toBe(1)
+    })
   })
 })

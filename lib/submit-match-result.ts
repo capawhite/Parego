@@ -5,7 +5,7 @@
  * player scores on the server so it works even if the organizer tab is closed.
  */
 
-import { createClient } from "@supabase/supabase-js"
+import { createAdminClient, adminClientMissingReason } from "@/lib/supabase/admin"
 import { getSubmissionSide, type ResultType } from "@/lib/result-utils"
 import { calculatePointsFromSettings } from "@/lib/points"
 import { parseTournamentSettings } from "@/lib/tournament-settings"
@@ -43,36 +43,20 @@ export async function submitMatchResultImpl(
     )
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-  if (!supabaseUrl) {
-    console.error("[submit-match-result] NEXT_PUBLIC_SUPABASE_URL is not set.")
-    return reject(
-      "MISSING_SUPABASE_URL",
-      "Server configuration error: Supabase URL is missing.",
-    )
+  const adminClient = createAdminClient()
+  if (!adminClient) {
+    console.error("[submit-match-result]", adminClientMissingReason())
+    if (adminClientMissingReason().includes("SUPABASE_URL")) {
+      return reject("MISSING_SUPABASE_URL", "Server configuration error: Supabase URL is missing.")
+    }
+    if (adminClientMissingReason().includes("SERVICE_ROLE")) {
+      return reject(
+        "SERVER_MISCONFIGURED_NO_SERVICE_ROLE",
+        "Server misconfiguration: service role key is missing. Match results cannot be saved.",
+      )
+    }
+    return reject("MISSING_SUPABASE_URL", "Server configuration error: no Supabase API key available.")
   }
-
-  const isProduction = process.env.NODE_ENV === "production"
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-  if (isProduction && !serviceRole) {
-    console.error(
-      "[submit-match-result] SUPABASE_SERVICE_ROLE_KEY is required in production for match writes.",
-    )
-    return reject(
-      "SERVER_MISCONFIGURED_NO_SERVICE_ROLE",
-      "Server misconfiguration: service role key is missing. Match results cannot be saved.",
-    )
-  }
-
-  const adminKey = serviceRole || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-  if (!adminKey) {
-    return reject(
-      "MISSING_SUPABASE_URL",
-      "Server configuration error: no Supabase API key available.",
-    )
-  }
-
-  const adminClient = createClient(supabaseUrl, adminKey)
 
   const { data: match, error: fetchError } = await adminClient
     .from("matches")
@@ -236,10 +220,11 @@ export async function submitMatchResultImpl(
 
       const isP1Winner = agreedResult === "player1-win"
       const isP2Winner = agreedResult === "player2-win"
+      const swiss = settings.pairingAlgorithm === "fide-swiss"
       const streak1 = Number(p1Row.current_streak) || 0
       const streak2 = Number(p2Row.current_streak) || 0
-      const newStreak1 = isDraw ? 0 : isP1Winner ? streak1 + 1 : 0
-      const newStreak2 = isDraw ? 0 : isP2Winner ? streak2 + 1 : 0
+      const newStreak1 = swiss ? 0 : isDraw ? 0 : isP1Winner ? streak1 + 1 : 0
+      const newStreak2 = swiss ? 0 : isDraw ? 0 : isP2Winner ? streak2 + 1 : 0
       const pts1 = calculatePointsFromSettings(isP1Winner, isDraw, streak1, settings)
       const pts2 = calculatePointsFromSettings(isP2Winner, isDraw, streak2, settings)
 
