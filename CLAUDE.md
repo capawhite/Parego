@@ -40,9 +40,8 @@ Live at: https://parego.onrender.com
 ├── localization/         # i18n strings (EN + ES currently)
 ├── OldPairingAlgo/       # Archived previous pairing implementation — do not modify
 ├── public/               # Static assets
-├── scripts/              # One-off data migration scripts
-├── styles/               # Global CSS
-├── supabase/             # DB schema and migration files
+├── scripts/              # Cron entrypoint, simulators, archived legacy SQL
+├── supabase/             # DB schema and migration files (canonical)
 └── __tests__/            # Vitest test suite
 ```
 

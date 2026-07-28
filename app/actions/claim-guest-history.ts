@@ -87,8 +87,3 @@ export async function claimGuestHistoryForDevice(
 
   return { success: true, claimedCount: updated?.length ?? 0 }
 }
-
-/** @deprecated Use claimGuestHistoryForDevice with getDeviceId() */
-export async function claimGuestHistory(playerIds: string[]): Promise<ClaimGuestHistoryResult> {
-  return claimGuestHistoryForDevice(playerIds, null)
-}

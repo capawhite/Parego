@@ -45,7 +45,10 @@ export function usePairingLoop({
     if (!tournamentId || !useServerPairing) return
 
     const algorithm = getPairingAlgorithm(pairingAlgorithm || "all-vs-all")
-    const intervalMs = algorithm.getPollingInterval()
+    // Floor the poll: the server pair tick does a full field reload, the 1-min cron
+    // covers organizer-absent arenas, and Realtime delivers new matches to clients.
+    const MIN_SERVER_POLL_MS = 15_000
+    const intervalMs = Math.max(algorithm.getPollingInterval(), MIN_SERVER_POLL_MS)
 
     const tick = () => {
       if (waitingRef.current) return
