@@ -9,9 +9,62 @@ import type { PairingAlgorithm } from "./types"
 import { bestOrientationForPair } from "./color-consecutive-cap"
 import { calculatePointsFromSettings } from "@/lib/points"
 
+/** Club Swiss floor: fewer rounds is basically a short match, not a Swiss. */
+export const MIN_SWISS_ROUNDS = 3
+/** Absolute ceiling when field size is unknown (create form). */
+export const MAX_SWISS_ROUNDS = 11
+/** Need enough players for a sensible Swiss (and for min rounds ≤ N−1). */
+export const MIN_SWISS_PLAYERS = 4
+
 export function isSwissAlgorithm(algorithmId: string | undefined | null): boolean {
   return algorithmId === "swiss" || algorithmId === "fide-swiss"
 }
+
+/**
+ * Max rounds before a full round-robin (forced rematches). For N players: N−1.
+ * Capped by {@link MAX_SWISS_ROUNDS}. Returns 0 when the field is too small for Club Swiss.
+ */
+export function maxSwissRoundsForPlayerCount(playerCount: number): number {
+  if (playerCount < MIN_SWISS_PLAYERS) return 0
+  return Math.min(MAX_SWISS_ROUNDS, playerCount - 1)
+}
+
+/** Clamp planned rounds to Club Swiss bounds; optionally tighten by field size. */
+export function clampPlannedSwissRounds(rounds: number, playerCount?: number): number {
+  const parsed = Number.isFinite(rounds) ? Math.floor(rounds) : MIN_SWISS_ROUNDS
+  const max =
+    playerCount != null && playerCount >= MIN_SWISS_PLAYERS
+      ? maxSwissRoundsForPlayerCount(playerCount)
+      : MAX_SWISS_ROUNDS
+  return Math.min(max, Math.max(MIN_SWISS_ROUNDS, parsed))
+}
+
+export type SwissFieldValidation = { valid: true } | { valid: false; errors: string[] }
+
+/** Validate planned rounds and optional player count against Club Swiss limits. */
+export function validateSwissTournamentField(
+  settings: Pick<TournamentSettings, "pairingAlgorithm" | "plannedSwissRounds">,
+  playerCount?: number,
+): SwissFieldValidation {
+  if (!isSwissAlgorithm(settings.pairingAlgorithm)) return { valid: true }
+  const errors: string[] = []
+  const planned = settings.plannedSwissRounds ?? 0
+  if (planned < MIN_SWISS_ROUNDS || planned > MAX_SWISS_ROUNDS) {
+    errors.push(`plannedSwissRounds must be ${MIN_SWISS_ROUNDS}–${MAX_SWISS_ROUNDS}`)
+  }
+  if (playerCount != null) {
+    if (playerCount < MIN_SWISS_PLAYERS) {
+      errors.push(`Swiss needs at least ${MIN_SWISS_PLAYERS} players`)
+    } else {
+      const maxR = maxSwissRoundsForPlayerCount(playerCount)
+      if (planned > maxR) {
+        errors.push(`With ${playerCount} players, planned rounds cannot exceed ${maxR} (players − 1)`)
+      }
+    }
+  }
+  return errors.length === 0 ? { valid: true } : { valid: false, errors }
+}
+
 
 export function isPairingByeMatch(m: Match): boolean {
   return m.matchKind === "pairing-bye" || m.player2?.id === PAIRING_BYE_PLAYER_ID
@@ -163,7 +216,7 @@ export function createSwissRoundPairings(
 
   let pool = availablePlayers.filter((p) => !p.hasLeft && !p.paused)
   pool = rankPlayers(pool)
-  if (pool.length < 1) return []
+  if (pool.length < MIN_SWISS_PLAYERS) return []
 
   const playSlotsNeeded = Math.floor(pool.length / 2)
   if (maxTables < playSlotsNeeded) return []
@@ -240,9 +293,7 @@ export const swissAlgorithm: PairingAlgorithm = {
     return 60_000
   },
   validateSettings(settings) {
-    const errors: string[] = []
-    const planned = settings.plannedSwissRounds ?? 0
-    if (planned < 1 || planned > 99) errors.push("plannedSwissRounds must be 1–99")
-    return { valid: errors.length === 0, errors }
+    const result = validateSwissTournamentField(settings)
+    return result.valid ? { valid: true, errors: [] } : { valid: false, errors: result.errors }
   },
 }

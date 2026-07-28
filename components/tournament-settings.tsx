@@ -9,6 +9,13 @@ import { Switch } from "@/components/ui/switch"
 import { X } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
 import type { TournamentSettings } from "@/lib/types"
+import {
+  MIN_SWISS_ROUNDS,
+  MAX_SWISS_ROUNDS,
+  MIN_SWISS_PLAYERS,
+  clampPlannedSwissRounds,
+  maxSwissRoundsForPlayerCount,
+} from "@/lib/pairing/swiss"
 
 interface TournamentSettingsProps {
   settings: TournamentSettings
@@ -19,6 +26,8 @@ interface TournamentSettingsProps {
   isOrganizer?: boolean
   /** When true, render only the settings card (no fullscreen backdrop). Parent must provide overlay and layout. */
   embedded?: boolean
+  /** Active (non-left) player count — used to cap Swiss rounds at players − 1. */
+  playerCount?: number
 }
 
 export function TournamentSettingsPanel({
@@ -29,9 +38,14 @@ export function TournamentSettingsPanel({
   onToggleSimulator,
   isOrganizer = true,
   embedded = false,
+  playerCount,
 }: TournamentSettingsProps) {
   const { t } = useI18n()
   const showSwissOption = true
+  const swissRoundsMax =
+    playerCount != null && playerCount >= MIN_SWISS_PLAYERS
+      ? maxSwissRoundsForPlayerCount(playerCount)
+      : MAX_SWISS_ROUNDS
   const updateSetting = <K extends keyof TournamentSettings>(key: K, value: TournamentSettings[K]) => {
     onUpdateSettings({ ...settings, [key]: value })
   }
@@ -252,8 +266,9 @@ export function TournamentSettingsPanel({
                         ...settings,
                         pairingAlgorithm: "swiss",
                         plannedSwissRounds:
-                          typeof settings.plannedSwissRounds === "number" && settings.plannedSwissRounds >= 1
-                            ? settings.plannedSwissRounds
+                          typeof settings.plannedSwissRounds === "number" &&
+                          settings.plannedSwissRounds >= MIN_SWISS_ROUNDS
+                            ? clampPlannedSwissRounds(settings.plannedSwissRounds, playerCount)
                             : 5,
                         swissLastCompletedRound: settings.swissLastCompletedRound ?? 0,
                         swissLastRoundColorRelax: settings.swissLastRoundColorRelax ?? false,
@@ -313,18 +328,30 @@ export function TournamentSettingsPanel({
                     <Input
                       id="plannedSwissRounds"
                       type="number"
-                      min={1}
-                      max={99}
-                      value={settings.plannedSwissRounds ?? 5}
+                      min={MIN_SWISS_ROUNDS}
+                      max={swissRoundsMax}
+                      value={clampPlannedSwissRounds(settings.plannedSwissRounds ?? 5, playerCount)}
                       onChange={(e) =>
                         updateSetting(
                           "plannedSwissRounds",
-                          Math.min(99, Math.max(1, Number.parseInt(e.target.value, 10) || 5)),
+                          clampPlannedSwissRounds(Number.parseInt(e.target.value, 10) || MIN_SWISS_ROUNDS, playerCount),
                         )
                       }
                       className="h-8 text-sm"
                     />
-                    <p className="text-xs text-muted-foreground">{t("settings.plannedSwissRoundsHelp")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {playerCount != null && playerCount >= MIN_SWISS_PLAYERS
+                        ? t("settings.plannedSwissRoundsHelpWithPlayers", {
+                            min: MIN_SWISS_ROUNDS,
+                            max: swissRoundsMax,
+                            players: playerCount,
+                          })
+                        : t("settings.plannedSwissRoundsHelp", {
+                            min: MIN_SWISS_ROUNDS,
+                            max: MAX_SWISS_ROUNDS,
+                            minPlayers: MIN_SWISS_PLAYERS,
+                          })}
+                    </p>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {t("settings.swissCompletedRoundsHint", {

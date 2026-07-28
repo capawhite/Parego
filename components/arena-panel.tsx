@@ -619,6 +619,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
                 showSimulator={showSimulator}
                 onToggleSimulator={(show) => setShowSimulator(show)}
                 isOrganizer={isOrganizer}
+                playerCount={arenaState.players.filter((p) => !p.hasLeft).length}
               />
               {arenaState.allTimeMatches.length > 0 && (
                 <AlgorithmComparisonPanel

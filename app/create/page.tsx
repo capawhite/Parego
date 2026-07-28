@@ -8,6 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Trophy, MapPin, Clock, Globe, Lock } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import {
+  MIN_SWISS_ROUNDS,
+  MAX_SWISS_ROUNDS,
+  MIN_SWISS_PLAYERS,
+  clampPlannedSwissRounds,
+} from "@/lib/pairing/swiss"
 import { saveTournament } from "@/lib/database/tournament-db"
 import { DEFAULT_SETTINGS } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
@@ -362,15 +368,21 @@ export default function CreateTournamentPage() {
                 <Input
                   id="swiss-rounds"
                   type="number"
-                  min={1}
-                  max={99}
+                  min={MIN_SWISS_ROUNDS}
+                  max={MAX_SWISS_ROUNDS}
                   value={plannedSwissRounds}
                   onChange={(e) =>
-                    setPlannedSwissRounds(Math.max(1, Math.min(99, Number.parseInt(e.target.value) || 5)))
+                    setPlannedSwissRounds(clampPlannedSwissRounds(Number.parseInt(e.target.value, 10) || MIN_SWISS_ROUNDS))
                   }
                   disabled={isCreating}
                 />
-                <p className="text-xs text-muted-foreground">{t("create.plannedSwissRoundsHelp")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("create.plannedSwissRoundsHelp", {
+                    min: MIN_SWISS_ROUNDS,
+                    max: MAX_SWISS_ROUNDS,
+                    minPlayers: MIN_SWISS_PLAYERS,
+                  })}
+                </p>
               </div>
             )}
 

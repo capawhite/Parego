@@ -10,6 +10,7 @@ import {
   isPairingByeMatch,
   isSwissAlgorithm,
   maybeAdvanceSwissLastCompletedRound,
+  validateSwissTournamentField,
 } from "@/lib/pairing/swiss"
 import { effectiveTableSlotsForPairing } from "@/lib/tournament/effective-table-count"
 
@@ -54,6 +55,12 @@ export async function pairSwissRound(tournamentId: string): Promise<PairSwissRou
 
   let players = (playerRows ?? []).map(mapDbPlayerRow)
   const allMatches = (matchRows ?? []).map(mapDbMatchRow)
+
+  const eligibleCount = players.filter((p) => !p.hasLeft && !p.paused).length
+  const fieldCheck = validateSwissTournamentField(settings, eligibleCount)
+  if (!fieldCheck.valid) {
+    return { success: false, error: fieldCheck.errors[0] ?? "Invalid Swiss field" }
+  }
 
   const tableSlots = effectiveTableSlotsForPairing(
     tournament.tables_count ?? tournament.table_count ?? 0,

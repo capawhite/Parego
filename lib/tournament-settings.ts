@@ -1,4 +1,5 @@
 import { DEFAULT_SETTINGS, type TournamentSettings } from "@/lib/types"
+import { clampPlannedSwissRounds } from "@/lib/pairing/swiss"
 
 /** Settings JSON for DB writes — exclude ephemeral pairing heartbeat. */
 export function settingsForPersistence(settings: TournamentSettings): TournamentSettings {
@@ -73,8 +74,8 @@ export function parseTournamentSettings(raw: {
         : undefined,
     t1CapPreset: t1PresetOk(s.t1CapPreset) ? s.t1CapPreset : DEFAULT_SETTINGS.t1CapPreset,
     plannedSwissRounds:
-      typeof s.plannedSwissRounds === "number" && s.plannedSwissRounds >= 1
-        ? Math.min(99, Math.floor(s.plannedSwissRounds))
+      typeof s.plannedSwissRounds === "number" && Number.isFinite(s.plannedSwissRounds)
+        ? clampPlannedSwissRounds(s.plannedSwissRounds)
         : DEFAULT_SETTINGS.plannedSwissRounds,
     swissLastCompletedRound:
       typeof s.swissLastCompletedRound === "number" && s.swissLastCompletedRound >= 0

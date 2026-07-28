@@ -6,6 +6,12 @@ import { finalizeTournament } from "@/app/actions/finalize-tournament"
 import { formatSupabaseError, saveTournament } from "@/lib/database/tournament-db"
 import type { ArenaState } from "@/lib/types"
 import type { useI18n } from "@/components/i18n-provider"
+import {
+  isSwissAlgorithm,
+  MIN_SWISS_PLAYERS,
+  maxSwissRoundsForPlayerCount,
+  validateSwissTournamentField,
+} from "@/lib/pairing/swiss"
 
 type TFunction = ReturnType<typeof useI18n>["t"]
 
@@ -67,7 +73,25 @@ export function useArenaLifecycle({
       return
     }
 
-    if (arenaState.players.length < 2) {
+    if (isSwissAlgorithm(arenaState.settings.pairingAlgorithm)) {
+      const activeCount = arenaState.players.filter((p) => !p.hasLeft).length
+      const check = validateSwissTournamentField(arenaState.settings, activeCount)
+      if (!check.valid) {
+        if (activeCount < MIN_SWISS_PLAYERS) {
+          toast.error(t("arena.alertSwissNeedPlayers", { min: MIN_SWISS_PLAYERS, count: activeCount }))
+        } else {
+          const maxR = maxSwissRoundsForPlayerCount(activeCount)
+          toast.error(
+            t("arena.alertSwissRoundsVsPlayers", {
+              players: activeCount,
+              rounds: arenaState.settings.plannedSwissRounds ?? 0,
+              max: maxR,
+            }),
+          )
+        }
+        return
+      }
+    } else if (arenaState.players.length < 2) {
       toast.error(t("arena.alertNeedAtLeastTwoPlayers"))
       return
     }

@@ -2,10 +2,13 @@ import { describe, it, expect } from "vitest"
 import {
   applyPairingByeToPlayers,
   canPairNextSwissRound,
+  clampPlannedSwissRounds,
   createSwissRoundPairings,
   isPairingByeMatch,
+  maxSwissRoundsForPlayerCount,
   maybeAdvanceSwissLastCompletedRound,
   nextSwissRoundToPair,
+  validateSwissTournamentField,
 } from "@/lib/pairing/swiss"
 import { DEFAULT_SETTINGS, PAIRING_BYE_PLAYER_ID, type Match, type Player } from "@/lib/types"
 
@@ -35,6 +38,30 @@ const swissSettings = {
   plannedSwissRounds: 5,
   swissLastCompletedRound: 0,
 }
+
+describe("Club Swiss field limits", () => {
+  it("rejects rounds below 3 and above 11", () => {
+    expect(clampPlannedSwissRounds(1)).toBe(3)
+    expect(clampPlannedSwissRounds(2)).toBe(3)
+    expect(clampPlannedSwissRounds(12)).toBe(11)
+    expect(clampPlannedSwissRounds(5)).toBe(5)
+  })
+
+  it("caps rounds at players − 1", () => {
+    expect(maxSwissRoundsForPlayerCount(3)).toBe(0)
+    expect(maxSwissRoundsForPlayerCount(4)).toBe(3)
+    expect(maxSwissRoundsForPlayerCount(8)).toBe(7)
+    expect(clampPlannedSwissRounds(5, 4)).toBe(3)
+    expect(clampPlannedSwissRounds(5, 8)).toBe(5)
+  })
+
+  it("validateSwissTournamentField requires 4+ players and rounds ≤ N−1", () => {
+    expect(validateSwissTournamentField(swissSettings, 3).valid).toBe(false)
+    expect(validateSwissTournamentField({ ...swissSettings, plannedSwissRounds: 5 }, 4).valid).toBe(false)
+    expect(validateSwissTournamentField({ ...swissSettings, plannedSwissRounds: 3 }, 4).valid).toBe(true)
+    expect(validateSwissTournamentField({ ...swissSettings, plannedSwissRounds: 5 }, 8).valid).toBe(true)
+  })
+})
 
 describe("Club Swiss round gate", () => {
   it("allows round 1 when no matches exist", () => {
@@ -111,9 +138,15 @@ describe("createSwissRoundPairings", () => {
   })
 
   it("gives a pairing bye to odd field", () => {
-    const players = [makePlayer("a"), makePlayer("b"), makePlayer("c")]
+    const players = [
+      makePlayer("a"),
+      makePlayer("b"),
+      makePlayer("c"),
+      makePlayer("d"),
+      makePlayer("e"),
+    ]
     const out = createSwissRoundPairings(players, [], swissSettings, 4)
-    expect(out.filter((m) => m.matchKind === "play")).toHaveLength(1)
+    expect(out.filter((m) => m.matchKind === "play")).toHaveLength(2)
     const bye = out.find(isPairingByeMatch)
     expect(bye).toBeTruthy()
     expect(bye!.player2.id).toBe(PAIRING_BYE_PLAYER_ID)
@@ -123,6 +156,11 @@ describe("createSwissRoundPairings", () => {
     const recipient = withBye.find((p) => p.id === bye!.player1.id)!
     expect(recipient.receivedPairingBye).toBe(true)
     expect(recipient.score).toBe(1)
+  })
+
+  it("returns empty when fewer than 4 players", () => {
+    const players = [makePlayer("a"), makePlayer("b"), makePlayer("c")]
+    expect(createSwissRoundPairings(players, [], swissSettings, 4)).toEqual([])
   })
 
   it("returns empty when rematch cannot be avoided", () => {

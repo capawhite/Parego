@@ -219,7 +219,7 @@
     "pairingSwiss": "Suizo",
     "pairingSwissDescription": "Emparejamientos suizos por rondas (reglas de club). Empareja la siguiente ronda cuando terminen todas las partidas. No certificado FIDE/USCF.",
     "plannedSwissRoundsLabel": "Rondas previstas",
-    "plannedSwissRoundsHelp": "Total de rondas suizas del evento (p. ej. 5)."
+    "plannedSwissRoundsHelp": "Elige entre {min} y {max} rondas. El suizo necesita al menos {minPlayers} jugadores; las rondas no pueden superar jugadores − 1 (p. ej. 8 jugadores → máx. 7)."
   },
   "arena": {
     "endTournamentTitle": "Finalizar torneo",
@@ -232,6 +232,8 @@
     "alertLateJoinsNotAllowed": "No se permiten incorporaciones tardías en este torneo. Espera al próximo torneo.",
     "alertTournamentAlreadyCompleted": "Este torneo ya ha finalizado y no se puede reiniciar.",
     "alertNeedAtLeastTwoPlayers": "Se necesitan al menos 2 jugadores para empezar.",
+    "alertSwissNeedPlayers": "El suizo necesita al menos {min} jugadores (tienes {count}).",
+    "alertSwissRoundsVsPlayers": "Con {players} jugadores, {rounds} rondas son demasiadas (máx. {max} = jugadores − 1). Reduce las rondas previstas en ajustes.",
     "alertInvalidTableCount": "Introduce un número válido de mesas (al menos 1).",
     "alertInvalidDuration": "Introduce una duración válida para el torneo (al menos 1 minuto).",
     "alertSelfPauseNotAllowed": "No se permite la autopausa en este torneo.",
@@ -589,7 +591,8 @@
     "tableSlotsHelp": "Cuántas mesas pueden usarse a la vez para emparejamientos (también queda guardado para la sede).",
     "swissOptionsTitle": "Rondas suizas",
     "plannedSwissRoundsLabel": "Rondas previstas",
-    "plannedSwissRoundsHelp": "Número total de rondas suizas previstas para este evento.",
+    "plannedSwissRoundsHelp": "Elige entre {min} y {max} rondas. El suizo necesita al menos {minPlayers} jugadores; las rondas no pueden superar jugadores − 1.",
+    "plannedSwissRoundsHelpWithPlayers": "Con {players} jugadores, elige entre {min} y {max} rondas (máx. = jugadores − 1).",
     "swissCompletedRoundsHint": "Rondas completadas (según resultados): {n}",
     "swissLastRoundColorRelaxLabel": "Relajar equilibrio de color en la última ronda",
     "swissLastRoundColorRelaxHelp": "Permite ignorar el equilibrio estricto de color en la última ronda programada si hace falta.",

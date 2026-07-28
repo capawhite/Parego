@@ -219,7 +219,7 @@
     "pairingSwiss": "Swiss",
     "pairingSwissDescription": "Round-based Swiss pairings (club rules). Pair the next round after all games finish. Not FIDE/USCF certified.",
     "plannedSwissRoundsLabel": "Planned rounds",
-    "plannedSwissRoundsHelp": "Total Swiss rounds for this event (e.g. 5)."
+    "plannedSwissRoundsHelp": "Choose {min}–{max} rounds. Swiss needs at least {minPlayers} players; rounds cannot exceed players − 1 (e.g. 8 players → max 7 rounds)."
   },
   "arena": {
     "endTournamentTitle": "End Tournament",
@@ -232,6 +232,8 @@
     "alertLateJoinsNotAllowed": "Late joins are not allowed in this tournament. Please wait for the next tournament.",
     "alertTournamentAlreadyCompleted": "This tournament has already been completed and cannot be restarted.",
     "alertNeedAtLeastTwoPlayers": "Need at least 2 players to start.",
+    "alertSwissNeedPlayers": "Swiss needs at least {min} players (you have {count}).",
+    "alertSwissRoundsVsPlayers": "With {players} players, {rounds} rounds is too many (max {max} = players − 1). Lower planned rounds in settings.",
     "alertInvalidTableCount": "Please enter a valid number of tables (at least 1).",
     "alertInvalidDuration": "Please enter a valid tournament duration (at least 1 minute).",
     "alertSelfPauseNotAllowed": "Self-pause is not allowed in this tournament.",
@@ -589,7 +591,8 @@
     "tableSlotsHelp": "How many boards can be used at once for pairings (also stored for the venue).",
     "swissOptionsTitle": "Swiss rounds",
     "plannedSwissRoundsLabel": "Planned rounds",
-    "plannedSwissRoundsHelp": "Total number of Swiss rounds planned for this event.",
+    "plannedSwissRoundsHelp": "Choose {min}–{max} rounds. Swiss needs at least {minPlayers} players; rounds cannot exceed players − 1.",
+    "plannedSwissRoundsHelpWithPlayers": "With {players} players, choose {min}–{max} rounds (max = players − 1).",
     "swissCompletedRoundsHint": "Completed rounds (from results): {n}",
     "swissLastRoundColorRelaxLabel": "Relax color balance on last round",
     "swissLastRoundColorRelaxHelp": "Allow color assignment to ignore strict balance on the final scheduled round if needed.",

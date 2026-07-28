@@ -2,6 +2,13 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { parseTournamentSettings } from "@/lib/tournament-settings"
+import {
+  isSwissAlgorithm,
+  MIN_SWISS_PLAYERS,
+  maxSwissRoundsForPlayerCount,
+  validateSwissTournamentField,
+} from "@/lib/pairing/swiss"
 
 interface StartTournamentResponse {
   success: boolean
@@ -14,7 +21,6 @@ interface StartTournamentResponse {
 export async function startTournament(tournamentId: string): Promise<StartTournamentResponse> {
   const supabase = await createClient()
 
-  // 1. Authenticate user
   const {
     data: { user },
     error: authError,
@@ -24,10 +30,9 @@ export async function startTournament(tournamentId: string): Promise<StartTourna
     return { success: false, error: "Authentication required" }
   }
 
-  // 2. Verify user is the organizer or owner
   const { data: tournament, error: tournamentError } = await supabase
     .from("tournaments")
-    .select("organizer_id, owner_id, status")
+    .select("organizer_id, owner_id, status, settings")
     .eq("id", tournamentId)
     .single()
 
@@ -47,7 +52,6 @@ export async function startTournament(tournamentId: string): Promise<StartTourna
     return { success: false, error: "Tournament is already active" }
   }
 
-  // 3. Check if there are enough players
   const { data: players, error: playersError } = await supabase
     .from("players")
     .select("id")
@@ -58,11 +62,30 @@ export async function startTournament(tournamentId: string): Promise<StartTourna
     return { success: false, error: "Failed to check players" }
   }
 
-  if (!players || players.length < 2) {
+  const playerCount = players?.length ?? 0
+  const settings = parseTournamentSettings(tournament)
+
+  if (isSwissAlgorithm(settings.pairingAlgorithm)) {
+    const check = validateSwissTournamentField(settings, playerCount)
+    if (!check.valid) {
+      const maxR = maxSwissRoundsForPlayerCount(playerCount)
+      if (playerCount < MIN_SWISS_PLAYERS) {
+        return {
+          success: false,
+          error: `Swiss needs at least ${MIN_SWISS_PLAYERS} players (you have ${playerCount})`,
+        }
+      }
+      return {
+        success: false,
+        error:
+          check.errors[0] ??
+          `With ${playerCount} players, use at most ${maxR} Swiss rounds (players − 1)`,
+      }
+    }
+  } else if (playerCount < 2) {
     return { success: false, error: "Need at least 2 players to start" }
   }
 
-  // 4. Update tournament status to active
   const { error: updateError } = await supabase
     .from("tournaments")
     .update({
@@ -77,7 +100,6 @@ export async function startTournament(tournamentId: string): Promise<StartTourna
     return { success: false, error: "Failed to start tournament" }
   }
 
-  // 5. Revalidate the tournament page
   revalidatePath(`/tournament/${tournamentId}`)
 
   return { success: true }
