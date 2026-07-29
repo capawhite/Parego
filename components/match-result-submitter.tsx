@@ -119,7 +119,11 @@ export function MatchResultSubmitter({
         <div className="flex flex-col gap-2">
           <Button
             variant={selectedResult === "player1-win" ? "default" : "outline"}
-            className="w-full"
+            className={`w-full h-11 min-h-[44px] font-semibold ${
+              selectedResult === "player1-win"
+                ? ""
+                : "border-2 bg-card text-foreground hover:bg-muted"
+            }`}
             onClick={() => handleSelectResult("player1-win")}
             disabled={mySubmission?.confirmed && !hasConflict}
           >
@@ -127,7 +131,9 @@ export function MatchResultSubmitter({
           </Button>
           <Button
             variant={selectedResult === "draw" ? "default" : "outline"}
-            className="w-full"
+            className={`w-full h-11 min-h-[44px] font-semibold ${
+              selectedResult === "draw" ? "" : "border-2 bg-muted text-foreground hover:bg-secondary"
+            }`}
             onClick={() => handleSelectResult("draw")}
             disabled={mySubmission?.confirmed && !hasConflict}
           >
@@ -135,14 +141,18 @@ export function MatchResultSubmitter({
           </Button>
           <Button
             variant={selectedResult === "player2-win" ? "default" : "outline"}
-            className="w-full"
+            className={`w-full h-11 min-h-[44px] font-semibold ${
+              selectedResult === "player2-win"
+                ? "bg-foreground text-background hover:bg-foreground/90"
+                : "border-2 bg-foreground text-background hover:bg-foreground/90"
+            }`}
             onClick={() => handleSelectResult("player2-win")}
             disabled={mySubmission?.confirmed && !hasConflict}
           >
             {t("arena.playerWinsBlack", { name: player2Name })}
           </Button>
           <Button
-            className="w-full mt-2"
+            className="w-full h-11 min-h-[44px] mt-2 font-semibold"
             onClick={handleSubmit}
             disabled={selectedResult == null || (mySubmission?.confirmed && !hasConflict)}
           >

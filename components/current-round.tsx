@@ -268,29 +268,28 @@ export function CurrentRound({
                     )}
 
                     {canRecordResults && (
-                      <div className="flex mt-2 justify-start gap-6">
+                      <div className="grid grid-cols-3 gap-2 mt-3">
                         <Button
+                          type="button"
                           variant="outline"
-                          size="sm"
-                          className="h-7 text-xs px-3 hover:bg-primary hover:text-primary-foreground bg-transparent"
+                          className="h-11 min-h-[44px] px-2 text-sm font-semibold border-2 border-border bg-card text-foreground shadow-sm hover:bg-muted hover:border-foreground/30"
                           onClick={() => recordMatchResult(match.id, match.player1.id, false)}
                           data-simulator-result="white"
                         >
                           {t("currentRound.whiteWins")}
                         </Button>
                         <Button
+                          type="button"
                           variant="outline"
-                          size="sm"
-                          className="h-7 text-xs px-3 hover:bg-primary hover:text-primary-foreground bg-transparent"
+                          className="h-11 min-h-[44px] px-2 text-sm font-semibold border-2 border-border bg-muted text-foreground shadow-sm hover:bg-secondary hover:border-primary/40"
                           onClick={() => recordMatchResult(match.id, undefined, true)}
                           data-simulator-result="draw"
                         >
                           {t("currentRound.draw")}
                         </Button>
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs px-3 hover:bg-primary hover:text-primary-foreground bg-transparent"
+                          type="button"
+                          className="h-11 min-h-[44px] px-2 text-sm font-semibold bg-foreground text-background shadow-sm hover:bg-foreground/90"
                           onClick={() => recordMatchResult(match.id, match.player2.id, false)}
                           data-simulator-result="black"
                         >

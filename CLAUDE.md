@@ -97,9 +97,9 @@ Live at: https://parego.onrender.com
 ## Known UI issues to fix (prioritized)
 
 ### 🔴 Critical
-1. **Results buttons** — "White Wins / Draw / Black Wins" need to be larger, color-coded, and feel like real action buttons, not passive tags
-2. **Pairings table headers** — burnt orange color clashes with purple brand; unify to purple or dark neutral
-3. **Tournament header overflow** — title truncates and nav tabs disappear at laptop widths; fix overflow and tab responsiveness
+1. ~~**Results buttons**~~ — fixed: larger color-coded White / Draw / Black action buttons
+2. ~~**Pairings table headers**~~ — fixed: purple brand (`bg-primary`) instead of burnt orange
+3. ~~**Tournament header overflow**~~ — fixed: stacked title / full-width tabs / actions so tabs stay visible
 
 ### 🟡 Important
 4. **Home page emptiness** — single tournament card in a sea of white; tighten layout, add subtle background or "how it works" section
