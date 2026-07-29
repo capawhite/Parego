@@ -46,6 +46,25 @@ describe("shouldRunPairingLoop", () => {
       }),
     ).toBe(false)
   })
+
+  it("skips inactive tournaments and legacy fide-swiss", () => {
+    expect(
+      shouldRunPairingLoop({
+        isOrganizer: true,
+        isActive: false,
+        waitingForFinalResults: false,
+        pairingAlgorithm: "all-vs-all",
+      }),
+    ).toBe(false)
+    expect(
+      shouldRunPairingLoop({
+        isOrganizer: true,
+        isActive: true,
+        waitingForFinalResults: false,
+        pairingAlgorithm: "fide-swiss",
+      }),
+    ).toBe(false)
+  })
 })
 
 describe("isPairingHeartbeatStale", () => {
@@ -63,5 +82,9 @@ describe("isPairingHeartbeatStale", () => {
   it("is stale after threshold", () => {
     const now = Date.now()
     expect(isPairingHeartbeatStale(now - PAIRING_HEARTBEAT_STALE_MS - 1, now)).toBe(true)
+  })
+
+  it("treats invalid heartbeat strings as stale", () => {
+    expect(isPairingHeartbeatStale("not-a-date", Date.now())).toBe(true)
   })
 })

@@ -1,9 +1,36 @@
 import { describe, it, expect } from "vitest"
-import { calculatePointsFromSettings, pointsEarnedFromGameResults } from "@/lib/points"
+import { activeScoringTriple, calculatePointsFromSettings, pointsEarnedFromGameResults } from "@/lib/points"
 import { DEFAULT_SETTINGS } from "@/lib/types"
 
 describe("points (scoring when results are recorded)", () => {
   const settings = DEFAULT_SETTINGS
+
+  describe("activeScoringTriple", () => {
+    it("uses arena win/draw/loss by default", () => {
+      expect(activeScoringTriple(DEFAULT_SETTINGS)).toEqual({
+        win: DEFAULT_SETTINGS.winPoints,
+        draw: DEFAULT_SETTINGS.drawPoints,
+        loss: DEFAULT_SETTINGS.lossPoints,
+      })
+    })
+
+    it("uses Swiss defaults and overrides", () => {
+      expect(activeScoringTriple({ ...DEFAULT_SETTINGS, pairingAlgorithm: "swiss" })).toEqual({
+        win: 1,
+        draw: 0.5,
+        loss: 0,
+      })
+      expect(
+        activeScoringTriple({
+          ...DEFAULT_SETTINGS,
+          pairingAlgorithm: "swiss",
+          swissWinPoints: 2,
+          swissDrawPoints: 1,
+          swissLossPoints: 0.25,
+        }),
+      ).toEqual({ win: 2, draw: 1, loss: 0.25 })
+    })
+  })
 
   describe("calculatePointsFromSettings", () => {
     it("draw gives drawPoints", () => {
@@ -18,9 +45,14 @@ describe("points (scoring when results are recorded)", () => {
       expect(calculatePointsFromSettings(false, false, 0, settings)).toBe(0)
     })
 
-    it("streak >= 2 multiplies points", () => {
+    it("streak >= 2 multiplies points when enabled", () => {
       expect(calculatePointsFromSettings(true, false, 2, settings)).toBe(4)
       expect(calculatePointsFromSettings(false, true, 2, settings)).toBe(2)
+    })
+
+    it("does not multiply when streak is disabled", () => {
+      const noStreak = { ...settings, streakEnabled: false }
+      expect(calculatePointsFromSettings(true, false, 5, noStreak)).toBe(2)
     })
   })
 

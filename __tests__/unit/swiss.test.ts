@@ -5,6 +5,7 @@ import {
   clampPlannedSwissRounds,
   createSwissRoundPairings,
   isPairingByeMatch,
+  isSwissAlgorithm,
   maxSwissRoundsForPlayerCount,
   maybeAdvanceSwissLastCompletedRound,
   nextSwissRoundToPair,
@@ -61,6 +62,35 @@ describe("Club Swiss field limits", () => {
     expect(validateSwissTournamentField({ ...swissSettings, plannedSwissRounds: 3 }, 4).valid).toBe(true)
     expect(validateSwissTournamentField({ ...swissSettings, plannedSwissRounds: 5 }, 8).valid).toBe(true)
   })
+
+  it("treats fide-swiss as Swiss and ignores non-Swiss algorithms", () => {
+    expect(isSwissAlgorithm("fide-swiss")).toBe(true)
+    expect(validateSwissTournamentField({ pairingAlgorithm: "all-vs-all", plannedSwissRounds: 1 })).toEqual({
+      valid: true,
+    })
+    expect(validateSwissTournamentField({ pairingAlgorithm: "fide-swiss", plannedSwissRounds: 5 }, 8).valid).toBe(
+      true,
+    )
+  })
+
+  it("reports clear validation error strings", () => {
+    const tooFewRounds = validateSwissTournamentField({ pairingAlgorithm: "swiss", plannedSwissRounds: 2 })
+    expect(tooFewRounds.valid).toBe(false)
+    if (!tooFewRounds.valid) {
+      expect(tooFewRounds.errors).toContain("plannedSwissRounds must be 3–11")
+    }
+
+    const tooFewPlayers = validateSwissTournamentField(swissSettings, 3)
+    expect(tooFewPlayers.valid).toBe(false)
+    if (!tooFewPlayers.valid) {
+      expect(tooFewPlayers.errors).toContain("Swiss needs at least 4 players")
+    }
+  })
+
+  it("caps max rounds at 11 even for large fields", () => {
+    expect(maxSwissRoundsForPlayerCount(20)).toBe(11)
+    expect(clampPlannedSwissRounds(Number.NaN)).toBe(3)
+  })
 })
 
 describe("Club Swiss round gate", () => {
@@ -109,6 +139,12 @@ describe("Club Swiss round gate", () => {
     expect(nextSwissRoundToPair({ ...swissSettings, swissLastCompletedRound: 1 }, done)).toBe(2)
   })
 
+  it("blocks pairing once planned rounds are finished", () => {
+    expect(
+      nextSwissRoundToPair({ ...swissSettings, plannedSwissRounds: 3, swissLastCompletedRound: 3 }, []),
+    ).toBeNull()
+  })
+
   it("advances swissLastCompletedRound when all round matches finish", () => {
     const a = makePlayer("a")
     const b = makePlayer("b")
@@ -125,6 +161,34 @@ describe("Club Swiss round gate", () => {
     ]
     const advanced = maybeAdvanceSwissLastCompletedRound(swissSettings, matches)
     expect(advanced.swissLastCompletedRound).toBe(1)
+  })
+
+  it("treats pairing byes as completed for round advance", () => {
+    const a = makePlayer("a")
+    const b = makePlayer("b")
+    const c = makePlayer("c")
+    const byeOpp = makePlayer(PAIRING_BYE_PLAYER_ID, { name: "Bye" })
+    const matches: Match[] = [
+      {
+        id: "m1",
+        player1: a,
+        player2: b,
+        swissRound: 1,
+        matchKind: "play",
+        tableNumber: 1,
+        result: { winnerId: "a", isDraw: false, completed: true, completedAt: 1 },
+      },
+      {
+        id: "bye1",
+        player1: c,
+        player2: byeOpp,
+        swissRound: 1,
+        matchKind: "pairing-bye",
+        tableNumber: 0,
+        result: { winnerId: "c", isDraw: false, completed: true, completedAt: 1 },
+      },
+    ]
+    expect(maybeAdvanceSwissLastCompletedRound(swissSettings, matches).swissLastCompletedRound).toBe(1)
   })
 })
 
