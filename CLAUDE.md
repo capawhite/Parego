@@ -104,7 +104,7 @@ Live at: https://parego.onrender.com
 ### 🟡 Important
 4. ~~**Home page emptiness**~~ — fixed: brand hero, tighter layout, how-it-works section
 5. ~~**Settings modal density**~~ — fixed: Advanced toggle for rematch / pause / pairing knobs
-6. **Join button shown to organizer** — replace "Join tournament" with "Share" for the tournament creator
+6. ~~**Join button shown to organizer**~~ — fixed: organizers get Share (QR/link); others still get Join
 
 ### 🟢 Polish
 7. **Empty standings stats** — hide "0 games • 0.0 pts/game • Perf: 0.00" until there is real data

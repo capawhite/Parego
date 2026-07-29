@@ -19,6 +19,7 @@ import {
   Users,
 } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
+import { TournamentShareDialog } from "@/components/tournament/tournament-share-dialog"
 
 export type ArenaHeaderUserRole = "organizer" | "registered-player" | "guest-player" | "visitor"
 
@@ -105,14 +106,23 @@ export function ArenaTournamentHeader({
               {displayName}
             </h1>
             <div className="flex items-center gap-1 shrink-0 pt-0.5">
-              {tournamentId && tournamentStatus !== "completed" && !isCurrentUserInTournament && (
-                <Button variant="default" size="sm" className="shrink-0 h-9 gap-1.5" asChild>
-                  <Link href={`/join/${tournamentId}`}>
-                    <LogIn className="h-4 w-4" />
-                    <span className="hidden sm:inline">{t("tournamentHeader.joinButton")}</span>
-                  </Link>
-                </Button>
+              {tournamentId && tournamentStatus !== "completed" && isOrganizer && (
+                <TournamentShareDialog
+                  tournamentId={tournamentId}
+                  tournamentName={displayName}
+                />
               )}
+              {tournamentId &&
+                tournamentStatus !== "completed" &&
+                !isOrganizer &&
+                !isCurrentUserInTournament && (
+                  <Button variant="default" size="sm" className="shrink-0 h-9 gap-1.5" asChild>
+                    <Link href={`/join/${tournamentId}`}>
+                      <LogIn className="h-4 w-4" />
+                      <span className="hidden sm:inline">{t("tournamentHeader.joinButton")}</span>
+                    </Link>
+                  </Button>
+                )}
               <Link href="/">
                 <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="Home">
                   <Home className="h-4 w-4" />
