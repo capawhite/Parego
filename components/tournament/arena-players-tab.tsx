@@ -5,15 +5,28 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { PlayersList } from "@/components/players-list"
 import { UserSearchAutocomplete } from "@/components/user-search-autocomplete"
 import { generateQRCode } from "@/lib/qr-utils"
 import type { Player } from "@/lib/types"
 import Image from "next/image"
-import { Check, Loader2, MapPin, QrCode, UserPlus } from "lucide-react"
+import { Check, Loader2, MapPin, QrCode, UserPlus, UsersRound } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
+import {
+  getLastTournamentRoster,
+  type LastRosterPlayer,
+} from "@/app/actions/last-tournament-roster"
 
 export interface ArenaPlayersTabProps {
   tournamentId: string | null
@@ -39,6 +52,9 @@ export interface ArenaPlayersTabProps {
   onJoinAsSelf: () => void
   onCheckIn: () => void
   onAddGuestPlayer: () => void
+  onAddPlayersFromRoster?: (
+    players: LastRosterPlayer[],
+  ) => Promise<number>
   onSelectUser: (user: { id: string; name: string; rating: number | null }) => void
   onRemovePlayer: (playerId: string) => void
   onTogglePause?: (playerId: string) => void
@@ -74,6 +90,7 @@ export function ArenaPlayersTab({
   onJoinAsSelf,
   onCheckIn,
   onAddGuestPlayer,
+  onAddPlayersFromRoster,
   onSelectUser,
   onRemovePlayer,
   onTogglePause,
@@ -82,11 +99,85 @@ export function ArenaPlayersTab({
 }: ArenaPlayersTabProps) {
   const { t } = useI18n()
   const [joinOrigin, setJoinOrigin] = useState("")
+  const [rosterOpen, setRosterOpen] = useState(false)
+  const [rosterLoading, setRosterLoading] = useState(false)
+  const [rosterAdding, setRosterAdding] = useState(false)
+  const [rosterSourceName, setRosterSourceName] = useState<string | null>(null)
+  const [rosterPlayers, setRosterPlayers] = useState<LastRosterPlayer[]>([])
+  const [selectedRosterKeys, setSelectedRosterKeys] = useState<Set<string>>(new Set())
+
   useEffect(() => {
     setJoinOrigin(window.location.origin)
   }, [])
-  const joinUrl = joinOrigin && tournamentId ? `${joinOrigin}/join/${tournamentId}` : ""
+  const joinUrl = joinOrigin && tournamentId ? `${joinOrigin}/j/${tournamentId}` : ""
   const qrSrc = joinUrl ? generateQRCode(joinUrl) : ""
+
+  const rosterKey = (p: LastRosterPlayer) =>
+    p.userId ? `u:${p.userId}` : `n:${p.name.toLowerCase()}`
+
+  const openLastRoster = async () => {
+    if (!tournamentId || !onAddPlayersFromRoster) return
+    setRosterOpen(true)
+    setRosterLoading(true)
+    setRosterPlayers([])
+    setSelectedRosterKeys(new Set())
+    setRosterSourceName(null)
+    try {
+      const result = await getLastTournamentRoster(tournamentId)
+      if (!result.success) {
+        toast.error(result.error || t("arena.toastFailedToAddPlayer"))
+        setRosterOpen(false)
+        return
+      }
+      if (!result.players?.length) {
+        toast.info(t("arena.noPreviousRoster"))
+        setRosterOpen(false)
+        return
+      }
+      const existingNames = new Set(players.map((p) => p.name.toLowerCase()))
+      const existingUserIds = new Set(players.map((p) => p.userId).filter(Boolean))
+      const available = result.players.filter((p) => {
+        if (p.userId && existingUserIds.has(p.userId)) return false
+        if (existingNames.has(p.name.toLowerCase())) return false
+        return true
+      })
+      if (available.length === 0) {
+        toast.info(t("arena.previousRosterAlreadyAdded"))
+        setRosterOpen(false)
+        return
+      }
+      setRosterSourceName(result.tournamentName ?? null)
+      setRosterPlayers(available)
+      setSelectedRosterKeys(new Set(available.map(rosterKey)))
+    } finally {
+      setRosterLoading(false)
+    }
+  }
+
+  const toggleRosterSelection = (key: string) => {
+    setSelectedRosterKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  const confirmAddFromRoster = async () => {
+    if (!onAddPlayersFromRoster) return
+    const selected = rosterPlayers.filter((p) => selectedRosterKeys.has(rosterKey(p)))
+    if (selected.length === 0) return
+    setRosterAdding(true)
+    try {
+      const added = await onAddPlayersFromRoster(selected)
+      if (added > 0) {
+        toast.success(t("arena.toastAddedFromRoster", { count: added }))
+      }
+      setRosterOpen(false)
+    } finally {
+      setRosterAdding(false)
+    }
+  }
 
   return (
     <>
@@ -289,9 +380,19 @@ export function ArenaPlayersTab({
                   >
                     {t("arena.addGuestPlayer")}
                   </Button>
+
+                  {onAddPlayersFromRoster && (
+                    <Button
+                      onClick={() => void openLastRoster()}
+                      variant="outline"
+                      className="w-full h-8 text-sm bg-transparent"
+                    >
+                      <UsersRound className="mr-2 h-4 w-4" />
+                      {t("arena.addFromLastEvent")}
+                    </Button>
+                  )}
                 </>
               )}
-
               {!currentUserId && (
                 <div className="space-y-3">
                   <Button onClick={onAddGuestPlayer} variant="outline" className="w-full bg-transparent">
@@ -327,6 +428,60 @@ export function ArenaPlayersTab({
           />
         </CardContent>
       </Card>
+
+      <Dialog open={rosterOpen} onOpenChange={setRosterOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("arena.addFromLastEventTitle")}</DialogTitle>
+            <DialogDescription>
+              {rosterSourceName
+                ? t("arena.addFromLastEventBody", { name: rosterSourceName })
+                : t("arena.addFromLastEventBodyGeneric")}
+            </DialogDescription>
+          </DialogHeader>
+          {rosterLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+              {rosterPlayers.map((p) => {
+                const key = rosterKey(p)
+                const checked = selectedRosterKeys.has(key)
+                return (
+                  <label
+                    key={key}
+                    className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/40"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggleRosterSelection(key)}
+                    />
+                    <span className="text-sm font-medium flex-1 truncate">{p.name}</span>
+                    {p.rating != null && (
+                      <span className="text-xs text-muted-foreground tabular-nums">{p.rating}</span>
+                    )}
+                  </label>
+                )
+              })}
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setRosterOpen(false)} disabled={rosterAdding}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={() => void confirmAddFromRoster()}
+              disabled={rosterLoading || rosterAdding || selectedRosterKeys.size === 0}
+            >
+              {rosterAdding ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : null}
+              {t("arena.addSelectedPlayers", { count: selectedRosterKeys.size })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

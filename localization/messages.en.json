@@ -74,7 +74,11 @@
     "howItWorksPlayTitle": "Pair and play",
     "howItWorksPlayBody": "Arena keeps boards filled; Swiss pairs each round when you are ready.",
     "howItWorksCreateTitle": "Create and run",
-    "howItWorksCreateBody": "Organizers set the format, share a link, and record results live."
+    "howItWorksCreateBody": "Organizers set the format, share a link, and record results live.",
+    "nearbyJoinCta": "Join {name} — {distance} away?",
+    "nearbyJoinButton": "Join this event",
+    "guestAccountBanner": "Create a free account to keep your results and rejoin faster.",
+    "guestAccountBannerCta": "Create account"
   },
   "auth": {
     "loginTitle": "Login",
@@ -127,13 +131,17 @@
   },
   "conversionPrompt": {
     "repeat_play_title": "You've played here before",
-    "repeat_play_description": "Create an account to save your history and ratings.",
-    "result_rankings_title": "This result affects rankings",
-    "result_rankings_description": "Create an account to keep your record.",
+    "repeat_play_description": "Create a free account to save your history and rejoin in one tap next time.",
+    "result_rankings_title": "Keep this result",
+    "result_rankings_description": "Create an account so this game stays on your record — not just on this phone.",
     "rated_game_title": "You're about to play a rated game",
-    "rated_game_description": "Create an account to track your rating.",
+    "rated_game_description": "Create an account to track your rating across events.",
+    "end_event_title": "Save your results before you go",
+    "end_event_description": "You played as a guest. Create a free account now so your results aren't lost when you clear this phone.",
     "maybeLater": "Maybe later",
-    "createAccount": "Create account"
+    "continueWithoutSaving": "Continue without saving",
+    "createAccount": "Create free account",
+    "signIn": "I already have an account"
   },
   "ratingBands": {
     "unrated": "I'm too weak to know",
@@ -187,7 +195,18 @@
     "joiningAsGuest": "Joining as guest",
     "register": "Register",
     "toTrackProgress": "to track your progress",
-    "enterYourNamePlaceholder": "Enter your name"
+    "enterYourNamePlaceholder": "Enter your name",
+    "confirmAsLabel": "Joining as",
+    "confirmJoinButton": "Confirm and join",
+    "continueAs": "Continue as {name}",
+    "orEnterDetails": "Or enter different details",
+    "secondJoinTitle": "Save your results",
+    "secondJoinTitleEscalated": "Your results may be lost on this phone",
+    "secondJoinBody": "You've played as a guest before. Create a free account to keep your history and rejoin faster.",
+    "secondJoinBodyEscalated": "Guest play on this device isn't saved permanently. Create an account before joining another event.",
+    "secondJoinCreateAccount": "Create free account",
+    "secondJoinSignIn": "Sign in",
+    "secondJoinContinueGuest": "Continue as guest anyway"
   },
   "create": {
     "title": "Create tournament",
@@ -277,6 +296,14 @@
     "searchRegisteredPlayers": "Search Registered Players",
     "orAddGuest": "Or add guest",
     "addGuestPlayer": "Add Guest Player",
+    "addFromLastEvent": "Add from last event",
+    "addFromLastEventTitle": "Add players from last event",
+    "addFromLastEventBody": "Select players from “{name}” to add to this tournament.",
+    "addFromLastEventBodyGeneric": "Select players from your last tournament to add here.",
+    "addSelectedPlayers": "Add selected ({count})",
+    "noPreviousRoster": "No previous tournament roster found.",
+    "previousRosterAlreadyAdded": "Everyone from your last event is already here.",
+    "toastAddedFromRoster": "Added {count} player(s) from last event",
     "joinAsGuest": "Join as Guest",
     "loginOrRegisterToTrack": "to track your progress",
     "currentPairings": "Current Pairings",

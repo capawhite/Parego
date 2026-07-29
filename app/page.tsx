@@ -17,10 +17,17 @@ import {
 import { LandingTournamentCard } from "@/components/landing-tournament-card"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
+import { haversineKm } from "@/lib/geo"
+import { hasPriorGuestSessions } from "@/lib/guest-session-history"
 
 const NEARBY_RADIUS_KM = 15
 const NEARBY_HOURS = 24
 const FALLBACK_LIST_LIMIT = 8
+
+function formatNearbyDistance(km: number, t: (path: string, params?: Record<string, string | number>) => string): string {
+  if (km < 1) return t("landing.distanceMeters", { meters: Math.round(km * 1000) })
+  return t("landing.distanceKilometers", { kilometers: Number(km.toFixed(1)) })
+}
 
 export default function Home() {
   const router = useRouter()
@@ -40,6 +47,7 @@ export default function Home() {
   const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({})
   const [playerPreviews, setPlayerPreviews] = useState<Record<string, string[]>>({})
   const [refreshing, setRefreshing] = useState(false)
+  const [showGuestBanner, setShowGuestBanner] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -101,6 +109,14 @@ export default function Home() {
       subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+    if (loadingAuth || user) {
+      setShowGuestBanner(false)
+      return
+    }
+    setShowGuestBanner(hasPriorGuestSessions())
+  }, [loadingAuth, user])
 
   // Request location and load nearby or fallback tournaments
   useEffect(() => {
@@ -196,6 +212,13 @@ export default function Home() {
   const hasNearbyList = showNearby && nearbyTournaments.length > 0
   const hasFallbackList = showFallback && fallbackTournaments.length > 0
 
+  const singleNearby =
+    showNearby && !loadingNearby && nearbyTournaments.length === 1 ? nearbyTournaments[0] : null
+  const singleNearbyDistanceKm =
+    singleNearby && userLocation && singleNearby.latitude != null && singleNearby.longitude != null
+      ? haversineKm(userLocation.lat, userLocation.lon, singleNearby.latitude, singleNearby.longitude)
+      : null
+
   // Load player counts and previews when tournament list changes
   const displayedTournaments = showNearby ? nearbyTournaments : fallbackTournaments
   const previewTournamentIds = useMemo(
@@ -287,6 +310,32 @@ export default function Home() {
               <p className="text-primary text-sm font-medium">{t("home.registerToCreate")}</p>
             )}
           </div>
+
+          {showGuestBanner && (
+            <div className="max-w-xl mx-auto rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 text-left">
+              <p className="text-sm flex-1">{t("home.guestAccountBanner")}</p>
+              <Button size="sm" className="shrink-0" asChild>
+                <Link href="/auth/signup?from=conversion&skipRating=1">{t("home.guestAccountBannerCta")}</Link>
+              </Button>
+            </div>
+          )}
+
+          {singleNearby && singleNearbyDistanceKm != null && (
+            <div className="max-w-xl mx-auto rounded-lg border-2 border-primary/30 bg-background/90 p-4 space-y-3 text-left shadow-sm">
+              <p className="text-sm font-medium">
+                {t("home.nearbyJoinCta", {
+                  name: singleNearby.name,
+                  distance: formatNearbyDistance(singleNearbyDistanceKm, t),
+                })}
+              </p>
+              <Button className="w-full h-12 font-semibold bg-primary hover:bg-primary/90" asChild>
+                <Link href={`/j/${singleNearby.id}`}>
+                  <MapPin className="h-4 w-4 mr-2 shrink-0" />
+                  {t("home.nearbyJoinButton")}
+                </Link>
+              </Button>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto text-left">
             {user && (

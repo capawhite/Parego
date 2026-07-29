@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { checkVenueProximity } from "@/app/actions/check-in"
 import { fetchTournamentById, joinTournamentAction } from "@/app/actions/join-tournament"
-import { addGuestSession } from "@/lib/guest-session-history"
+import { addGuestSession, hasPriorGuestSessions, getLastGuestDisplayName, getLastGuestRatingBand, getSecondJoinNudgeCount, incrementSecondJoinNudgeCount, SECOND_JOIN_NUDGE_SOFT_LIMIT } from "@/lib/guest-session-history"
 import { toast } from "sonner"
 import { SIMPLE_LEVELS, resolveRating, type RatingBandValue } from "@/lib/rating-bands"
 import { getDeviceId } from "@/lib/device-id"
@@ -38,6 +38,10 @@ export default function JoinTournamentPage() {
   const [ratingPrecise, setRatingPrecise] = useState("")
   const [guestName, setGuestName] = useState("")
   const [alreadyJoined, setAlreadyJoined] = useState(false)
+  const [showSecondJoinNudge, setShowSecondJoinNudge] = useState(false)
+  const [secondJoinEscalated, setSecondJoinEscalated] = useState(false)
+  const [savedGuestName, setSavedGuestName] = useState<string | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
     async function checkAuth() {
@@ -71,11 +75,26 @@ export default function JoinTournamentPage() {
           }
         }
         if (profile?.rating != null) setRatingPrecise(String(profile.rating))
+      } else {
+        const lastName = getLastGuestDisplayName()
+        if (lastName) {
+          setSavedGuestName(lastName)
+          setGuestName(lastName)
+        }
+        const lastBand = getLastGuestRatingBand()
+        if (lastBand === "beginner" || lastBand === "intermediate" || lastBand === "advanced") {
+          setRatingBand(lastBand)
+        }
+        if (hasPriorGuestSessions(code)) {
+          setShowSecondJoinNudge(true)
+          setSecondJoinEscalated(getSecondJoinNudgeCount() >= SECOND_JOIN_NUDGE_SOFT_LIMIT)
+        }
       }
+      setAuthChecked(true)
     }
 
     checkAuth()
-  }, [])
+  }, [code])
 
   useEffect(() => {
     async function loadTournamentData() {
@@ -319,6 +338,7 @@ export default function JoinTournamentPage() {
             tournamentId: code,
             playerId: joinedPlayerId,
             displayName: finalName,
+            ratingBand: ratingBand || undefined,
           })
         }
 
@@ -401,6 +421,43 @@ export default function JoinTournamentPage() {
     )
   }
 
+  if (showSecondJoinNudge && !isRegistered && authChecked && tournament && !alreadyJoined && !success) {
+    return (
+      <div className="min-h-svh flex items-center justify-center bg-background p-4 sm:p-6">
+        <Card className="w-full max-w-md p-6 space-y-4">
+          <div className="text-center space-y-2">
+            <Trophy className="h-12 w-12 mx-auto text-primary" />
+            <h1 className="text-2xl font-bold">
+              {secondJoinEscalated ? t("join.secondJoinTitleEscalated") : t("join.secondJoinTitle")}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {secondJoinEscalated
+                ? t("join.secondJoinBodyEscalated")
+                : t("join.secondJoinBody")}
+            </p>
+            <p className="text-sm font-medium">{tournament.name}</p>
+          </div>
+          <Button asChild className="w-full" size="lg">
+            <Link href="/auth/signup?from=conversion&skipRating=1">{t("join.secondJoinCreateAccount")}</Link>
+          </Button>
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/auth/login?from=conversion">{t("join.secondJoinSignIn")}</Link>
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full text-muted-foreground"
+            onClick={() => {
+              incrementSecondJoinNudgeCount()
+              setShowSecondJoinNudge(false)
+            }}
+          >
+            {t("join.secondJoinContinueGuest")}
+          </Button>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-svh flex items-center justify-center bg-background p-4 sm:p-6">
       <Card className="w-full max-w-md p-6">
@@ -416,7 +473,7 @@ export default function JoinTournamentPage() {
           {!isRegistered && (
             <div className="mt-2 text-xs text-muted-foreground">
               {t("join.joiningAsGuest")} •{" "}
-              <Link href="/auth/signup" className="underline">
+              <Link href="/auth/signup?from=conversion&skipRating=1" className="underline">
                 {t("join.register")}
               </Link>{" "}
               {t("join.toTrackProgress")}
@@ -425,7 +482,12 @@ export default function JoinTournamentPage() {
         </div>
 
         <div className="space-y-4">
-          {isRegistered && (
+          {isRegistered && playerName.trim() ? (
+            <div className="rounded-lg border bg-muted/30 p-4 text-center space-y-1">
+              <p className="text-sm text-muted-foreground">{t("join.confirmAsLabel")}</p>
+              <p className="text-lg font-semibold">{playerName}</p>
+            </div>
+          ) : isRegistered ? (
             <div>
               <label htmlFor="playerName" className="text-sm font-medium mb-2 block">
                 {t("join.yourNameLabel")}
@@ -437,16 +499,47 @@ export default function JoinTournamentPage() {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleJoin()
+                  if (e.key === "Enter") void handleJoin()
                 }}
-                disabled={joining || !!playerName}
+                disabled={joining}
                 className="w-full"
               />
             </div>
+          ) : null}
+
+          {!isRegistered && savedGuestName && guestName === savedGuestName && ratingBand && (
+            <Button
+              type="button"
+              variant="default"
+              className="w-full h-12 font-semibold"
+              disabled={joining || verifyingLocation}
+              onClick={() => void handleJoin()}
+            >
+              {joining || verifyingLocation ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {verifyingLocation ? t("join.verifyingLocation") : t("join.joining")}
+                </>
+              ) : (
+                t("join.continueAs", { name: savedGuestName })
+              )}
+            </Button>
           )}
 
-          {!isRegistered && (
+          {!isRegistered && !(savedGuestName && guestName === savedGuestName && ratingBand) && (
             <>
+              {savedGuestName && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full h-11"
+                  onClick={() => {
+                    setGuestName(savedGuestName)
+                  }}
+                >
+                  {t("join.continueAs", { name: savedGuestName })}
+                </Button>
+              )}
               <div>
                 <label htmlFor="guestName" className="text-sm font-medium mb-2 block">
                   {t("join.guestNameLabelFull")}
@@ -500,8 +593,14 @@ export default function JoinTournamentPage() {
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
+          {!(
+            !isRegistered &&
+            savedGuestName &&
+            guestName === savedGuestName &&
+            ratingBand
+          ) && (
           <Button
-            onClick={handleJoin}
+            onClick={() => void handleJoin()}
             disabled={
               joining ||
               (isRegistered && !playerName.trim()) ||
@@ -521,10 +620,13 @@ export default function JoinTournamentPage() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {t("join.joining")}
               </>
+            ) : isRegistered ? (
+              t("join.confirmJoinButton")
             ) : (
               t("join.joinButton")
             )}
           </Button>
+          )}
 
           <p className="text-xs text-center text-muted-foreground">
             {t("join.tournamentCode")} <span className="font-mono font-semibold">{code}</span>

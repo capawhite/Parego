@@ -279,6 +279,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     addPlayer,
     handleSelectUser,
     handleAddGuestPlayer,
+    handleAddPlayersFromRoster,
     handleCheckIn,
     handleMarkPresent,
     handleRenamePlayer,
@@ -345,6 +346,18 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       setShowConversionPrompt("rated_game")
     }
   }, [guestHasMatch, tournamentUsesRatings, showConversionPrompt])
+
+  // End of event: guest sees podium — strong nudge to save results
+  useEffect(() => {
+    if (
+      showPodium &&
+      userRole === "guest-player" &&
+      !getConversionPromptDismissed("end_event") &&
+      !showConversionPrompt
+    ) {
+      setShowConversionPrompt("end_event")
+    }
+  }, [showPodium, userRole, showConversionPrompt])
 
   useArenaTournamentLoad({
     tournamentId,
@@ -679,6 +692,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           <ConversionPrompt
             open
             triggerKey={showConversionPrompt}
+            strong={showConversionPrompt === "end_event"}
             onOpenChange={(open) => {
               if (!open) setShowConversionPrompt(null)
             }}
@@ -775,6 +789,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               onJoinAsSelf={joinAsSelf}
               onCheckIn={handleCheckIn}
               onAddGuestPlayer={handleAddGuestPlayer}
+              onAddPlayersFromRoster={handleAddPlayersFromRoster}
               onSelectUser={handleSelectUser}
               onRemovePlayer={removePlayer}
               onTogglePause={isOrganizer ? togglePause : undefined}

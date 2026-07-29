@@ -39,7 +39,7 @@ export function TournamentShareDialog({
 
   const joinUrl = useMemo(() => {
     if (typeof window === "undefined") return ""
-    return `${window.location.origin}/join/${tournamentId}`
+    return `${window.location.origin}/j/${tournamentId}`
   }, [tournamentId])
 
   const qrSrc = joinUrl ? generateQRCode(joinUrl) : ""

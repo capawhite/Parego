@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useState } from "react"
 import { signUp, checkEmailAvailable } from "./actions"
 import { ChevronLeft, ChevronRight, Loader2, Home, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
@@ -18,9 +18,11 @@ import { getGuestSessionHistory, clearGuestSessionHistory } from "@/lib/guest-se
 import { useI18n } from "@/components/i18n-provider"
 import { SIMPLE_LEVELS, type SimpleLevelValue } from "@/lib/rating-bands"
 
-const TOTAL_STEPS = 4
+function SignUpForm() {
+  const searchParams = useSearchParams()
+  const skipRating = searchParams.get("skipRating") === "1" || searchParams.get("from") === "conversion"
+  const totalSteps = skipRating ? 3 : 4
 
-export default function SignUpPage() {
   const [step, setStep] = useState(1)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -36,7 +38,7 @@ export default function SignUpPage() {
 
   const goNext = () => {
     setError(null)
-    if (step < TOTAL_STEPS) setStep((s) => s + 1)
+    if (step < totalSteps) setStep((s) => s + 1)
   }
 
   const handleEmailBlur = async () => {
@@ -64,7 +66,7 @@ export default function SignUpPage() {
       case 3:
         return password.length >= 6
       case 4:
-        return ratingBand !== ""
+        return skipRating || ratingBand !== ""
       default:
         return false
     }
@@ -79,8 +81,8 @@ export default function SignUpPage() {
       email: email.trim(),
       password,
       name: name.trim(),
-      ratingBand: ratingBand || undefined,
-      rating: ratingNum != null && !isNaN(ratingNum) ? ratingNum : undefined,
+      ratingBand: skipRating ? undefined : ratingBand || undefined,
+      rating: skipRating ? undefined : ratingNum != null && !isNaN(ratingNum) ? ratingNum : undefined,
     })
     if (result.error) {
       setIsLoading(false)
@@ -117,8 +119,8 @@ export default function SignUpPage() {
 
   const handleNextOrSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (step < TOTAL_STEPS) goNext()
-    else handleSubmit()
+    if (step < totalSteps) goNext()
+    else void handleSubmit()
   }
 
   if (success) {
@@ -155,12 +157,12 @@ export default function SignUpPage() {
       <div className="w-full px-4 pt-2 pb-4">
         <div className="max-w-md mx-auto flex items-center justify-between gap-2">
           <span className="text-sm font-medium text-muted-foreground">
-            {t("auth.stepOf", { step, total: TOTAL_STEPS })}
+            {t("auth.stepOf", { step, total: totalSteps })}
           </span>
           <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
-              style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+              style={{ width: `${(step / totalSteps) * 100}%` }}
             />
           </div>
         </div>
@@ -327,10 +329,10 @@ export default function SignUpPage() {
             </Button>
             <Button
               type="submit"
-              disabled={!canProceed() || (step === TOTAL_STEPS && isLoading)}
+              disabled={!canProceed() || (step === totalSteps && isLoading)}
               className="flex-1 h-12 rounded-full font-medium max-w-[200px]"
             >
-              {step === TOTAL_STEPS ? (
+              {step === totalSteps ? (
                 isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
@@ -356,3 +358,18 @@ export default function SignUpPage() {
     </div>
   )
 }
+
+export default function SignUpPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-svh flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <SignUpForm />
+    </Suspense>
+  )
+}
+

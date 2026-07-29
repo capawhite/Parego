@@ -7,6 +7,8 @@ export interface GuestSessionEntry {
   playerId: string
   displayName: string
   lastPlayedAt: string // ISO string
+  /** Optional strength band remembered for one-tap rejoin */
+  ratingBand?: string
 }
 
 function getStorage(): GuestSessionEntry[] {
@@ -80,6 +82,8 @@ export function clearGuestSessionHistory(): void {
 }
 
 const CONVERSION_DISMISSED_KEY = "parego_conversion_dismissed"
+const SECOND_JOIN_NUDGE_KEY = "parego_second_join_nudge_count"
+export const SECOND_JOIN_NUDGE_SOFT_LIMIT = 2
 
 /** Check if the user has dismissed this conversion prompt this session. */
 export function getConversionPromptDismissed(triggerKey: string): boolean {
@@ -105,4 +109,50 @@ export function setConversionPromptDismissed(triggerKey: string): void {
   } catch {
     // ignore
   }
+}
+
+/** Most recent guest display name on this device (for one-tap rejoin). */
+export function getLastGuestDisplayName(): string | null {
+  const entries = getGuestSessionHistory()
+  if (entries.length === 0) return null
+  const last = entries[entries.length - 1]
+  return last?.displayName?.trim() || null
+}
+
+/** Most recent guest strength band if stored. */
+export function getLastGuestRatingBand(): string | null {
+  const entries = getGuestSessionHistory()
+  if (entries.length === 0) return null
+  const last = entries[entries.length - 1]
+  const band = last?.ratingBand?.trim()
+  return band || null
+}
+
+/** True if this device has joined at least one tournament as a guest before. */
+export function hasPriorGuestSessions(excludeTournamentId?: string): boolean {
+  const entries = getGuestSessionHistory()
+  if (!excludeTournamentId) return entries.length > 0
+  return entries.some((e) => e.tournamentId !== excludeTournamentId)
+}
+
+export function getSecondJoinNudgeCount(): number {
+  if (typeof window === "undefined") return 0
+  try {
+    const raw = localStorage.getItem(SECOND_JOIN_NUDGE_KEY)
+    const n = raw ? Number.parseInt(raw, 10) : 0
+    return Number.isFinite(n) && n > 0 ? n : 0
+  } catch {
+    return 0
+  }
+}
+
+export function incrementSecondJoinNudgeCount(): number {
+  const next = getSecondJoinNudgeCount() + 1
+  if (typeof window === "undefined") return next
+  try {
+    localStorage.setItem(SECOND_JOIN_NUDGE_KEY, String(next))
+  } catch {
+    // ignore
+  }
+  return next
 }

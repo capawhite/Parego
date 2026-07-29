@@ -65,8 +65,14 @@ export function useArenaPlayers({
   const [joiningSelf, setJoiningSelf] = useState(false)
 
   const addPlayer = useCallback(
-    async (name: string, userId?: string, isGuest = false, addToGuestHistory = false) => {
-      if (!name.trim()) return
+    async (
+      name: string,
+      userId?: string,
+      isGuest = false,
+      addToGuestHistory = false,
+      options?: { rating?: number | null },
+    ) => {
+      if (!name.trim()) return false
 
       const isDuplicate = arenaState.players.some((player) => {
         if (userId && player.userId === userId) return true
@@ -76,12 +82,12 @@ export function useArenaPlayers({
 
       if (isDuplicate) {
         toast.error(t("arena.alertPlayerAlreadyInTournament"))
-        return
+        return false
       }
 
       if (arenaState.isActive && !arenaState.settings.allowLateJoin) {
         toast.error(t("arena.alertLateJoinsNotAllowed"))
-        return
+        return false
       }
 
       if (arenaState.isActive) {
@@ -94,12 +100,17 @@ export function useArenaPlayers({
               tables: arenaState.tableCount,
             }),
           )
-          return
+          return false
         }
       }
 
+      const rating =
+        options?.rating !== undefined
+          ? options.rating
+          : resolveRating(userRating, userRatingBand as RatingBandValue | null | undefined)
+
       const newPlayer: Player = {
-        id: `p-${Date.now()}`,
+        id: globalThis.crypto.randomUUID(),
         name,
         score: 0,
         gamesPlayed: 0,
@@ -113,7 +124,7 @@ export function useArenaPlayers({
         joinedAt: Date.now(),
         userId: userId || null,
         isGuest,
-        rating: resolveRating(userRating, userRatingBand as RatingBandValue | null | undefined),
+        rating,
         buchholz: 0,
         sonnebornBerger: 0,
         country: userCountry,
@@ -125,7 +136,7 @@ export function useArenaPlayers({
       }))
       onPlayerNameCleared?.()
 
-      if (!tournamentId) return
+      if (!tournamentId) return false
 
       let savedPlayerId = newPlayer.id
       try {
@@ -151,7 +162,7 @@ export function useArenaPlayers({
             ...prev,
             players: prev.players.filter((p) => p.id !== newPlayer.id),
           }))
-          return
+          return false
         }
         if (joinResult.playerId && joinResult.playerId !== newPlayer.id) {
           savedPlayerId = joinResult.playerId
@@ -171,7 +182,7 @@ export function useArenaPlayers({
           ...prev,
           players: prev.players.filter((p) => p.id !== newPlayer.id),
         }))
-        return
+        return false
       }
 
       if (isGuest && addToGuestHistory) {
@@ -181,6 +192,7 @@ export function useArenaPlayers({
           displayName: name,
         })
       }
+      return true
     },
     [
       arenaState.players,
@@ -210,6 +222,31 @@ export function useArenaPlayers({
     const guestUsername = generateGuestUsername(existingNames)
     await addPlayer(guestUsername, undefined, true, !currentUserId)
   }, [addPlayer, arenaState.players, currentUserId])
+
+  const handleAddPlayersFromRoster = useCallback(
+    async (
+      rosterPlayers: Array<{
+        name: string
+        userId: string | null
+        rating: number | null
+        isGuest: boolean
+      }>,
+    ) => {
+      let added = 0
+      for (const p of rosterPlayers) {
+        const ok = await addPlayer(
+          p.name,
+          p.userId ?? undefined,
+          p.isGuest || !p.userId,
+          false,
+          { rating: p.rating },
+        )
+        if (ok) added += 1
+      }
+      return added
+    },
+    [addPlayer],
+  )
 
   const handleCheckIn = useCallback(async () => {
     if (!tournamentId) return
@@ -609,6 +646,7 @@ export function useArenaPlayers({
     addPlayer,
     handleSelectUser,
     handleAddGuestPlayer,
+    handleAddPlayersFromRoster,
     handleCheckIn,
     handleMarkPresent,
     handleRenamePlayer,

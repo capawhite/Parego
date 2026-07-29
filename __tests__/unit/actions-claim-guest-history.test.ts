@@ -41,22 +41,20 @@ describe("claimGuestHistoryForDevice", () => {
     expect(out.error).toMatch(/device/i)
   })
 
-  it("only claims device-matched seats from completed tournaments", async () => {
+  it("claims device-matched seats from live and completed tournaments", async () => {
     const claim = await setup(
       { user: { id: "u1" } },
       {
         tables: {
           players: [
             {
-              // unclaimed candidates fetched by id
               data: [
                 { id: "p1", tournament_id: "t-done", user_id: null, device_id: "dev-1" },
                 { id: "p2", tournament_id: "t-done", user_id: null, device_id: "other-device" },
                 { id: "p3", tournament_id: "t-live", user_id: null, device_id: "dev-1" },
               ],
             },
-            // update(...).select("id") result — only the eligible row
-            { data: [{ id: "p1" }] },
+            { data: [{ id: "p1" }, { id: "p3" }] },
           ],
           tournaments: {
             data: [
@@ -69,7 +67,7 @@ describe("claimGuestHistoryForDevice", () => {
     )
     const out = await claim(["p1", "p2", "p3"], "dev-1")
     expect(out.success).toBe(true)
-    expect(out.claimedCount).toBe(1)
+    expect(out.claimedCount).toBe(2)
   })
 
   it("returns zero when no candidate matches the device", async () => {

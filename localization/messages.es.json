@@ -74,7 +74,11 @@
     "howItWorksPlayTitle": "Empareja y juega",
     "howItWorksPlayBody": "Arena mantiene las mesas ocupadas; el Suizo empareja cada ronda cuando quieras.",
     "howItWorksCreateTitle": "Crea y dirige",
-    "howItWorksCreateBody": "Los organizadores eligen el formato, comparten un enlace y registran resultados en vivo."
+    "howItWorksCreateBody": "Los organizadores eligen el formato, comparten un enlace y registran resultados en vivo.",
+    "nearbyJoinCta": "¿Unirte a {name} — a {distance}?",
+    "nearbyJoinButton": "Unirme a este evento",
+    "guestAccountBanner": "Crea una cuenta gratis para guardar tus resultados y unirte más rápido.",
+    "guestAccountBannerCta": "Crear cuenta"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -127,13 +131,17 @@
   },
   "conversionPrompt": {
     "repeat_play_title": "Ya has jugado aquí antes",
-    "repeat_play_description": "Crea una cuenta para guardar tu historial y tus ratings.",
-    "result_rankings_title": "Este resultado afecta a las clasificaciones",
-    "result_rankings_description": "Crea una cuenta para conservar tu historial.",
+    "repeat_play_description": "Crea una cuenta gratis para guardar tu historial y volver a unirte en un toque.",
+    "result_rankings_title": "Conserva este resultado",
+    "result_rankings_description": "Crea una cuenta para que esta partida quede en tu historial, no solo en este teléfono.",
     "rated_game_title": "Estás a punto de jugar una partida con rating",
-    "rated_game_description": "Crea una cuenta para hacer seguimiento de tu rating.",
+    "rated_game_description": "Crea una cuenta para seguir tu rating entre torneos.",
+    "end_event_title": "Guarda tus resultados antes de irte",
+    "end_event_description": "Has jugado como invitado. Crea una cuenta gratis ahora para no perder tus resultados si borras los datos de este teléfono.",
     "maybeLater": "Quizás más tarde",
-    "createAccount": "Crear cuenta"
+    "continueWithoutSaving": "Continuar sin guardar",
+    "createAccount": "Crear cuenta gratis",
+    "signIn": "Ya tengo una cuenta"
   },
   "ratingBands": {
     "unrated": "Soy demasiado flojo para saberlo",
@@ -187,7 +195,18 @@
     "joiningAsGuest": "Uniéndote como invitado",
     "register": "Regístrate",
     "toTrackProgress": "para seguir tu progreso",
-    "enterYourNamePlaceholder": "Introduce tu nombre"
+    "enterYourNamePlaceholder": "Introduce tu nombre",
+    "confirmAsLabel": "Te unes como",
+    "confirmJoinButton": "Confirmar y unirme",
+    "continueAs": "Continuar como {name}",
+    "orEnterDetails": "O introduce otros datos",
+    "secondJoinTitle": "Guarda tus resultados",
+    "secondJoinTitleEscalated": "Tus resultados pueden perderse en este teléfono",
+    "secondJoinBody": "Ya has jugado como invitado. Crea una cuenta gratis para conservar tu historial y unirte más rápido.",
+    "secondJoinBodyEscalated": "Jugar como invitado en este dispositivo no se guarda de forma permanente. Crea una cuenta antes de unirte a otro evento.",
+    "secondJoinCreateAccount": "Crear cuenta gratis",
+    "secondJoinSignIn": "Iniciar sesión",
+    "secondJoinContinueGuest": "Continuar como invitado"
   },
   "create": {
     "title": "Crear torneo",
@@ -277,6 +296,14 @@
     "searchRegisteredPlayers": "Buscar jugadores registrados",
     "orAddGuest": "O añadir invitado",
     "addGuestPlayer": "Añadir jugador invitado",
+    "addFromLastEvent": "Añadir del último evento",
+    "addFromLastEventTitle": "Añadir jugadores del último evento",
+    "addFromLastEventBody": "Selecciona jugadores de “{name}” para añadir a este torneo.",
+    "addFromLastEventBodyGeneric": "Selecciona jugadores de tu último torneo para añadirlos aquí.",
+    "addSelectedPlayers": "Añadir seleccionados ({count})",
+    "noPreviousRoster": "No se encontró la lista del torneo anterior.",
+    "previousRosterAlreadyAdded": "Todos los del último evento ya están aquí.",
+    "toastAddedFromRoster": "Se añadieron {count} jugador(es) del último evento",
     "joinAsGuest": "Unirse como invitado",
     "loginOrRegisterToTrack": "para guardar tu historial",
     "currentPairings": "Emparejamientos actuales",

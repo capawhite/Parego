@@ -12,9 +12,9 @@ export interface ClaimGuestHistoryResult {
 }
 
 /**
- * Link past guest player records to the current user.
+ * Link guest player records to the current user.
  * Requires device_id match (proof this browser created the guest seat).
- * Only claims seats from completed tournaments; only sets user_id via service role.
+ * Claims seats from setup/active/completed tournaments via service role.
  */
 export async function claimGuestHistoryForDevice(
   playerIds: string[],
@@ -63,11 +63,13 @@ export async function claimGuestHistoryForDevice(
 
   const tournamentIds = [...new Set(candidates.map((c) => c.tournament_id))]
   const { data: tournaments } = await admin.from("tournaments").select("id, status").in("id", tournamentIds)
-  const completedIds = new Set(
-    (tournaments ?? []).filter((t) => t.status === "completed").map((t) => t.id),
+  // Claim seats from live or finished events so "register now" saves the current tournament too.
+  const claimableStatuses = new Set(["setup", "active", "completed"])
+  const claimableTournamentIds = new Set(
+    (tournaments ?? []).filter((t) => claimableStatuses.has(t.status)).map((t) => t.id),
   )
 
-  const claimableIds = candidates.filter((c) => completedIds.has(c.tournament_id)).map((c) => c.id)
+  const claimableIds = candidates.filter((c) => claimableTournamentIds.has(c.tournament_id)).map((c) => c.id)
   if (claimableIds.length === 0) {
     return { success: true, claimedCount: 0 }
   }
