@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "start": "next start",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:smoke": "vitest run __tests__/smoke"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

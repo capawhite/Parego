@@ -101,11 +101,16 @@ export function ArenaPairingStatusPanel({
   const inGame = insights.players.filter((p) => p.status === "in_game").length
   const ready = insights.players.filter((p) => p.status === "ready").length
   const t1 = insights.players.filter((p) => p.status === "t1_wait").length
+  const notCheckedIn = insights.notCheckedInCount
 
   const idleReadyCount = insights.players.filter((p) => p.status === "ready").length
-  const summary = insights.usesT1
+  const summaryBase = insights.usesT1
     ? t("arena.pairingStatusSummary", { inGame, ready, t1 })
     : t("arena.pairingStatusSummaryNoT1", { inGame, ready: idleReadyCount })
+  const summary =
+    insights.hasVenue && notCheckedIn > 0
+      ? `${summaryBase} · ${t("arena.pairingStatusSummaryCheckIn", { count: notCheckedIn })}`
+      : summaryBase
 
   const minIdleLabel = insights.usesT1
     ? t("arena.pairingStatusMinIdleLabelT1")
@@ -156,13 +161,18 @@ export function ArenaPairingStatusPanel({
         return t("arena.pairingStatusBlockerNotActive")
       case "waiting_final_results":
         return t("arena.pairingStatusBlockerWaitingFinal")
+      case "need_check_in":
+        return t("arena.pairingStatusBlockerNeedCheckIn", { count: b.have ?? 0 })
       default:
         return ""
     }
   })
 
   const showRows = (p: PairingInsightPlayer) =>
-    p.status === "ready" || p.status === "t1_wait" || p.status === "in_game"
+    p.status === "ready" ||
+    p.status === "t1_wait" ||
+    p.status === "in_game" ||
+    p.status === "not_checked_in"
 
   return (
     <Card className="border-dashed">
@@ -250,6 +260,17 @@ export function ArenaPairingStatusPanel({
               {!canReduceWait ? (
                 <p className="text-xs text-muted-foreground mt-1">{t("arena.reduceWaitDisabledHelp")}</p>
               ) : null}
+            </div>
+          ) : null}
+
+          {insights.hasVenue && insights.notCheckedInCount > 0 ? (
+            <div className="rounded-md border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/30 p-3 text-sm">
+              <p className="font-medium">
+                {t("arena.pairingStatusCheckInBannerTitle", { count: insights.notCheckedInCount })}
+              </p>
+              <p className="text-muted-foreground text-xs mt-1">
+                {t("arena.pairingStatusCheckInBannerBody")}
+              </p>
             </div>
           ) : null}
 

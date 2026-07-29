@@ -34,6 +34,7 @@ export type PairingInsightBlockerId =
   | "no_tables"
   | "not_active"
   | "waiting_final_results"
+  | "need_check_in"
 
 export interface PairingInsightBlocker {
   id: PairingInsightBlockerId
@@ -63,6 +64,9 @@ export interface ArenaPairingInsights {
   effectiveMinIdle: number
   idleForPairingCount: number
   t1EligibleIdleCount: number
+  /** Players blocked only by missing venue check-in */
+  notCheckedInCount: number
+  hasVenue: boolean
   wouldPair: boolean
   blockers: PairingInsightBlocker[]
   players: PairingInsightPlayer[]
@@ -155,7 +159,26 @@ export function computeArenaPairingInsights(input: ArenaPairingInsightsInput): A
   const blockers: PairingInsightBlocker[] = []
   if (!isActive) blockers.push({ id: "not_active" })
   if (waitingForFinalResults) blockers.push({ id: "waiting_final_results" })
+
+  const notCheckedInCount = hasVenue
+    ? state.players.filter(
+        (p) =>
+          !p.hasLeft &&
+          !p.paused &&
+          !p.markedForRemoval &&
+          p.checkedInAt == null &&
+          !inActiveGame(p),
+      ).length
+    : 0
+
   if (isActive && !waitingForFinalResults) {
+    if (hasVenue && notCheckedInCount > 0 && availablePlayers.length < 2) {
+      blockers.push({
+        id: "need_check_in",
+        have: notCheckedInCount,
+        need: Math.max(2, effectiveMinIdle),
+      })
+    }
     if (smallFieldBlocked) blockers.push({ id: "small_field" })
     if (availableTables <= 0) blockers.push({ id: "no_tables" })
     if (usesT1) {
@@ -288,6 +311,8 @@ export function computeArenaPairingInsights(input: ArenaPairingInsightsInput): A
     effectiveMinIdle,
     idleForPairingCount,
     t1EligibleIdleCount,
+    notCheckedInCount,
+    hasVenue,
     wouldPair,
     blockers,
     players,

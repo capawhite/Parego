@@ -11,6 +11,7 @@ import {
   pairingLeaseHolderId,
   releasePairingLease,
 } from "@/lib/pairing/pairing-lease"
+import { effectiveTableCountFromDb } from "@/lib/tournament/effective-table-count"
 
 export type PairTournamentResult = {
   success: boolean
@@ -94,12 +95,12 @@ export async function pairTournamentImpl(
     )
 
     const hasVenue = tournament.latitude != null && tournament.longitude != null
-    const tableCount =
-      typeof tournament.table_count === "number"
-        ? tournament.table_count
-        : typeof settings.tableCount === "number"
-          ? settings.tableCount
-          : 0
+    // DB column is `tables_count` (not `table_count`); merge with settings via shared helper.
+    const tableCount = effectiveTableCountFromDb({
+      tables_count: typeof tournament.tables_count === "number" ? tournament.tables_count : 0,
+      settings,
+      status: tournament.status,
+    })
 
     const tick = runPairTick({
       players,
