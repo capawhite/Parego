@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { X } from "lucide-react"
+import { ChevronDown, X } from "lucide-react"
+import { useState } from "react"
 import { useI18n } from "@/components/i18n-provider"
 import type { TournamentSettings } from "@/lib/types"
 import {
@@ -41,6 +42,7 @@ export function TournamentSettingsPanel({
   playerCount,
 }: TournamentSettingsProps) {
   const { t } = useI18n()
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const showSwissOption = true
   const swissRoundsMax =
     playerCount != null && playerCount >= MIN_SWISS_PLAYERS
@@ -234,20 +236,6 @@ export function TournamentSettingsPanel({
                   onCheckedChange={(checked) => updateSetting("allowLateJoin", checked)}
                 />
               </div>
-
-              <div className="space-y-1.5 max-w-[140px]">
-                <Label htmlFor="minGamesBeforePause" className="text-sm">
-                  {t("settings.minGamesBeforePauseLabel")}
-                </Label>
-                <Input
-                  id="minGamesBeforePause"
-                  type="number"
-                  min="0"
-                  value={settings.minGamesBeforePause}
-                  onChange={(e) => updateSetting("minGamesBeforePause", Number(e.target.value))}
-                  className="h-8 text-sm"
-                />
-              </div>
             </div>
 
             {/* Pairing Rules */}
@@ -376,150 +364,176 @@ export function TournamentSettingsPanel({
                 </div>
               )}
 
-              <div className="space-y-1.5 max-w-[140px]">
-                <Label htmlFor="avoidRecentRematches" className="text-sm">
-                  {t("settings.avoidRecentRematchesLabel")}
-                </Label>
-                <Input
-                  id="avoidRecentRematches"
-                  type="number"
-                  min="0"
-                  value={settings.avoidRecentRematches}
-                  onChange={(e) => updateSetting("avoidRecentRematches", Number(e.target.value))}
-                  className="h-8 text-sm"
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full justify-between px-2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowAdvanced((v) => !v)}
+                aria-expanded={showAdvanced}
+              >
+                <span className="text-sm font-medium">{t("settings.advancedToggle")}</span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
                 />
-                <p className="text-xs text-muted-foreground">{t("settings.avoidRecentRematchesHelp")}</p>
-              </div>
+              </Button>
 
-              {settings.pairingAlgorithm === "all-vs-all" && (
-                <div className="flex items-center justify-between py-2">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="allowRematchToReduceWait" className="text-sm">
-                      {t("settings.allowRematchToReduceWaitLabel")}
+              {showAdvanced && (
+                <div className="space-y-3 rounded-md border border-border bg-muted/20 p-3">
+                  <div className="space-y-1.5 max-w-[140px]">
+                    <Label htmlFor="minGamesBeforePause" className="text-sm">
+                      {t("settings.minGamesBeforePauseLabel")}
                     </Label>
-                    <p className="text-xs text-muted-foreground">{t("settings.allowRematchToReduceWaitHelp")}</p>
+                    <Input
+                      id="minGamesBeforePause"
+                      type="number"
+                      min="0"
+                      value={settings.minGamesBeforePause}
+                      onChange={(e) => updateSetting("minGamesBeforePause", Number(e.target.value))}
+                      className="h-8 text-sm"
+                    />
                   </div>
-                  <Switch
-                    id="allowRematchToReduceWait"
-                    checked={settings.allowRematchToReduceWait ?? false}
-                    onCheckedChange={(checked) => updateSetting("allowRematchToReduceWait", checked)}
-                  />
-                </div>
-              )}
 
-              <div className="space-y-1.5 max-w-xs">
-                <Label htmlFor="colorBalancePriority" className="text-sm">
-                  {t("settings.colorBalanceLabel")}
-                </Label>
-                <Select
-                  value={settings.colorBalancePriority}
-                  onValueChange={(v) =>
-                    updateSetting("colorBalancePriority", v as TournamentSettings["colorBalancePriority"])
-                  }
-                >
-                  <SelectTrigger id="colorBalancePriority" className="h-8 text-sm w-full max-w-[220px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="high">{t("settings.colorBalanceHigh")}</SelectItem>
-                    <SelectItem value="medium">{t("settings.colorBalanceMedium")}</SelectItem>
-                    <SelectItem value="low">{t("settings.colorBalanceLow")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">{t("settings.colorBalanceHelp")}</p>
-              </div>
-
-              <div className="space-y-1.5 max-w-xs">
-                <Label htmlFor="scoreMatchingStrictness" className="text-sm">
-                  {t("settings.scoreMatchingLabel")}
-                </Label>
-                <Select
-                  value={settings.scoreMatchingStrictness}
-                  onValueChange={(v) =>
-                    updateSetting("scoreMatchingStrictness", v as TournamentSettings["scoreMatchingStrictness"])
-                  }
-                >
-                  <SelectTrigger id="scoreMatchingStrictness" className="h-8 text-sm w-full max-w-[220px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="loose">{t("settings.scoreMatchingLoose")}</SelectItem>
-                    <SelectItem value="normal">{t("settings.scoreMatchingNormal")}</SelectItem>
-                    <SelectItem value="strict">{t("settings.scoreMatchingStrict")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">{t("settings.scoreMatchingHelp")}</p>
-              </div>
-
-              <div className="space-y-1.5 max-w-[260px]">
-                <Label htmlFor="t1CapPreset" className="text-sm">
-                  {t("settings.t1CapPresetLabel")}
-                </Label>
-                <Select
-                  value={settings.t1CapPreset ?? "balanced"}
-                  onValueChange={(v) => updateSetting("t1CapPreset", v as TournamentSettings["t1CapPreset"])}
-                >
-                  <SelectTrigger id="t1CapPreset" className="h-8 text-sm w-full max-w-[240px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fast">{t("settings.t1CapPresetFast")}</SelectItem>
-                    <SelectItem value="balanced">{t("settings.t1CapPresetBalanced")}</SelectItem>
-                    <SelectItem value="strict">{t("settings.t1CapPresetStrict")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">{t("settings.t1CapPresetHelp")}</p>
-              </div>
-
-            </div>
-
-            {/* Tournament Settings */}
-            <div className="space-y-3">
-              <h3 className="text-base font-semibold">{t("settings.simulatorCompletionSection")}</h3>
-
-              {onToggleSimulator && (
-                <div className="flex items-center justify-between py-2">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="showSimulator" className="text-sm">
-                      {t("settings.showSimulatorLabel")}
+                  <div className="space-y-1.5 max-w-[140px]">
+                    <Label htmlFor="avoidRecentRematches" className="text-sm">
+                      {t("settings.avoidRecentRematchesLabel")}
                     </Label>
-                    <p className="text-xs text-muted-foreground">{t("settings.showSimulatorHelp")}</p>
+                    <Input
+                      id="avoidRecentRematches"
+                      type="number"
+                      min="0"
+                      value={settings.avoidRecentRematches}
+                      onChange={(e) => updateSetting("avoidRecentRematches", Number(e.target.value))}
+                      className="h-8 text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">{t("settings.avoidRecentRematchesHelp")}</p>
                   </div>
-                  <Switch id="showSimulator" checked={showSimulator} onCheckedChange={onToggleSimulator} />
-                </div>
-              )}
 
-              <div className="flex items-center justify-between py-2">
-                <div className="space-y-0.5">
-                  <Label htmlFor="autoEndAtCompletion" className="text-sm">
-                    {t("settings.autoEndAtCompletionLabel")}
-                  </Label>
-                  <p className="text-xs text-muted-foreground">{t("settings.autoEndAtCompletionHelp")}</p>
-                </div>
-                <Switch
-                  id="autoEndAtCompletion"
-                  checked={settings.autoEndAtCompletion}
-                  onCheckedChange={(checked) => updateSetting("autoEndAtCompletion", checked)}
-                />
-              </div>
+                  {settings.pairingAlgorithm === "all-vs-all" && (
+                    <div className="flex items-center justify-between py-2">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="allowRematchToReduceWait" className="text-sm">
+                          {t("settings.allowRematchToReduceWaitLabel")}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">{t("settings.allowRematchToReduceWaitHelp")}</p>
+                      </div>
+                      <Switch
+                        id="allowRematchToReduceWait"
+                        checked={settings.allowRematchToReduceWait ?? false}
+                        onCheckedChange={(checked) => updateSetting("allowRematchToReduceWait", checked)}
+                      />
+                    </div>
+                  )}
 
-              {settings.autoEndAtCompletion && (
-                <div className="space-y-1.5 max-w-[140px]">
-                  <Label htmlFor="completionThreshold" className="text-sm">
-                    {t("settings.completionThresholdLabel")}
-                  </Label>
-                  <Input
-                    id="completionThreshold"
-                    type="number"
-                    min="50"
-                    max="100"
-                    value={settings.completionThreshold}
-                    onChange={(e) => updateSetting("completionThreshold", Number(e.target.value))}
-                    className="h-8 text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t("settings.completionThresholdHelp", { percent: settings.completionThreshold })}
-                  </p>
+                  <div className="space-y-1.5 max-w-xs">
+                    <Label htmlFor="colorBalancePriority" className="text-sm">
+                      {t("settings.colorBalanceLabel")}
+                    </Label>
+                    <Select
+                      value={settings.colorBalancePriority}
+                      onValueChange={(v) =>
+                        updateSetting("colorBalancePriority", v as TournamentSettings["colorBalancePriority"])
+                      }
+                    >
+                      <SelectTrigger id="colorBalancePriority" className="h-8 text-sm w-full max-w-[220px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="high">{t("settings.colorBalanceHigh")}</SelectItem>
+                        <SelectItem value="medium">{t("settings.colorBalanceMedium")}</SelectItem>
+                        <SelectItem value="low">{t("settings.colorBalanceLow")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">{t("settings.colorBalanceHelp")}</p>
+                  </div>
+
+                  <div className="space-y-1.5 max-w-xs">
+                    <Label htmlFor="scoreMatchingStrictness" className="text-sm">
+                      {t("settings.scoreMatchingLabel")}
+                    </Label>
+                    <Select
+                      value={settings.scoreMatchingStrictness}
+                      onValueChange={(v) =>
+                        updateSetting("scoreMatchingStrictness", v as TournamentSettings["scoreMatchingStrictness"])
+                      }
+                    >
+                      <SelectTrigger id="scoreMatchingStrictness" className="h-8 text-sm w-full max-w-[220px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="loose">{t("settings.scoreMatchingLoose")}</SelectItem>
+                        <SelectItem value="normal">{t("settings.scoreMatchingNormal")}</SelectItem>
+                        <SelectItem value="strict">{t("settings.scoreMatchingStrict")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">{t("settings.scoreMatchingHelp")}</p>
+                  </div>
+
+                  <div className="space-y-1.5 max-w-[260px]">
+                    <Label htmlFor="t1CapPreset" className="text-sm">
+                      {t("settings.t1CapPresetLabel")}
+                    </Label>
+                    <Select
+                      value={settings.t1CapPreset ?? "balanced"}
+                      onValueChange={(v) => updateSetting("t1CapPreset", v as TournamentSettings["t1CapPreset"])}
+                    >
+                      <SelectTrigger id="t1CapPreset" className="h-8 text-sm w-full max-w-[240px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fast">{t("settings.t1CapPresetFast")}</SelectItem>
+                        <SelectItem value="balanced">{t("settings.t1CapPresetBalanced")}</SelectItem>
+                        <SelectItem value="strict">{t("settings.t1CapPresetStrict")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">{t("settings.t1CapPresetHelp")}</p>
+                  </div>
+
+                  {onToggleSimulator && (
+                    <div className="flex items-center justify-between py-2">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="showSimulator" className="text-sm">
+                          {t("settings.showSimulatorLabel")}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">{t("settings.showSimulatorHelp")}</p>
+                      </div>
+                      <Switch id="showSimulator" checked={showSimulator} onCheckedChange={onToggleSimulator} />
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between py-2">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="autoEndAtCompletion" className="text-sm">
+                        {t("settings.autoEndAtCompletionLabel")}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">{t("settings.autoEndAtCompletionHelp")}</p>
+                    </div>
+                    <Switch
+                      id="autoEndAtCompletion"
+                      checked={settings.autoEndAtCompletion}
+                      onCheckedChange={(checked) => updateSetting("autoEndAtCompletion", checked)}
+                    />
+                  </div>
+
+                  {settings.autoEndAtCompletion && (
+                    <div className="space-y-1.5 max-w-[140px]">
+                      <Label htmlFor="completionThreshold" className="text-sm">
+                        {t("settings.completionThresholdLabel")}
+                      </Label>
+                      <Input
+                        id="completionThreshold"
+                        type="number"
+                        min="50"
+                        max="100"
+                        value={settings.completionThreshold}
+                        onChange={(e) => updateSetting("completionThreshold", Number(e.target.value))}
+                        className="h-8 text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t("settings.completionThresholdHelp", { percent: settings.completionThreshold })}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

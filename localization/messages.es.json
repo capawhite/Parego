@@ -67,7 +67,14 @@
     "findNearby": "Buscar cerca",
     "distanceTimeFilters": "Filtros de distancia y hora",
     "signupPrompt": "Crea y organiza torneos, sigue tu progreso",
-    "homeLink": "Inicio"
+    "homeLink": "Inicio",
+    "howItWorksTitle": "Cómo funciona",
+    "howItWorksJoinTitle": "Únete con código o QR",
+    "howItWorksJoinBody": "No hace falta registrarse para explorar o jugar como invitado.",
+    "howItWorksPlayTitle": "Empareja y juega",
+    "howItWorksPlayBody": "Arena mantiene las mesas ocupadas; el Suizo empareja cada ronda cuando quieras.",
+    "howItWorksCreateTitle": "Crea y dirige",
+    "howItWorksCreateBody": "Los organizadores eligen el formato, comparten un enlace y registran resultados en vivo."
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -565,6 +572,7 @@
     "descriptionOrganizer": "Personaliza puntuación, reglas de emparejamiento y gestión de jugadores",
     "descriptionViewer": "Ver la configuración del torneo (solo el organizador puede editar)",
     "closeAriaLabel": "Cerrar ajustes",
+    "advancedToggle": "Avanzado",
     "scoringSection": "Sistema de puntuación",
     "winLabel": "Victoria",
     "drawLabel": "Tablas",

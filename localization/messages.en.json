@@ -67,7 +67,14 @@
     "findNearby": "Find nearby",
     "distanceTimeFilters": "Distance & time filters",
     "signupPrompt": "Create and run tournaments, track your progress",
-    "homeLink": "Home"
+    "homeLink": "Home",
+    "howItWorksTitle": "How it works",
+    "howItWorksJoinTitle": "Join with a code or QR",
+    "howItWorksJoinBody": "No signup needed to browse or play as a guest.",
+    "howItWorksPlayTitle": "Pair and play",
+    "howItWorksPlayBody": "Arena keeps boards filled; Swiss pairs each round when you are ready.",
+    "howItWorksCreateTitle": "Create and run",
+    "howItWorksCreateBody": "Organizers set the format, share a link, and record results live."
   },
   "auth": {
     "loginTitle": "Login",
@@ -565,6 +572,7 @@
     "descriptionOrganizer": "Customize scoring, pairing rules, and player management",
     "descriptionViewer": "View tournament configuration (organizer only can edit)",
     "closeAriaLabel": "Close settings",
+    "advancedToggle": "Advanced",
     "scoringSection": "Scoring System",
     "winLabel": "Win",
     "drawLabel": "Draw",

@@ -102,8 +102,8 @@ Live at: https://parego.onrender.com
 3. ~~**Tournament header overflow**~~ — fixed: stacked title / full-width tabs / actions so tabs stay visible
 
 ### 🟡 Important
-4. **Home page emptiness** — single tournament card in a sea of white; tighten layout, add subtle background or "how it works" section
-5. **Settings modal density** — collapse advanced fields (Min Games Before Pause, Avoid Recent Rematches) behind an "Advanced" toggle
+4. ~~**Home page emptiness**~~ — fixed: brand hero, tighter layout, how-it-works section
+5. ~~**Settings modal density**~~ — fixed: Advanced toggle for rematch / pause / pairing knobs
 6. **Join button shown to organizer** — replace "Join tournament" with "Share" for the tournament creator
 
 ### 🟢 Polish

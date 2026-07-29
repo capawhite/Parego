@@ -1,9 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Zap, MapPin, Hash, User, LogOut, Plus, AlertCircle, Compass, Loader2, RefreshCw } from "lucide-react"
+import { Zap, MapPin, Hash, User, LogOut, Plus, AlertCircle, Compass, Loader2, RefreshCw, QrCode, Swords } from "lucide-react"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -234,15 +233,14 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-svh">
-      {/* Header */}
-      <header className="relative z-10 flex items-center justify-between gap-3 p-4">
-        <Link href="/" className="flex items-center gap-2 min-w-0">
-          <Zap className="h-8 w-8 shrink-0 text-primary" strokeWidth={2.5} fill="currentColor" />
-          <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent truncate">
-            Parego
-          </span>
-        </Link>
+    <main className="relative min-h-svh overflow-x-hidden">
+      {/* Soft brand atmosphere (behind content) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[70vh] bg-[radial-gradient(ellipse_at_top,hsl(263_76%_57%/0.12),transparent_55%)]"
+      />
+
+      <header className="relative z-10 flex items-center justify-end gap-3 p-4">
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {loadingAuth ? (
             <span className="text-sm text-muted-foreground">{t("common.loading")}</span>
@@ -272,210 +270,247 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12 space-y-8">
-        {/* Hero copy */}
-        <div className="text-center space-y-1 pt-2 px-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{t("home.heroTagline")}</h1>
-          <p className="text-muted-foreground text-sm font-medium">{t("home.heroTitle")}</p>
-          <p className="text-muted-foreground text-xs">{t("home.heroSubtitle")}</p>
-          {!loadingAuth && !user && (
-            <p className="text-primary/90 text-sm font-medium pt-1">{t("home.registerToCreate")}</p>
-          )}
-        </div>
-
-        {/* Top CTAs: Create tournament + Join with code */}
-        <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
-          {user && (
-            <Button variant="outline" className="sm:flex-1 border-2 hover:border-primary hover:bg-primary/5 font-semibold h-12" asChild>
-              <Link href="/create">
-                <Plus className="h-4 w-4 mr-2 shrink-0" />
-                {t("home.ctaCreate")}
-              </Link>
-            </Button>
-          )}
-          <div className="sm:flex-1 flex flex-col gap-0 rounded-md border-2 border-input bg-background hover:border-primary hover:bg-primary/5 transition-colors overflow-hidden">
-            {showCodeInput ? (
-              <div className="p-4 space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder={t("home.enterTournamentCode")}
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleJoinWithCode()
-                      if (e.key === "Escape") {
-                        setShowCodeInput(false)
-                        setJoinCode("")
-                      }
-                    }}
-                    className="text-center font-mono tracking-widest uppercase"
-                    maxLength={8}
-                    autoFocus
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={() => { setShowCodeInput(false); setJoinCode("") }}>
-                    {t("common.cancel")}
-                  </Button>
-                  <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleJoinWithCode} disabled={!joinCode.trim()}>
-                    {t("home.joinButton")}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                className="w-full h-12 rounded-md border-0 border-transparent bg-transparent hover:bg-primary/5 font-semibold justify-start px-4 sm:px-6 shadow-none"
-                onClick={() => setShowCodeInput(true)}
-              >
-                <Hash className="h-4 w-4 mr-2 shrink-0" strokeWidth={2.5} />
-                <span className="truncate">{t("home.ctaJoin")}</span>
-                <span className="text-muted-foreground font-normal text-sm ml-1.5 hidden sm:inline truncate">— {t("home.enterCodeOrQr")}</span>
-              </Button>
+      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pb-16 space-y-10">
+        {/* First viewport: brand + one line + CTAs */}
+        <section className="pt-6 sm:pt-10 space-y-6 text-center">
+          <div className="space-y-3">
+            <Link href="/" className="inline-flex items-center justify-center gap-3">
+              <Zap className="h-12 w-12 sm:h-14 sm:w-14 text-primary" strokeWidth={2.5} fill="currentColor" />
+              <h1 className="text-5xl sm:text-6xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Parego
+              </h1>
+            </Link>
+            <p className="text-muted-foreground text-base sm:text-lg max-w-md mx-auto">
+              {t("home.subheadline")}
+            </p>
+            {!loadingAuth && !user && (
+              <p className="text-primary text-sm font-medium">{t("home.registerToCreate")}</p>
             )}
           </div>
-        </div>
 
-        {/* Location pending */}
-        {locationStatus === "pending" && (
-          <Card className="border-2 border-primary/20">
-            <CardContent className="p-6 flex flex-col items-center gap-3 text-center">
-              <Compass className="h-10 w-10 text-primary animate-pulse" />
-              <div>
-                <p className="font-medium">{t("home.gettingLocation")}</p>
-                <p className="text-sm text-muted-foreground">{t("home.gettingLocationHint")}</p>
-              </div>
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Nearby list (when location granted) */}
-        {showNearby && (
-          <>
-            {loadingNearby ? (
-              <Card>
-                <CardContent className="p-8 flex flex-col items-center gap-2">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">{t("home.searchingNearby")}</p>
-                </CardContent>
-              </Card>
-            ) : hasNearbyList ? (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {t("home.withinKmHours", { km: NEARBY_RADIUS_KM, hours: NEARBY_HOURS })}
-                  </p>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Link
-                      href="/nearby"
-                      className="text-sm text-primary hover:underline"
-                    >
-                      {t("home.adjustDistanceTime")}
-                    </Link>
+          <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto text-left">
+            {user && (
+              <Button
+                className="sm:flex-1 h-12 font-semibold bg-primary hover:bg-primary/90"
+                asChild
+              >
+                <Link href="/create">
+                  <Plus className="h-4 w-4 mr-2 shrink-0" />
+                  {t("home.ctaCreate")}
+                </Link>
+              </Button>
+            )}
+            <div className="sm:flex-1 flex flex-col rounded-md border-2 border-input bg-background/80 hover:border-primary transition-colors overflow-hidden">
+              {showCodeInput ? (
+                <div className="p-4 space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder={t("home.enterTournamentCode")}
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleJoinWithCode()
+                        if (e.key === "Escape") {
+                          setShowCodeInput(false)
+                          setJoinCode("")
+                        }
+                      }}
+                      className="text-center font-mono tracking-widest uppercase"
+                      maxLength={8}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex gap-2">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => refreshTournaments()}
-                      disabled={refreshing}
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setShowCodeInput(false)
+                        setJoinCode("")
+                      }}
                     >
-                      <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                      {t("common.cancel")}
+                    </Button>
+                    <Button
+                      className="flex-1 bg-primary hover:bg-primary/90"
+                      onClick={handleJoinWithCode}
+                      disabled={!joinCode.trim()}
+                    >
+                      {t("home.joinButton")}
                     </Button>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {nearbyTournaments.map((t) => (
-                    <LandingTournamentCard
-                      key={t.id}
-                      tournament={t}
-                      userCoords={userLocation}
-                      showDistance={true}
-                      playerCount={playerCounts[t.id] ?? 0}
-                      playerNames={playerPreviews[t.id] ?? []}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="p-8 text-center space-y-3">
-                  <MapPin className="h-10 w-10 mx-auto text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{t("home.noTournamentsNearby")}</p>
-                    <p className="text-sm text-muted-foreground">{t("home.noTournamentsHint")}</p>
-                  </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/nearby">{t("home.adjustDistanceTime")}</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
-
-        {/* Location denied / unsupported: fallback */}
-        {showFallback && (
-          <Card className="border-amber-500/30 bg-amber-500/5">
-            <CardContent className="p-4 flex flex-col gap-3">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium">{t("home.locationOff")}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {t("home.locationOffHint")}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/nearby">{t("home.tryFindNearby")}</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Fallback list: recent tournaments when no location */}
-        {hasFallbackList && (
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-sm font-medium text-muted-foreground">{t("home.recentTournaments")}</h2>
-              <div className="flex items-center gap-2 shrink-0">
-                <Link href="/nearby" className="text-sm text-primary hover:underline">
-                  {t("home.findNearby")}
-                </Link>
+              ) : (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => refreshTournaments()}
-                  disabled={refreshing}
+                  variant="outline"
+                  className="w-full h-12 rounded-md border-0 bg-transparent hover:bg-primary/5 font-semibold justify-start px-4 shadow-none"
+                  onClick={() => setShowCodeInput(true)}
                 >
-                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                  <Hash className="h-4 w-4 mr-2 shrink-0" strokeWidth={2.5} />
+                  <span className="truncate">{t("home.ctaJoin")}</span>
+                  <span className="text-muted-foreground font-normal text-sm ml-1.5 hidden sm:inline truncate">
+                    — {t("home.enterCodeOrQr")}
+                  </span>
                 </Button>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {fallbackTournaments.map((t) => (
-                <LandingTournamentCard
-                  key={t.id}
-                  tournament={t}
-                  userCoords={null}
-                  showDistance={false}
-                  playerCount={playerCounts[t.id] ?? 0}
-                  playerNames={playerPreviews[t.id] ?? []}
-                />
-              ))}
+              )}
             </div>
           </div>
-        )}
+        </section>
 
-        {/* Soft signup prompt when not logged in */}
+        {/* Tournament discovery */}
+        <section className="space-y-4">
+          {locationStatus === "pending" && (
+            <div className="flex flex-col items-center gap-2 py-8 text-center">
+              <Compass className="h-8 w-8 text-primary animate-pulse" />
+              <p className="font-medium">{t("home.gettingLocation")}</p>
+              <p className="text-sm text-muted-foreground max-w-sm">{t("home.gettingLocationHint")}</p>
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {showNearby && (
+            <>
+              {loadingNearby ? (
+                <div className="flex flex-col items-center gap-2 py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">{t("home.searchingNearby")}</p>
+                </div>
+              ) : hasNearbyList ? (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {t("home.withinKmHours", { km: NEARBY_RADIUS_KM, hours: NEARBY_HOURS })}
+                    </p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link href="/nearby" className="text-sm text-primary hover:underline">
+                        {t("home.adjustDistanceTime")}
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => refreshTournaments()}
+                        disabled={refreshing}
+                      >
+                        <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {nearbyTournaments.map((tour) => (
+                      <LandingTournamentCard
+                        key={tour.id}
+                        tournament={tour}
+                        userCoords={userLocation}
+                        showDistance={true}
+                        playerCount={playerCounts[tour.id] ?? 0}
+                        playerNames={playerPreviews[tour.id] ?? []}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 py-6 text-center">
+                  <MapPin className="h-8 w-8 text-muted-foreground" />
+                  <p className="font-medium">{t("home.noTournamentsNearby")}</p>
+                  <p className="text-sm text-muted-foreground">{t("home.noTournamentsHint")}</p>
+                  <Button variant="outline" size="sm" asChild className="mt-1">
+                    <Link href="/nearby">{t("home.adjustDistanceTime")}</Link>
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+
+          {showFallback && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 flex flex-col gap-3">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">{t("home.locationOff")}</p>
+                  <p className="text-sm text-muted-foreground">{t("home.locationOffHint")}</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="self-start" asChild>
+                <Link href="/nearby">{t("home.tryFindNearby")}</Link>
+              </Button>
+            </div>
+          )}
+
+          {hasFallbackList && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-medium text-muted-foreground">{t("home.recentTournaments")}</h2>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link href="/nearby" className="text-sm text-primary hover:underline">
+                    {t("home.findNearby")}
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => refreshTournaments()}
+                    disabled={refreshing}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                  </Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {fallbackTournaments.map((tour) => (
+                  <LandingTournamentCard
+                    key={tour.id}
+                    tournament={tour}
+                    userCoords={null}
+                    showDistance={false}
+                    playerCount={playerCounts[tour.id] ?? 0}
+                    playerNames={playerPreviews[tour.id] ?? []}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* How it works — second section, fills empty atmosphere */}
+        <section className="border-t border-border/80 pt-8 space-y-5">
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-center">
+            {t("home.howItWorksTitle")}
+          </h2>
+          <ol className="space-y-4 max-w-lg mx-auto">
+            <li className="flex gap-3 items-start">
+              <QrCode className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">{t("home.howItWorksJoinTitle")}</p>
+                <p className="text-sm text-muted-foreground">{t("home.howItWorksJoinBody")}</p>
+              </div>
+            </li>
+            <li className="flex gap-3 items-start">
+              <Swords className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">{t("home.howItWorksPlayTitle")}</p>
+                <p className="text-sm text-muted-foreground">{t("home.howItWorksPlayBody")}</p>
+              </div>
+            </li>
+            <li className="flex gap-3 items-start">
+              <Plus className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">{t("home.howItWorksCreateTitle")}</p>
+                <p className="text-sm text-muted-foreground">{t("home.howItWorksCreateBody")}</p>
+              </div>
+            </li>
+          </ol>
+        </section>
+
         {!loadingAuth && !user && (
-          <div className="text-center pt-4 border-t max-w-md mx-auto">
+          <div className="text-center pt-2">
             <p className="text-sm text-muted-foreground mb-3">{t("home.signupPrompt")}</p>
-            <Button variant="outline" size="sm" asChild className="border-2 hover:border-primary hover:bg-primary/5 bg-transparent">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="border-2 hover:border-primary hover:bg-primary/5 bg-transparent"
+            >
               <Link href="/auth/signup">{t("home.signUp")}</Link>
             </Button>
           </div>
