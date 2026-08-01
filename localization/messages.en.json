@@ -78,7 +78,11 @@
     "nearbyJoinCta": "Join {name} — {distance} away?",
     "nearbyJoinButton": "Join this event",
     "guestAccountBanner": "Create a free account to keep your results and rejoin faster.",
-    "guestAccountBannerCta": "Create account"
+    "guestAccountBannerCta": "Create account",
+    "clubsLink": "Clubs",
+    "followedClubsTitle": "Clubs you follow",
+    "browseClubs": "Browse clubs",
+    "followingEventsTitle": "From organizers & clubs you follow"
   },
   "auth": {
     "loginTitle": "Login",
@@ -245,7 +249,13 @@
     "pairingSwiss": "Swiss",
     "pairingSwissDescription": "Round-based Swiss pairings (club rules). Pair the next round after all games finish. Not FIDE/USCF certified.",
     "plannedSwissRoundsLabel": "Planned rounds",
-    "plannedSwissRoundsHelp": "Choose {min}–{max} rounds. Swiss needs at least {minPlayers} players; rounds cannot exceed players − 1 (e.g. 8 players → max 7 rounds)."
+    "plannedSwissRoundsHelp": "Choose {min}–{max} rounds. Swiss needs at least {minPlayers} players; rounds cannot exceed players − 1 (e.g. 8 players → max 7 rounds).",
+    "clubLabel": "Club (optional)",
+    "clubPlaceholder": "No club",
+    "clubNone": "Personal event (no club)",
+    "clubEmptyHelp": "Create a club to publish events under a shared brand.",
+    "clubCreateLink": "Create a club",
+    "clubHelp": "Only club owners and admins can attach an event to a club."
   },
   "arena": {
     "endTournamentTitle": "End Tournament",
@@ -687,7 +697,9 @@
     "morePlayers": "+{count} more",
     "getDirections": "Get directions",
     "viewButton": "View",
-    "joinButton": "Join"
+    "joinButton": "Join",
+    "moreFromOrganizer": "More from {name}",
+    "clubLabel": "{name}"
   },
   "swiss": {
     "title": "Swiss tournament",
@@ -737,5 +749,46 @@
     "standingsOddPlayersNote": "With an odd number of players, one pairing bye is assigned each round: full points, no board game.",
     "pairingByeOne": "1 pairing bye",
     "pairingByeMany": "{count} pairing byes"
+  },
+  "organizer": {
+    "subtitle": "Public events run by this organizer",
+    "upcomingTitle": "Upcoming & live",
+    "recentTitle": "Recent",
+    "noUpcoming": "No public upcoming events right now.",
+    "notFound": "Organizer not found.",
+    "follow": "Follow",
+    "unfollow": "Following",
+    "signInToFollow": "Sign in to follow organizers."
+  },
+  "club": {
+    "backToClubs": "All clubs",
+    "defaultDescription": "Chess club on Parego",
+    "upcomingTitle": "Upcoming & live",
+    "recentTitle": "Recent",
+    "noUpcoming": "No public upcoming events for this club.",
+    "notFound": "Club not found.",
+    "follow": "Follow",
+    "unfollow": "Following",
+    "createEvent": "Create event",
+    "signInToFollow": "Sign in to follow clubs."
+  },
+  "clubs": {
+    "title": "Clubs",
+    "subtitle": "Find clubs and their events. Create a club to run nights under one brand—only owners and admins can post events.",
+    "create": "Create club",
+    "followingTitle": "Following",
+    "browseTitle": "Browse",
+    "searchPlaceholder": "Search by name or city",
+    "empty": "No clubs found yet. Be the first to create one.",
+    "createTitle": "Create a club",
+    "createSubtitle": "You become the owner. Only you and admins you add can create club events.",
+    "nameLabel": "Club name",
+    "namePlaceholder": "e.g. Madrid Chess Club",
+    "descriptionLabel": "About (optional)",
+    "descriptionPlaceholder": "Venue nights, formats, who is welcome…",
+    "cityLabel": "City",
+    "countryLabel": "Country",
+    "createSubmit": "Create club",
+    "createdToast": "Club created"
   }
 }

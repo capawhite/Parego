@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Trophy, MapPin, Clock, Globe, Lock } from "lucide-react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   MIN_SWISS_ROUNDS,
   MAX_SWISS_ROUNDS,
@@ -15,19 +15,26 @@ import {
   clampPlannedSwissRounds,
 } from "@/lib/pairing/swiss"
 import { saveTournament } from "@/lib/database/tournament-db"
+import { listMyStaffClubs, type Club } from "@/lib/database/club-db"
 import { DEFAULT_SETTINGS } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
+import Link from "next/link"
+import { Suspense } from "react"
 
-export default function CreateTournamentPage() {
+function CreateTournamentForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { t } = useI18n()
+  const presetClubId = searchParams.get("club")
 
   const [tournamentName, setTournamentName] = useState("")
   const [visibility, setVisibility] = useState<"public" | "private">("public")
   const [startTime, setStartTime] = useState("")
   const [isCreating, setIsCreating] = useState(false)
+  const [clubId, setClubId] = useState<string>("")
+  const [staffClubs, setStaffClubs] = useState<Club[]>([])
 
   const [pairingAlgorithm, setPairingAlgorithm] = useState<string>("all-vs-all")
   const [plannedSwissRounds, setPlannedSwissRounds] = useState<number>(5)
@@ -76,6 +83,12 @@ export default function CreateTournamentPage() {
             country: authUser.user_metadata?.country,
           })
         }
+
+        const clubs = await listMyStaffClubs()
+        setStaffClubs(clubs)
+        if (presetClubId && clubs.some((c) => c.id === presetClubId)) {
+          setClubId(presetClubId)
+        }
       } catch (error) {
         console.error("[v0] Auth error:", error)
         router.push("/auth/login")
@@ -85,7 +98,7 @@ export default function CreateTournamentPage() {
     }
 
     checkAuth()
-  }, [router])
+  }, [router, presetClubId])
 
   // Auto-detect location
   useEffect(() => {
@@ -210,6 +223,7 @@ export default function CreateTournamentPage() {
         location?.lon,
         visibility,
         startTime ? new Date(startTime).toISOString() : undefined,
+        clubId || null,
       )
 
       router.push(`/tournament/${tournamentId}`)
@@ -265,6 +279,38 @@ export default function CreateTournamentPage() {
                 onChange={(e) => setTournamentName(e.target.value)}
                 disabled={isCreating}
               />
+            </div>
+
+            {/* Club (optional — staff only) */}
+            <div className="space-y-2">
+              <Label>{t("create.clubLabel")}</Label>
+              {staffClubs.length > 0 ? (
+                <Select
+                  value={clubId || "none"}
+                  onValueChange={(v) => setClubId(v === "none" ? "" : v)}
+                  disabled={isCreating}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("create.clubPlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("create.clubNone")}</SelectItem>
+                    {staffClubs.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {t("create.clubEmptyHelp")}{" "}
+                  <Link href="/clubs/new" className="text-primary underline">
+                    {t("create.clubCreateLink")}
+                  </Link>
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">{t("create.clubHelp")}</p>
             </div>
 
             {/* Visibility */}
@@ -436,5 +482,19 @@ export default function CreateTournamentPage() {
         </Card>
       </div>
     </main>
+  )
+}
+
+export default function CreateTournamentPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-svh bg-background flex items-center justify-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </main>
+      }
+    >
+      <CreateTournamentForm />
+    </Suspense>
   )
 }

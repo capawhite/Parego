@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Zap, MapPin, Hash, User, LogOut, Plus, AlertCircle, Compass, Loader2, RefreshCw, QrCode, Swords } from "lucide-react"
+import { Zap, MapPin, Hash, User, LogOut, Plus, AlertCircle, Compass, Loader2, RefreshCw, QrCode, Swords, Users } from "lucide-react"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -14,6 +14,16 @@ import {
   getPlayerPreviews,
   type TournamentData,
 } from "@/lib/database/tournament-db"
+import {
+  getOrganizerNames,
+  listTournamentsFromFollowedOrganizers,
+} from "@/lib/database/organizer-db"
+import {
+  getClubsByIds,
+  listFollowedClubs,
+  listTournamentsFromFollowedClubs,
+  type Club,
+} from "@/lib/database/club-db"
 import { LandingTournamentCard } from "@/components/landing-tournament-card"
 import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
@@ -48,6 +58,11 @@ export default function Home() {
   const [playerPreviews, setPlayerPreviews] = useState<Record<string, string[]>>({})
   const [refreshing, setRefreshing] = useState(false)
   const [showGuestBanner, setShowGuestBanner] = useState(false)
+  const [organizerNames, setOrganizerNames] = useState<Record<string, string>>({})
+  const [clubsById, setClubsById] = useState<Record<string, Club>>({})
+  const [followingTournaments, setFollowingTournaments] = useState<TournamentData[]>([])
+  const [followedClubs, setFollowedClubs] = useState<Club[]>([])
+  const [clubEventTournaments, setClubEventTournaments] = useState<TournamentData[]>([])
 
   useEffect(() => {
     const supabase = createClient()
@@ -116,6 +131,29 @@ export default function Home() {
       return
     }
     setShowGuestBanner(hasPriorGuestSessions())
+  }, [loadingAuth, user])
+
+  useEffect(() => {
+    if (loadingAuth || !user) {
+      setFollowingTournaments([])
+      setFollowedClubs([])
+      setClubEventTournaments([])
+      return
+    }
+    let cancelled = false
+    Promise.all([
+      listTournamentsFromFollowedOrganizers(8),
+      listFollowedClubs(8),
+      listTournamentsFromFollowedClubs(8),
+    ]).then(([orgEvents, clubs, clubEvents]) => {
+      if (cancelled) return
+      setFollowingTournaments(orgEvents)
+      setFollowedClubs(clubs)
+      setClubEventTournaments(clubEvents)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [loadingAuth, user])
 
   // Request location and load nearby or fallback tournaments
@@ -222,8 +260,13 @@ export default function Home() {
   // Load player counts and previews when tournament list changes
   const displayedTournaments = showNearby ? nearbyTournaments : fallbackTournaments
   const previewTournamentIds = useMemo(
-    () => displayedTournaments.map((t) => t.id),
-    [displayedTournaments],
+    () =>
+      [
+        ...displayedTournaments,
+        ...followingTournaments,
+        ...clubEventTournaments,
+      ].map((t) => t.id),
+    [displayedTournaments, followingTournaments, clubEventTournaments],
   )
   useEffect(() => {
     if (previewTournamentIds.length === 0) return
@@ -241,6 +284,35 @@ export default function Home() {
       cancelled = true
     }
   }, [previewTournamentIds])
+
+  useEffect(() => {
+    const orgIds = [
+      ...displayedTournaments,
+      ...followingTournaments,
+      ...clubEventTournaments,
+    ]
+      .map((t) => t.organizer_id)
+      .filter((id): id is string => Boolean(id))
+    const clubIds = [
+      ...displayedTournaments,
+      ...followingTournaments,
+      ...clubEventTournaments,
+    ]
+      .map((t) => t.club_id)
+      .filter((id): id is string => Boolean(id))
+    let cancelled = false
+    Promise.all([
+      orgIds.length > 0 ? getOrganizerNames(orgIds) : Promise.resolve({}),
+      clubIds.length > 0 ? getClubsByIds(clubIds) : Promise.resolve({}),
+    ]).then(([names, clubs]) => {
+      if (cancelled) return
+      setOrganizerNames(names)
+      setClubsById(clubs)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [displayedTournaments, followingTournaments, clubEventTournaments])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -265,6 +337,9 @@ export default function Home() {
 
       <header className="relative z-10 flex items-center justify-end gap-3 p-4">
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <Button variant="ghost" size="sm" className="min-h-10" asChild>
+            <Link href="/clubs">{t("home.clubsLink")}</Link>
+          </Button>
           {loadingAuth ? (
             <span className="text-sm text-muted-foreground">{t("common.loading")}</span>
           ) : user ? (
@@ -408,6 +483,55 @@ export default function Home() {
 
         {/* Tournament discovery */}
         <section className="space-y-4">
+          {(followingTournaments.length > 0 || followedClubs.length > 0 || clubEventTournaments.length > 0) && (
+            <div className="space-y-4">
+              {followedClubs.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-muted-foreground">{t("home.followedClubsTitle")}</p>
+                    <Link href="/clubs" className="text-sm text-primary hover:underline">
+                      {t("home.browseClubs")}
+                    </Link>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {followedClubs.map((c) => (
+                      <Button key={c.id} variant="outline" size="sm" asChild>
+                        <Link href={`/club/${c.slug}`}>
+                          <Users className="h-3.5 w-3.5 mr-1.5" />
+                          {c.name}
+                        </Link>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(followingTournaments.length > 0 || clubEventTournaments.length > 0) && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-muted-foreground">{t("home.followingEventsTitle")}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[...clubEventTournaments, ...followingTournaments]
+                      .filter((t, i, arr) => arr.findIndex((x) => x.id === t.id) === i)
+                      .slice(0, 6)
+                      .map((tour) => (
+                        <LandingTournamentCard
+                          key={`fol-${tour.id}`}
+                          tournament={tour}
+                          userCoords={userLocation}
+                          showDistance={Boolean(userLocation)}
+                          playerCount={playerCounts[tour.id] ?? 0}
+                          playerNames={playerPreviews[tour.id] ?? []}
+                          organizerId={tour.organizer_id}
+                          organizerName={tour.organizer_id ? organizerNames[tour.organizer_id] : null}
+                          clubName={tour.club_id ? clubsById[tour.club_id]?.name : null}
+                          clubSlug={tour.club_id ? clubsById[tour.club_id]?.slug : null}
+                        />
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {locationStatus === "pending" && (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
               <Compass className="h-8 w-8 text-primary animate-pulse" />
@@ -454,6 +578,10 @@ export default function Home() {
                         showDistance={true}
                         playerCount={playerCounts[tour.id] ?? 0}
                         playerNames={playerPreviews[tour.id] ?? []}
+                        organizerId={tour.organizer_id}
+                        organizerName={tour.organizer_id ? organizerNames[tour.organizer_id] : null}
+                        clubName={tour.club_id ? clubsById[tour.club_id]?.name : null}
+                        clubSlug={tour.club_id ? clubsById[tour.club_id]?.slug : null}
                       />
                     ))}
                   </div>
@@ -514,6 +642,10 @@ export default function Home() {
                     showDistance={false}
                     playerCount={playerCounts[tour.id] ?? 0}
                     playerNames={playerPreviews[tour.id] ?? []}
+                    organizerId={tour.organizer_id}
+                    organizerName={tour.organizer_id ? organizerNames[tour.organizer_id] : null}
+                    clubName={tour.club_id ? clubsById[tour.club_id]?.name : null}
+                    clubSlug={tour.club_id ? clubsById[tour.club_id]?.slug : null}
                   />
                 ))}
               </div>

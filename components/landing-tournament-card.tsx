@@ -56,6 +56,10 @@ interface LandingTournamentCardProps {
   playerCount?: number
   /** First few player names for preview (e.g. first 5) */
   playerNames?: string[]
+  organizerName?: string | null
+  organizerId?: string | null
+  clubName?: string | null
+  clubSlug?: string | null
   className?: string
 }
 
@@ -65,6 +69,10 @@ export function LandingTournamentCard({
   showDistance = true,
   playerCount = 0,
   playerNames = [],
+  organizerName,
+  organizerId,
+  clubName,
+  clubSlug,
   className,
 }: LandingTournamentCardProps) {
   const { t } = useI18n()
@@ -153,6 +161,20 @@ export function LandingTournamentCard({
               )}
             </div>
           </Link>
+          {(clubSlug && clubName) || (organizerId && organizerName) ? (
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+              {clubSlug && clubName ? (
+                <Link href={`/club/${clubSlug}`} className="text-primary hover:underline font-medium">
+                  {t("landing.clubLabel", { name: clubName })}
+                </Link>
+              ) : null}
+              {organizerId && organizerName ? (
+                <Link href={`/organizer/${organizerId}`} className="text-muted-foreground hover:text-primary hover:underline">
+                  {t("landing.moreFromOrganizer", { name: organizerName })}
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
           {tournament.latitude != null && tournament.longitude != null && (
             <a
               href={googleMapsUrl(tournament.latitude, tournament.longitude, "directions")}

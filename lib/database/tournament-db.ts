@@ -36,6 +36,7 @@ export interface TournamentData {
   start_time?: string
   presence_radius_m?: number | null // GPS check-in radius in meters; null = app default
   pairing_heartbeat_at?: string | null
+  club_id?: string | null
 }
 
 // Save tournament to database
@@ -52,6 +53,7 @@ export async function saveTournament(
   longitude?: number,
   visibility: "public" | "private" = "public",
   startTime?: string,
+  clubId?: string | null,
 ) {
   const supabase = createClient()
 
@@ -70,6 +72,7 @@ export async function saveTournament(
       longitude,
       visibility,
       start_time: startTime,
+      club_id: clubId ?? null,
       updated_at: new Date().toISOString(),
     })
     .select()

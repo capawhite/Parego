@@ -78,7 +78,11 @@
     "nearbyJoinCta": "¿Unirte a {name} — a {distance}?",
     "nearbyJoinButton": "Unirme a este evento",
     "guestAccountBanner": "Crea una cuenta gratis para guardar tus resultados y unirte más rápido.",
-    "guestAccountBannerCta": "Crear cuenta"
+    "guestAccountBannerCta": "Crear cuenta",
+    "clubsLink": "Clubes",
+    "followedClubsTitle": "Clubes que sigues",
+    "browseClubs": "Explorar clubes",
+    "followingEventsTitle": "De organizadores y clubes que sigues"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -245,7 +249,13 @@
     "pairingSwiss": "Suizo",
     "pairingSwissDescription": "Emparejamientos suizos por rondas (reglas de club). Empareja la siguiente ronda cuando terminen todas las partidas. No certificado FIDE/USCF.",
     "plannedSwissRoundsLabel": "Rondas previstas",
-    "plannedSwissRoundsHelp": "Elige entre {min} y {max} rondas. El suizo necesita al menos {minPlayers} jugadores; las rondas no pueden superar jugadores − 1 (p. ej. 8 jugadores → máx. 7)."
+    "plannedSwissRoundsHelp": "Elige entre {min} y {max} rondas. El suizo necesita al menos {minPlayers} jugadores; las rondas no pueden superar jugadores − 1 (p. ej. 8 jugadores → máx. 7).",
+    "clubLabel": "Club (opcional)",
+    "clubPlaceholder": "Sin club",
+    "clubNone": "Evento personal (sin club)",
+    "clubEmptyHelp": "Crea un club para publicar eventos bajo una misma marca.",
+    "clubCreateLink": "Crear un club",
+    "clubHelp": "Solo los dueños y admins del club pueden asociar un evento al club."
   },
   "arena": {
     "endTournamentTitle": "Finalizar torneo",
@@ -687,7 +697,9 @@
     "morePlayers": "+{count} más",
     "getDirections": "Cómo llegar",
     "viewButton": "Ver",
-    "joinButton": "Unirse"
+    "joinButton": "Unirse",
+    "moreFromOrganizer": "Más de {name}",
+    "clubLabel": "{name}"
   },
   "swiss": {
     "title": "Torneo suizo",
@@ -737,5 +749,46 @@
     "standingsOddPlayersNote": "Con un número impar de jugadores, cada ronda hay un bye de emparejamiento: puntos completos, sin partida en mesa.",
     "pairingByeOne": "1 bye de emparejamiento",
     "pairingByeMany": "{count} byes de emparejamiento"
+  },
+  "organizer": {
+    "subtitle": "Eventos públicos de este organizador",
+    "upcomingTitle": "Próximos y en vivo",
+    "recentTitle": "Recientes",
+    "noUpcoming": "No hay eventos públicos próximos.",
+    "notFound": "Organizador no encontrado.",
+    "follow": "Seguir",
+    "unfollow": "Siguiendo",
+    "signInToFollow": "Inicia sesión para seguir organizadores."
+  },
+  "club": {
+    "backToClubs": "Todos los clubes",
+    "defaultDescription": "Club de ajedrez en Parego",
+    "upcomingTitle": "Próximos y en vivo",
+    "recentTitle": "Recientes",
+    "noUpcoming": "No hay eventos públicos próximos de este club.",
+    "notFound": "Club no encontrado.",
+    "follow": "Seguir",
+    "unfollow": "Siguiendo",
+    "createEvent": "Crear evento",
+    "signInToFollow": "Inicia sesión para seguir clubes."
+  },
+  "clubs": {
+    "title": "Clubes",
+    "subtitle": "Encuentra clubes y sus eventos. Crea un club para organizar noches bajo una marca—solo dueños y admins pueden publicar.",
+    "create": "Crear club",
+    "followingTitle": "Siguiendo",
+    "browseTitle": "Explorar",
+    "searchPlaceholder": "Buscar por nombre o ciudad",
+    "empty": "Aún no hay clubes. Sé el primero en crear uno.",
+    "createTitle": "Crear un club",
+    "createSubtitle": "Pasas a ser el dueño. Solo tú y los admins que añadas pueden crear eventos del club.",
+    "nameLabel": "Nombre del club",
+    "namePlaceholder": "p. ej. Club de Ajedrez Madrid",
+    "descriptionLabel": "Sobre el club (opcional)",
+    "descriptionPlaceholder": "Horarios, formatos, a quién va dirigido…",
+    "cityLabel": "Ciudad",
+    "countryLabel": "País",
+    "createSubmit": "Crear club",
+    "createdToast": "Club creado"
   }
 }
