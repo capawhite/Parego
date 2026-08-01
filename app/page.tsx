@@ -9,7 +9,9 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import {
   listNearbyTournaments,
-  listTournaments,
+  listOpenTournaments,
+  listRecentCompletedTournaments,
+  isDiscoverableTournament,
   getPlayerCounts,
   getPlayerPreviews,
   type TournamentData,
@@ -31,8 +33,9 @@ import { haversineKm } from "@/lib/geo"
 import { hasPriorGuestSessions } from "@/lib/guest-session-history"
 
 const NEARBY_RADIUS_KM = 15
-const NEARBY_HOURS = 24
+const NEARBY_HOURS = 168 // 7 days on home
 const FALLBACK_LIST_LIMIT = 8
+const HISTORY_LIMIT = 6
 
 function formatNearbyDistance(km: number, t: (path: string, params?: Record<string, string | number>) => string): string {
   if (km < 1) return t("landing.distanceMeters", { meters: Math.round(km * 1000) })
@@ -52,6 +55,7 @@ export default function Home() {
   const [locationStatus, setLocationStatus] = useState<"pending" | "granted" | "denied" | "unsupported">("pending")
   const [nearbyTournaments, setNearbyTournaments] = useState<TournamentData[]>([])
   const [fallbackTournaments, setFallbackTournaments] = useState<TournamentData[]>([])
+  const [historyTournaments, setHistoryTournaments] = useState<TournamentData[]>([])
   const [loadingNearby, setLoadingNearby] = useState(false)
   const [loadingFallback, setLoadingFallback] = useState(false)
   const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({})
@@ -147,9 +151,9 @@ export default function Home() {
       listTournamentsFromFollowedClubs(8),
     ]).then(([orgEvents, clubs, clubEvents]) => {
       if (cancelled) return
-      setFollowingTournaments(orgEvents)
+      setFollowingTournaments(orgEvents.filter((t) => isDiscoverableTournament(t)))
       setFollowedClubs(clubs)
-      setClubEventTournaments(clubEvents)
+      setClubEventTournaments(clubEvents.filter((t) => isDiscoverableTournament(t)))
     })
     return () => {
       cancelled = true
@@ -200,9 +204,9 @@ export default function Home() {
 
     let cancelled = false
     setLoadingFallback(true)
-    listTournaments(FALLBACK_LIST_LIMIT)
+    listOpenTournaments(FALLBACK_LIST_LIMIT)
       .then((data) => {
-        if (!cancelled) setFallbackTournaments(data.filter((t) => t.status !== "completed"))
+        if (!cancelled) setFallbackTournaments(data)
       })
       .finally(() => {
         if (!cancelled) setLoadingFallback(false)
@@ -212,6 +216,17 @@ export default function Home() {
     }
   }, [locationStatus])
 
+  // Recent completed events (history) — always available, independent of GPS
+  useEffect(() => {
+    let cancelled = false
+    listRecentCompletedTournaments(HISTORY_LIMIT, 30).then((data) => {
+      if (!cancelled) setHistoryTournaments(data)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   // Refetch tournaments (used by periodic refresh, manual button, and tab focus)
   const refreshTournaments = useCallback(async () => {
     setRefreshing(true)
@@ -220,9 +235,11 @@ export default function Home() {
         const data = await listNearbyTournaments(userLocation.lat, userLocation.lon, NEARBY_RADIUS_KM, NEARBY_HOURS, 10)
         setNearbyTournaments(data)
       } else if (locationStatus === "denied" || locationStatus === "unsupported") {
-        const data = await listTournaments(FALLBACK_LIST_LIMIT)
-        setFallbackTournaments(data.filter((t) => t.status !== "completed"))
+        const data = await listOpenTournaments(FALLBACK_LIST_LIMIT)
+        setFallbackTournaments(data)
       }
+      const history = await listRecentCompletedTournaments(HISTORY_LIMIT, 30)
+      setHistoryTournaments(history)
     } finally {
       setRefreshing(false)
     }
@@ -265,8 +282,9 @@ export default function Home() {
         ...displayedTournaments,
         ...followingTournaments,
         ...clubEventTournaments,
+        ...historyTournaments,
       ].map((t) => t.id),
-    [displayedTournaments, followingTournaments, clubEventTournaments],
+    [displayedTournaments, followingTournaments, clubEventTournaments, historyTournaments],
   )
   useEffect(() => {
     if (previewTournamentIds.length === 0) return
@@ -290,6 +308,7 @@ export default function Home() {
       ...displayedTournaments,
       ...followingTournaments,
       ...clubEventTournaments,
+      ...historyTournaments,
     ]
       .map((t) => t.organizer_id)
       .filter((id): id is string => Boolean(id))
@@ -297,6 +316,7 @@ export default function Home() {
       ...displayedTournaments,
       ...followingTournaments,
       ...clubEventTournaments,
+      ...historyTournaments,
     ]
       .map((t) => t.club_id)
       .filter((id): id is string => Boolean(id))
@@ -312,7 +332,7 @@ export default function Home() {
     return () => {
       cancelled = true
     }
-  }, [displayedTournaments, followingTournaments, clubEventTournaments])
+  }, [displayedTournaments, followingTournaments, clubEventTournaments, historyTournaments])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -552,7 +572,7 @@ export default function Home() {
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-medium text-muted-foreground">
-                      {t("home.withinKmHours", { km: NEARBY_RADIUS_KM, hours: NEARBY_HOURS })}
+                      {t("home.withinKmPeriod", { km: NEARBY_RADIUS_KM, period: t("home.periodWeek") })}
                     </p>
                     <div className="flex items-center gap-2 shrink-0">
                       <Link href="/nearby" className="text-sm text-primary hover:underline">
@@ -617,7 +637,7 @@ export default function Home() {
           {hasFallbackList && (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-medium text-muted-foreground">{t("home.recentTournaments")}</h2>
+                <h2 className="text-sm font-medium text-muted-foreground">{t("home.openTournaments")}</h2>
                 <div className="flex items-center gap-2 shrink-0">
                   <Link href="/nearby" className="text-sm text-primary hover:underline">
                     {t("home.findNearby")}
@@ -640,6 +660,31 @@ export default function Home() {
                     tournament={tour}
                     userCoords={null}
                     showDistance={false}
+                    playerCount={playerCounts[tour.id] ?? 0}
+                    playerNames={playerPreviews[tour.id] ?? []}
+                    organizerId={tour.organizer_id}
+                    organizerName={tour.organizer_id ? organizerNames[tour.organizer_id] : null}
+                    clubName={tour.club_id ? clubsById[tour.club_id]?.name : null}
+                    clubSlug={tour.club_id ? clubsById[tour.club_id]?.slug : null}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {historyTournaments.length > 0 && (
+            <div className="space-y-3 pt-2 border-t border-border/60">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-medium text-muted-foreground">{t("home.historyTitle")}</h2>
+                <p className="text-xs text-muted-foreground">{t("home.historyHint")}</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 opacity-90">
+                {historyTournaments.map((tour) => (
+                  <LandingTournamentCard
+                    key={`hist-${tour.id}`}
+                    tournament={tour}
+                    userCoords={userLocation}
+                    showDistance={Boolean(userLocation)}
                     playerCount={playerCounts[tour.id] ?? 0}
                     playerNames={playerPreviews[tour.id] ?? []}
                     organizerId={tour.organizer_id}

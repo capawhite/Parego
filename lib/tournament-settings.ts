@@ -91,5 +91,11 @@ export function parseTournamentSettings(raw: {
         : typeof s.pairingHeartbeatAt === "string"
           ? s.pairingHeartbeatAt
           : undefined,
+    arenaDurationMinutes:
+      typeof s.arenaDurationMinutes === "number" &&
+      Number.isFinite(s.arenaDurationMinutes) &&
+      s.arenaDurationMinutes >= 1
+        ? Math.min(24 * 60, Math.floor(s.arenaDurationMinutes))
+        : undefined,
   }
 }

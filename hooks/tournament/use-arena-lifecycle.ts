@@ -150,6 +150,7 @@ export function useArenaLifecycle({
         {
           ...arenaState.settings,
           tableCount: newTables,
+          arenaDurationMinutes: durationMinutes,
         },
         tournamentMetadata?.city,
         tournamentMetadata?.country,
@@ -171,6 +172,7 @@ export function useArenaLifecycle({
       settings: {
         ...prev.settings,
         tableCount: newTables,
+        arenaDurationMinutes: durationMinutes,
       },
       tournamentStartTime: startTimeMs,
       tournamentDuration: durationMs,

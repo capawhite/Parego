@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
 import { isPairingCronAuthorized, pairingCronSecretConfigured } from "@/lib/pairing/cron-auth"
 import { pairActiveTournamentsImpl } from "@/lib/pairing/pair-tournament"
+import { autoCompleteStaleTournamentsImpl } from "@/lib/tournament/auto-complete-stale"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
 /**
- * Cron entrypoint: pair all active arena tournaments.
+ * Cron entrypoint: auto-complete stale tournaments, then pair active arenas.
  * Auth: Authorization: Bearer $PAIRING_CRON_SECRET
  */
 export async function POST(request: Request) {
@@ -21,11 +22,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
+    const stale = await autoCompleteStaleTournamentsImpl()
     const summary = await pairActiveTournamentsImpl()
     if (!summary.success) {
-      return NextResponse.json(summary, { status: 500 })
+      return NextResponse.json({ ...summary, stale }, { status: 500 })
     }
-    return NextResponse.json(summary)
+    return NextResponse.json({ ...summary, stale })
   } catch (err) {
     console.error("[api/cron/pair-active] error:", err)
     const { captureException } = await import("@/lib/sentry")

@@ -138,6 +138,53 @@ export async function listTournaments(
   return data as TournamentData[]
 }
 
+/** Hours past scheduled start to still show a setup event as joinable. */
+export const SETUP_START_GRACE_HOURS = 3
+
+/** Open events only: active, or setup that is not stale past its start time. */
+export function isDiscoverableTournament(
+  t: TournamentData,
+  nowMs = Date.now(),
+  graceHours = SETUP_START_GRACE_HOURS,
+): boolean {
+  if (t.status === "completed") return false
+  if (t.status === "active") return true
+  if (t.status !== "setup") return false
+  if (!t.start_time) return true
+  const startMs = new Date(t.start_time).getTime()
+  if (Number.isNaN(startMs)) return true
+  return startMs >= nowMs - graceHours * 60 * 60 * 1000
+}
+
+/** Public setup/active events suitable for home / nearby primary lists. */
+export async function listOpenTournaments(limit = 10): Promise<TournamentData[]> {
+  const rows = await listTournaments(Math.max(limit * 3, 24))
+  return rows.filter((t) => isDiscoverableTournament(t)).slice(0, limit)
+}
+
+/** Recently completed public events for a History section. */
+export async function listRecentCompletedTournaments(
+  limit = 6,
+  withinDays = 30,
+): Promise<TournamentData[]> {
+  const supabase = createClient()
+  const since = new Date(Date.now() - withinDays * 24 * 60 * 60 * 1000).toISOString()
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("*")
+    .eq("visibility", "public")
+    .eq("status", "completed")
+    .gte("updated_at", since)
+    .order("updated_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("[v0] Error listing completed tournaments:", formatSupabaseError(error))
+    return []
+  }
+  return (data as TournamentData[]) ?? []
+}
+
 // Save players to database
 export async function savePlayers(tournamentId: string, players: Player[], settings?: TournamentSettings) {
   const supabase = createClient()
@@ -222,8 +269,9 @@ export async function listNearbyTournaments(
 ): Promise<TournamentData[]> {
   const supabase = createClient()
 
-  // Calculate time window
+  // Calculate time window (include a short grace so late-starting setup events still appear)
   const now = new Date()
+  const pastGrace = new Date(now.getTime() - SETUP_START_GRACE_HOURS * 60 * 60 * 1000)
   const futureTime = new Date(now.getTime() + hoursAhead * 60 * 60 * 1000)
 
   // Simple distance calculation using lat/lon bounds
@@ -242,9 +290,11 @@ export async function listNearbyTournaments(
     .lte("latitude", latitude + latDelta)
     .gte("longitude", longitude - lonDelta)
     .lte("longitude", longitude + lonDelta)
-    .or(`start_time.is.null,start_time.lte.${futureTime.toISOString()}`)
+    .or(
+      `start_time.is.null,and(start_time.gte.${pastGrace.toISOString()},start_time.lte.${futureTime.toISOString()})`,
+    )
     .order("start_time", { ascending: true, nullsFirst: false })
-    .limit(limit)
+    .limit(Math.max(limit * 3, 30))
 
   if (error) {
     console.error("[v0] Error listing nearby tournaments:", formatSupabaseError(error))
@@ -254,24 +304,30 @@ export async function listNearbyTournaments(
   // Filter by actual distance (the SQL query uses a bounding box, this refines it to a circle)
   const filtered = (data as TournamentData[]).filter((t) => {
     if (!t.latitude || !t.longitude) return false
+    if (!isDiscoverableTournament(t, now.getTime())) return false
     const distance = haversineKm(latitude, longitude, t.latitude, t.longitude)
     return distance <= radiusKm
   })
 
-  // Sort by most recently created first, then soonest start time, then distance
-  return filtered.sort((a, b) => {
-    const createdA = (a.created_at && new Date(a.created_at).getTime()) || 0
-    const createdB = (b.created_at && new Date(b.created_at).getTime()) || 0
-    if (createdB !== createdA) return createdB - createdA // newest first
-    if (a.start_time && !b.start_time) return -1
-    if (!a.start_time && b.start_time) return 1
-    if (a.start_time && b.start_time) {
-      return new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-    }
-    const distA = haversineKm(latitude, longitude, a.latitude!, a.longitude!)
-    const distB = haversineKm(latitude, longitude, b.latitude!, b.longitude!)
-    return distA - distB
-  })
+  // Prefer soonest start, then newest, then closest
+  return filtered
+    .sort((a, b) => {
+      if (a.status === "active" && b.status !== "active") return -1
+      if (b.status === "active" && a.status !== "active") return 1
+      if (a.start_time && b.start_time) {
+        const d = new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+        if (d !== 0) return d
+      }
+      if (a.start_time && !b.start_time) return -1
+      if (!a.start_time && b.start_time) return 1
+      const createdA = (a.created_at && new Date(a.created_at).getTime()) || 0
+      const createdB = (b.created_at && new Date(b.created_at).getTime()) || 0
+      if (createdB !== createdA) return createdB - createdA
+      const distA = haversineKm(latitude, longitude, a.latitude!, a.longitude!)
+      const distB = haversineKm(latitude, longitude, b.latitude!, b.longitude!)
+      return distA - distB
+    })
+    .slice(0, limit)
 }
 
 /** Batch: player count per tournament id */

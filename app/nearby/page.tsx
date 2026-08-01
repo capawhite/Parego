@@ -15,7 +15,17 @@ import { createClient } from "@/lib/supabase/client"
 import { useI18n } from "@/components/i18n-provider"
 
 type RadiusOption = 5 | 10 | 25 | 50
-type TimeOption = 12 | 24
+/** Hours ahead: 12h, 24h, 7 days, 30 days */
+type TimeOption = 12 | 24 | 168 | 720
+
+function timeWindowLabel(
+  hours: TimeOption,
+  t: (path: string, params?: Record<string, string | number>) => string,
+): string {
+  if (hours === 168) return t("nearby.weekLabel")
+  if (hours === 720) return t("nearby.monthLabel")
+  return t("nearby.hoursLabel", { hours })
+}
 
 export default function NearbyPage() {
   const router = useRouter()
@@ -32,7 +42,7 @@ export default function NearbyPage() {
   const [requestingLocation, setRequestingLocation] = useState(true)
 
   const [radius, setRadius] = useState<RadiusOption>(10)
-  const [timeWindow, setTimeWindow] = useState<TimeOption>(12)
+  const [timeWindow, setTimeWindow] = useState<TimeOption>(24)
   const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({})
   const [playerPreviews, setPlayerPreviews] = useState<Record<string, string[]>>({})
   const [refreshing, setRefreshing] = useState(false)
@@ -278,16 +288,16 @@ export default function NearbyPage() {
             {/* Time window */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">{t("nearby.startingWithinLabel")}</label>
-              <div className="flex gap-1.5">
-                {([12, 24] as TimeOption[]).map((windowHours) => (
+              <div className="flex gap-1.5 flex-wrap">
+                {([12, 24, 168, 720] as TimeOption[]).map((windowHours) => (
                   <Button
                     key={windowHours}
                     variant={timeWindow === windowHours ? "default" : "outline"}
                     size="sm"
-                    className={`flex-1 min-h-10 touch-manipulation ${timeWindow !== windowHours ? "bg-transparent" : ""}`}
+                    className={`flex-1 min-w-[4.5rem] min-h-10 touch-manipulation sm:flex-initial ${timeWindow !== windowHours ? "bg-transparent" : ""}`}
                     onClick={() => setTimeWindow(windowHours)}
                   >
-                    {t("nearby.hoursLabel", { hours: windowHours })}
+                    {timeWindowLabel(windowHours, t)}
                   </Button>
                 ))}
               </div>

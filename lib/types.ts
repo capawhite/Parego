@@ -132,6 +132,12 @@ export interface TournamentSettings {
 
   /** ISO timestamp of last successful server pairing tick (organizer/API heartbeat). */
   pairingHeartbeatAt?: string
+
+  /**
+   * Planned arena/session length in minutes (set when the organizer starts).
+   * Used to auto-complete abandoned tournaments after duration + grace.
+   */
+  arenaDurationMinutes?: number
 }
 
 export const DEFAULT_SETTINGS: TournamentSettings = {

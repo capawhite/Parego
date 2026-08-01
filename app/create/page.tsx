@@ -22,6 +22,7 @@ import { toast } from "sonner"
 import { useI18n } from "@/components/i18n-provider"
 import Link from "next/link"
 import { Suspense } from "react"
+import { StartTimePicker } from "@/components/start-time-picker"
 
 function CreateTournamentForm() {
   const router = useRouter()
@@ -350,11 +351,10 @@ function CreateTournamentForm() {
                 {t("create.startTimeLabel")}
                 <span className="text-xs text-muted-foreground">{t("create.startTimeOptional")}</span>
               </Label>
-              <Input
+              <StartTimePicker
                 id="start-time"
-                type="datetime-local"
                 value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                onChange={setStartTime}
                 disabled={isCreating}
               />
               <p className="text-xs text-muted-foreground">
