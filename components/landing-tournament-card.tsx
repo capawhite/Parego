@@ -183,7 +183,7 @@ export function LandingTournamentCard({
               className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              Get directions
+              {t("landing.getDirections")}
             </a>
           )}
         </div>

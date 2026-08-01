@@ -20,10 +20,11 @@ function getInitialLocale(): Locale {
   if (typeof window === "undefined") return "en"
 
   const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY)
-  if (stored === "en" || stored === "es") return stored
+  if (stored === "en" || stored === "es" || stored === "fr") return stored
 
   const browser = window.navigator.language.toLowerCase()
   if (browser.startsWith("es")) return "es"
+  if (browser.startsWith("fr")) return "fr"
 
   return "en"
 }
@@ -37,7 +38,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof document === "undefined") return
-    document.documentElement.lang = locale === "es" ? "es" : "en"
+    document.documentElement.lang =
+      locale === "es" ? "es" : locale === "fr" ? "fr" : "en"
   }, [locale])
 
   const setLocale = useCallback((next: Locale) => {

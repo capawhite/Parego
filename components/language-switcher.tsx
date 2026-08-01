@@ -26,6 +26,15 @@ export function LanguageSwitcher() {
       >
         ES
       </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={locale === "fr" ? "default" : "ghost"}
+        className="h-7 px-2 text-xs"
+        onClick={() => setLocale("fr")}
+      >
+        FR
+      </Button>
     </div>
   )
 }

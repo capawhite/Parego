@@ -585,7 +585,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
       <div className="container mx-auto py-8 flex items-center justify-center min-h-screen">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">Loading tournament...</p>
+            <p className="text-center text-muted-foreground">{t("arena.loadingTournament")}</p>
           </CardContent>
         </Card>
       </div>

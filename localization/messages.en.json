@@ -8,6 +8,8 @@
     "continue": "Continue",
     "loading": "Loading...",
     "errorGeneric": "Something went wrong. Please try again.",
+    "tryAgain": "Try again",
+    "unexpectedError": "An unexpected error occurred. You can try again, or go back to the home page.",
     "copyLink": "Copy link",
     "linkCopied": "Link copied!"
   },
@@ -281,6 +283,7 @@
     "allVsAllCompletionLabel": "Unique pairings",
     "allUniquePairingsCompleteMessage": "All unique pairings are complete; repeat pairings are now happening.",
     "defaultTournamentName": "Arena Tournament",
+    "loadingTournament": "Loading tournament...",
     "setupTitle": "Tournament Setup",
     "setupTables": "Tables",
     "setupTablesPlaceholder": "# of tables",
@@ -565,7 +568,13 @@
     "updateButton": "Update profile",
     "logoutButton": "Log out",
     "photoUpdated": "Photo updated",
-    "photoRemoved": "Photo removed"
+    "photoRemoved": "Photo removed",
+    "avatarAlt": "Your avatar",
+    "takePhoto": "Take photo",
+    "choosePhoto": "Choose photo",
+    "removePhoto": "Remove",
+    "stylizeLabel": "Avatar-style (recommended for privacy — makes the photo less recognizable)",
+    "photoHelp": "Optional. Use camera or pick from your photos. We’ll resize and optionally stylize for your profile."
   },
   "nearby": {
     "title": "Find Nearby",

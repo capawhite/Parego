@@ -487,14 +487,17 @@ function CreateTournamentForm() {
 
 export default function CreateTournamentPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="min-h-svh bg-background flex items-center justify-center">
-          <p className="text-muted-foreground">Loading...</p>
-        </main>
-      }
-    >
+    <Suspense fallback={<CreateTournamentFallback />}>
       <CreateTournamentForm />
     </Suspense>
+  )
+}
+
+function CreateTournamentFallback() {
+  const { t } = useI18n()
+  return (
+    <main className="min-h-svh bg-background flex items-center justify-center">
+      <p className="text-muted-foreground">{t("common.loading")}</p>
+    </main>
   )
 }

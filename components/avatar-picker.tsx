@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Camera, ImagePlus, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useI18n } from "@/components/i18n-provider"
 
 const MAX_SIZE_PX = 512
 const MAX_FILE_BYTES = 2 * 1024 * 1024 // 2MB
@@ -141,6 +142,7 @@ export function AvatarPicker({
   stylizeForPrivacy = true,
   className,
 }: AvatarPickerProps) {
+  const { t } = useI18n()
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
 
@@ -227,7 +229,7 @@ export function AvatarPicker({
         )}
       >
         {previewUrl ? (
-          <AvatarImage src={previewUrl} alt="Your avatar" />
+          <AvatarImage src={previewUrl} alt={t("profile.avatarAlt")} />
         ) : (
           <AvatarFallback className="text-muted-foreground">?</AvatarFallback>
         )}
@@ -243,7 +245,7 @@ export function AvatarPicker({
           className="gap-2"
         >
           <Camera className="h-4 w-4" />
-          Take photo
+          {t("profile.takePhoto")}
         </Button>
         <Button
           type="button"
@@ -254,7 +256,7 @@ export function AvatarPicker({
           className="gap-2"
         >
           <ImagePlus className="h-4 w-4" />
-          Choose photo
+          {t("profile.choosePhoto")}
         </Button>
         {hasImage && onClear && (
           <Button
@@ -266,7 +268,7 @@ export function AvatarPicker({
             className="gap-2 text-muted-foreground"
           >
             <X className="h-4 w-4" />
-            Remove
+            {t("profile.removePhoto")}
           </Button>
         )}
       </div>
@@ -276,10 +278,10 @@ export function AvatarPicker({
           onCheckedChange={(v) => setStylize(v === true)}
           disabled={disabled}
         />
-        <span>Avatar-style (recommended for privacy — makes the photo less recognizable)</span>
+        <span>{t("profile.stylizeLabel")}</span>
       </label>
       <p className="text-xs text-muted-foreground text-center max-w-[260px]">
-        Optional. Use camera or pick from your photos. We’ll resize and optionally stylize for your profile.
+        {t("profile.photoHelp")}
       </p>
     </div>
   )

@@ -1,11 +1,13 @@
 import enMessages from "@/localization/messages.en.json"
 import esMessages from "@/localization/messages.es.json"
+import frMessages from "@/localization/messages.fr.json"
 
-export type Locale = "en" | "es"
+export type Locale = "en" | "es" | "fr"
 
 const ALL_MESSAGES = {
   en: enMessages,
   es: esMessages,
+  fr: frMessages,
 } as const
 
 function interpolate(template: string, params?: Record<string, string | number>): string {

@@ -8,6 +8,8 @@
     "continue": "Continuar",
     "loading": "Cargando...",
     "errorGeneric": "Algo salió mal. Inténtalo de nuevo.",
+    "tryAgain": "Reintentar",
+    "unexpectedError": "Ha ocurrido un error inesperado. Puedes reintentarlo o volver al inicio.",
     "copyLink": "Copiar enlace",
     "linkCopied": "¡Enlace copiado!"
   },
@@ -255,7 +257,7 @@
     "clubNone": "Evento personal (sin club)",
     "clubEmptyHelp": "Crea un club para publicar eventos bajo una misma marca.",
     "clubCreateLink": "Crear un club",
-    "clubHelp": "Solo los dueños y admins del club pueden asociar un evento al club."
+    "clubHelp": "Solo los dueños y administradores del club pueden asociar un evento al club."
   },
   "arena": {
     "endTournamentTitle": "Finalizar torneo",
@@ -281,6 +283,7 @@
     "allVsAllCompletionLabel": "Emparejamientos únicos",
     "allUniquePairingsCompleteMessage": "Todos los emparejamientos únicos están completos; ahora se repiten emparejamientos.",
     "defaultTournamentName": "Torneo Arena",
+    "loadingTournament": "Cargando torneo...",
     "setupTitle": "Configuración del torneo",
     "setupTables": "Mesas",
     "setupTablesPlaceholder": "N.º de mesas",
@@ -565,7 +568,13 @@
     "updateButton": "Actualizar perfil",
     "logoutButton": "Cerrar sesión",
     "photoUpdated": "Foto actualizada",
-    "photoRemoved": "Foto eliminada"
+    "photoRemoved": "Foto eliminada",
+    "avatarAlt": "Tu avatar",
+    "takePhoto": "Hacer foto",
+    "choosePhoto": "Elegir foto",
+    "removePhoto": "Quitar",
+    "stylizeLabel": "Estilo avatar (recomendado por privacidad — hace la foto menos reconocible)",
+    "photoHelp": "Opcional. Usa la cámara o elige de tus fotos. La redimensionaremos y, si quieres, la estilizaremos para tu perfil."
   },
   "nearby": {
     "title": "Buscar cercanos",
@@ -774,14 +783,14 @@
   },
   "clubs": {
     "title": "Clubes",
-    "subtitle": "Encuentra clubes y sus eventos. Crea un club para organizar noches bajo una marca—solo dueños y admins pueden publicar.",
+    "subtitle": "Encuentra clubes y sus eventos. Crea un club para organizar noches bajo una marca—solo dueños y administradores pueden publicar.",
     "create": "Crear club",
     "followingTitle": "Siguiendo",
     "browseTitle": "Explorar",
     "searchPlaceholder": "Buscar por nombre o ciudad",
     "empty": "Aún no hay clubes. Sé el primero en crear uno.",
     "createTitle": "Crear un club",
-    "createSubtitle": "Pasas a ser el dueño. Solo tú y los admins que añadas pueden crear eventos del club.",
+    "createSubtitle": "Pasas a ser el dueño. Solo tú y los administradores que añadas pueden crear eventos del club.",
     "nameLabel": "Nombre del club",
     "namePlaceholder": "p. ej. Club de Ajedrez Madrid",
     "descriptionLabel": "Sobre el club (opcional)",
