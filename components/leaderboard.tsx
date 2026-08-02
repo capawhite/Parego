@@ -164,9 +164,11 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
 
                       {renderCompactMatchHistory(player)}
 
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {player.gamesPlayed} game{player.gamesPlayed !== 1 ? "s" : ""} • {pointsPerGame} pts/game
-                      </p>
+                      {player.gamesPlayed > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {player.gamesPlayed} game{player.gamesPlayed !== 1 ? "s" : ""} • {pointsPerGame} pts/game
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -178,9 +180,11 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
                       <p className="font-bold text-lg md:text-xl">
                         {viewMode === "points" ? player.score : performance.toFixed(2)}
                       </p>
-                      <p className="text-xs text-muted-foreground font-medium">
-                        {viewMode === "points" ? `Perf: ${performance.toFixed(2)}` : `Points: ${player.score}`}
-                      </p>
+                      {player.gamesPlayed > 0 && (
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {viewMode === "points" ? `Perf: ${performance.toFixed(2)}` : `Points: ${player.score}`}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

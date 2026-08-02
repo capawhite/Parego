@@ -475,7 +475,16 @@ function CreateTournamentForm() {
               <p className="text-xs text-muted-foreground">{t("create.timeControlDefault")}</p>
             </div>
 
-            <Button onClick={handleCreate} className="w-full" disabled={isCreating || !tournamentName.trim()}>
+            <Button
+              onClick={handleCreate}
+              size="lg"
+              className={
+                tournamentName.trim() && !isCreating
+                  ? "w-full bg-primary text-primary-foreground opacity-100 hover:bg-primary/90"
+                  : "w-full"
+              }
+              disabled={isCreating || !tournamentName.trim()}
+            >
               {isCreating ? t("create.creating") : t("create.createButton")}
             </Button>
           </CardContent>

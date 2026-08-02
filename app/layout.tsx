@@ -47,8 +47,10 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <I18nProvider>
+          <div className="sticky top-0 z-50 flex h-10 items-center justify-end border-b border-border/80 bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+            <LanguageSwitcher />
+          </div>
           {children}
-          <LanguageSwitcher />
         </I18nProvider>
         <Toaster richColors position="top-center" />
       </body>
