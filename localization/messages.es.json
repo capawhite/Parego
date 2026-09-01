@@ -11,7 +11,9 @@
     "tryAgain": "Reintentar",
     "unexpectedError": "Ha ocurrido un error inesperado. Puedes reintentarlo o volver al inicio.",
     "copyLink": "Copiar enlace",
-    "linkCopied": "¡Enlace copiado!"
+    "linkCopied": "¡Enlace copiado!",
+    "print": "Imprimir",
+    "exportCsv": "Exportar CSV"
   },
   "submitErrors": {
     "MISSING_AUTH": "Debes iniciar sesión o enviar un ID de jugador para enviar resultados.",
@@ -343,6 +345,7 @@
     "standingsTitle": "Clasificación del torneo",
     "viewPoints": "Puntos",
     "viewPerformance": "Rendimiento",
+    "tiebreakSummary": "Buchholz {buchholz} • SB {sb}",
     "noPlayersYet": "Aún no hay jugadores",
     "changeToWin": "Cambiar a victoria",
     "changeToDraw": "Cambiar a tablas",

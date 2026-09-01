@@ -4,9 +4,10 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
+import { Download, Printer } from "lucide-react"
 import type { Player, TournamentSettings } from "@/lib/types"
 import { DEFAULT_SETTINGS } from "@/lib/types"
-import { calculatePerformance, sortPlayersByStandings } from "@/lib/standings"
+import { calculatePerformance, sortPlayersByStandings, standingsToCsv } from "@/lib/standings"
 import { calculatePointsFromSettings } from "@/lib/points"
 import { useI18n } from "@/components/i18n-provider"
 
@@ -21,6 +22,16 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
   const { t } = useI18n()
   const [viewMode, setViewMode] = useState<"points" | "performance">("points")
   const sorted = sortPlayersByStandings(players, viewMode)
+
+  const handleExportCsv = () => {
+    const blob = new Blob([standingsToCsv(sorted)], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "standings.csv"
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const renderCompactMatchHistory = (player: Player) => {
     if (!player.gameResults || player.gameResults.length === 0) return null
@@ -112,25 +123,33 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-lg md:text-xl">{t("arena.standingsTitle")}</CardTitle>
-          <div className="flex gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === "points" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("points")}
-              className="h-8 text-xs"
-            >
-              {t("arena.viewPoints")}
+          <div className="flex items-center gap-1.5 print:hidden">
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={handleExportCsv} title={t("common.exportCsv")}>
+              <Download className="h-3.5 w-3.5" />
             </Button>
-            <Button
-              variant={viewMode === "performance" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("performance")}
-              className="h-8 text-xs"
-            >
-              {t("arena.viewPerformance")}
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => window.print()} title={t("common.print")}>
+              <Printer className="h-3.5 w-3.5" />
             </Button>
+            <div className="flex gap-1 border rounded-lg p-1">
+              <Button
+                variant={viewMode === "points" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("points")}
+                className="h-8 text-xs"
+              >
+                {t("arena.viewPoints")}
+              </Button>
+              <Button
+                variant={viewMode === "performance" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("performance")}
+                className="h-8 text-xs"
+              >
+                {t("arena.viewPerformance")}
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -142,6 +161,7 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
             {sorted.map((player, idx) => {
               const performance = calculatePerformance(player)
               const pointsPerGame = player.gamesPlayed > 0 ? (player.score / player.gamesPlayed).toFixed(1) : "0.0"
+              const isTiedOnScore = sorted.some((p) => p.id !== player.id && p.score === player.score)
 
               return (
                 <div
@@ -167,6 +187,14 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
                       {player.gamesPlayed > 0 && (
                         <p className="text-xs text-muted-foreground mt-1">
                           {player.gamesPlayed} game{player.gamesPlayed !== 1 ? "s" : ""} • {pointsPerGame} pts/game
+                        </p>
+                      )}
+                      {player.gamesPlayed > 0 && isTiedOnScore && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {t("arena.tiebreakSummary", {
+                            buchholz: (player.buchholz ?? 0).toFixed(1),
+                            sb: (player.sonnebornBerger ?? 0).toFixed(1),
+                          })}
                         </p>
                       )}
                     </div>

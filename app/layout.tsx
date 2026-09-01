@@ -43,11 +43,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${russo.variable} ${chakra.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${russo.variable} ${chakra.variable} ${geistMono.variable} font-sans antialiased print:bg-white`}
         suppressHydrationWarning
       >
         <I18nProvider>
-          <div className="sticky top-0 z-50 flex h-10 items-center justify-end border-b border-border/80 bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+          <div className="sticky top-0 z-50 flex h-10 items-center justify-end border-b border-border/80 bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 print:hidden">
             <LanguageSwitcher />
           </div>
           {children}

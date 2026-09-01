@@ -94,7 +94,7 @@ export function ArenaTournamentHeader({
   )
 
   return (
-    <div className="sticky top-10 z-40 -mx-4 px-4 py-2.5 mb-3 bg-background/95 backdrop-blur-md border-b border-border supports-[backdrop-filter]:bg-background/85 shadow-sm">
+    <div className="sticky top-10 z-40 -mx-4 px-4 py-2.5 mb-3 bg-background/95 backdrop-blur-md border-b border-border supports-[backdrop-filter]:bg-background/85 shadow-sm print:hidden">
       <div className="flex flex-col gap-2.5">
         {/* Title row — never shares horizontal space with tabs */}
         <div className="min-w-0">

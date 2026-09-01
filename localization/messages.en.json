@@ -11,7 +11,9 @@
     "tryAgain": "Try again",
     "unexpectedError": "An unexpected error occurred. You can try again, or go back to the home page.",
     "copyLink": "Copy link",
-    "linkCopied": "Link copied!"
+    "linkCopied": "Link copied!",
+    "print": "Print",
+    "exportCsv": "Export CSV"
   },
   "submitErrors": {
     "MISSING_AUTH": "You must be logged in or provide a player ID to submit results.",
@@ -343,6 +345,7 @@
     "standingsTitle": "Tournament Standings",
     "viewPoints": "Points",
     "viewPerformance": "Performance",
+    "tiebreakSummary": "Buchholz {buchholz} • SB {sb}",
     "noPlayersYet": "No players yet",
     "changeToWin": "Change to Win",
     "changeToDraw": "Change to Draw",

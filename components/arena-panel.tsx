@@ -733,6 +733,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
             </Card>
           )}
 
+        <h1 className="hidden print:block text-xl font-bold mb-2">{displayName}</h1>
+
         <Tabs
           value={activeTab}
           onValueChange={(tab) => {
