@@ -14,6 +14,9 @@ import { fetchTournamentById, joinTournamentAction } from "@/app/actions/join-to
 import { addGuestSession, hasPriorGuestSessions, getLastGuestDisplayName, getLastGuestRatingBand, getSecondJoinNudgeCount, incrementSecondJoinNudgeCount, SECOND_JOIN_NUDGE_SOFT_LIMIT } from "@/lib/guest-session-history"
 import { toast } from "sonner"
 import { SIMPLE_LEVELS, resolveRating, type RatingBandValue } from "@/lib/rating-bands"
+import { resolvePairingRating } from "@/lib/fide/time-control"
+import type { FideRatings } from "@/lib/fide/types"
+import { parseTournamentSettings } from "@/lib/tournament-settings"
 import { getDeviceId } from "@/lib/device-id"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useI18n } from "@/components/i18n-provider"
@@ -36,6 +39,9 @@ export default function JoinTournamentPage() {
   const [verifyingLocation, setVerifyingLocation] = useState(false)
   const [ratingBand, setRatingBand] = useState<RatingBandValue | "">("")
   const [ratingPrecise, setRatingPrecise] = useState("")
+  const [ratingManuallyEdited, setRatingManuallyEdited] = useState(false)
+  const [profileRating, setProfileRating] = useState<number | null>(null)
+  const [fideRatings, setFideRatings] = useState<FideRatings | null>(null)
   const [guestName, setGuestName] = useState("")
   const [alreadyJoined, setAlreadyJoined] = useState(false)
   const [showSecondJoinNudge, setShowSecondJoinNudge] = useState(false)
@@ -57,11 +63,17 @@ export default function JoinTournamentPage() {
         // Auto-fill name and rating from profile
         const { data: profile } = await supabase
           .from("users")
-          .select("name, rating_band, rating")
+          .select("name, rating_band, rating, fide_standard, fide_rapid, fide_blitz")
           .eq("id", user.id)
           .maybeSingle()
 
         if (profile?.name) setPlayerName(profile.name)
+        setProfileRating(profile?.rating ?? null)
+        setFideRatings({
+          standard: profile?.fide_standard ?? null,
+          rapid: profile?.fide_rapid ?? null,
+          blitz: profile?.fide_blitz ?? null,
+        })
         if (profile?.rating_band) {
           const band = profile.rating_band as string
           if (band === "beginner" || band === "intermediate" || band === "advanced") {
@@ -95,6 +107,19 @@ export default function JoinTournamentPage() {
 
     checkAuth()
   }, [code])
+
+  useEffect(() => {
+    if (!tournament || !isRegistered || ratingManuallyEdited) return
+    const settings = parseTournamentSettings(tournament)
+    const suggested = resolvePairingRating({
+      ratingBand: ratingBand || null,
+      fideRatings,
+      profileRating,
+      baseTimeMinutes: settings.baseTimeMinutes,
+      incrementSeconds: settings.incrementSeconds,
+    })
+    if (suggested != null) setRatingPrecise(String(suggested))
+  }, [tournament, isRegistered, ratingManuallyEdited, ratingBand, fideRatings, profileRating])
 
   useEffect(() => {
     async function loadTournamentData() {
@@ -252,10 +277,16 @@ export default function JoinTournamentPage() {
         }
 
         const preciseNum = ratingPrecise.trim() ? parseInt(ratingPrecise.trim(), 10) : null
-        const playerRating = resolveRating(
-          preciseNum != null && !isNaN(preciseNum) ? preciseNum : null,
-          ratingBand ? (ratingBand as RatingBandValue) : undefined,
-        )
+        const hasManualRating =
+          isRegistered && ratingManuallyEdited && preciseNum != null && !isNaN(preciseNum)
+        const playerRating = isRegistered
+          ? hasManualRating
+            ? preciseNum
+            : undefined
+          : resolveRating(
+              preciseNum != null && !isNaN(preciseNum) ? preciseNum : null,
+              ratingBand ? (ratingBand as RatingBandValue) : undefined,
+            )
 
         let finalName = isRegistered ? playerName.trim() : guestName.trim()
         const isGuest = !isRegistered
@@ -287,6 +318,7 @@ export default function JoinTournamentPage() {
           userId: isRegistered ? userId : null,
           isGuest,
           rating: playerRating,
+          ratingOverride: !isRegistered || hasManualRating,
           deviceId,
           checkedInAt: proximity.checkedInAt,
           presenceSource: proximity.presenceSource,
@@ -583,7 +615,10 @@ export default function JoinTournamentPage() {
                   min={100}
                   max={3000}
                   value={ratingPrecise}
-                  onChange={(e) => setRatingPrecise(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  onChange={(e) => {
+                    setRatingManuallyEdited(true)
+                    setRatingPrecise(e.target.value.replace(/\D/g, "").slice(0, 4))
+                  }}
                   disabled={joining}
                   className="w-full"
                 />

@@ -6,6 +6,7 @@ import { fetchTournamentById } from "@/app/actions/join-tournament"
 import { getAvatarUrls, loadMatches, loadPlayers } from "@/lib/database/tournament-db"
 import { parseTournamentSettings } from "@/lib/tournament-settings"
 import { effectiveTableCountFromDb } from "@/lib/tournament/effective-table-count"
+import type { FideRatings } from "@/lib/fide/types"
 import type { ArenaState, Player } from "@/lib/types"
 
 const DEBUG = process.env.NODE_ENV === "development"
@@ -27,6 +28,7 @@ type UseArenaTournamentLoadOptions = {
   setUserName: Dispatch<SetStateAction<string>>
   setUserRating: Dispatch<SetStateAction<number | null>>
   setUserRatingBand: Dispatch<SetStateAction<string | null>>
+  setUserFideRatings: Dispatch<SetStateAction<FideRatings | null>>
   setUserCountry: Dispatch<SetStateAction<string | null>>
   setDisplayName: Dispatch<SetStateAction<string>>
   setOrganizerId: Dispatch<SetStateAction<string | null>>
@@ -47,6 +49,7 @@ export function useArenaTournamentLoad({
   setUserName,
   setUserRating,
   setUserRatingBand,
+  setUserFideRatings,
   setUserCountry,
   setDisplayName,
   setOrganizerId,
@@ -68,13 +71,18 @@ export function useArenaTournamentLoad({
         setCurrentUserId(user.id)
         const { data: profileData } = await supabase
           .from("users")
-          .select("name, rating, rating_band, country")
+          .select("name, rating, rating_band, country, fide_standard, fide_rapid, fide_blitz")
           .eq("id", user.id)
           .maybeSingle()
         if (profileData) {
           setUserName(profileData.name || "")
           setUserRating(profileData.rating ?? null)
           setUserRatingBand(profileData.rating_band ?? null)
+          setUserFideRatings({
+            standard: profileData.fide_standard ?? null,
+            rapid: profileData.fide_rapid ?? null,
+            blitz: profileData.fide_blitz ?? null,
+          })
           setUserCountry(profileData.country || null)
         }
       }

@@ -8,7 +8,8 @@ import { Leaderboard } from "./leaderboard"
 import { TournamentPodium } from "./tournament-podium"
 import { TournamentSettingsPanel } from "./tournament-settings"
 import { AlgorithmComparisonPanel } from "./algorithm-comparison-panel"
-import type { ArenaState, Player, Match, TournamentSettings } from "@/lib/types"
+import type { ArenaState, Player, Match } from "@/lib/types"
+import type { FideRatings } from "@/lib/fide/types"
 import { isPairingHeartbeatStale } from "@/lib/tournament/pairing-loop-gate"
 import {
   X,
@@ -137,6 +138,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [userName, setUserName] = useState<string>("") // For logged-in user joining
   const [userRating, setUserRating] = useState<number | null>(null)
   const [userRatingBand, setUserRatingBand] = useState<string | null>(null) // rating_band from profile
+  const [userFideRatings, setUserFideRatings] = useState<FideRatings | null>(null)
   const [userCountry, setUserCountry] = useState<string | null>(null)
 
   const [pastGuestSessions, setPastGuestSessions] = useState<GuestSessionEntry[]>([])
@@ -298,6 +300,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     userName,
     userRating,
     userRatingBand,
+    userFideRatings,
     userCountry,
     tournamentMetadata,
     t,
@@ -368,6 +371,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     setUserName,
     setUserRating,
     setUserRatingBand,
+    setUserFideRatings,
     setUserCountry,
     setDisplayName,
     setOrganizerId,

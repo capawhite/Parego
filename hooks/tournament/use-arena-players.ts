@@ -10,7 +10,8 @@ import { renamePlayer } from "@/app/actions/rename-player"
 import { generateGuestUsername } from "@/lib/guest-names"
 import { addGuestSession } from "@/lib/guest-session-history"
 import { getDeviceId } from "@/lib/device-id"
-import { resolveRating, type RatingBandValue } from "@/lib/rating-bands"
+import { resolvePairingRating } from "@/lib/fide/time-control"
+import type { FideRatings } from "@/lib/fide/types"
 import type { ArenaState, Player } from "@/lib/types"
 import type { useI18n } from "@/components/i18n-provider"
 
@@ -30,6 +31,7 @@ type UseArenaPlayersOptions = {
   userName: string
   userRating: number | null
   userRatingBand: string | null
+  userFideRatings: FideRatings | null
   userCountry: string | null
   tournamentMetadata: {
     latitude?: number
@@ -54,6 +56,7 @@ export function useArenaPlayers({
   userName,
   userRating,
   userRatingBand,
+  userFideRatings,
   userCountry,
   tournamentMetadata,
   t,
@@ -63,6 +66,37 @@ export function useArenaPlayers({
   const [markingPresentPlayerId, setMarkingPresentPlayerId] = useState<string | null>(null)
   const [renamingPlayerId, setRenamingPlayerId] = useState<string | null>(null)
   const [joiningSelf, setJoiningSelf] = useState(false)
+
+  const resolveJoinRating = useCallback(
+    (explicitRating?: number | null, ratingBand?: string | null) => {
+      if (explicitRating !== undefined) return explicitRating
+      return resolvePairingRating({
+        ratingBand: ratingBand ?? userRatingBand,
+        fideRatings: userFideRatings,
+        profileRating: userRating,
+        baseTimeMinutes: arenaState.settings.baseTimeMinutes,
+        incrementSeconds: arenaState.settings.incrementSeconds,
+      })
+    },
+    [
+      arenaState.settings.baseTimeMinutes,
+      arenaState.settings.incrementSeconds,
+      userFideRatings,
+      userRating,
+      userRatingBand,
+    ],
+  )
+
+  const applyJoinRating = useCallback(
+    (playerId: string, rating: number | null | undefined) => {
+      if (rating == null) return
+      setArenaState((prev) => ({
+        ...prev,
+        players: prev.players.map((p) => (p.id === playerId ? { ...p, rating } : p)),
+      }))
+    },
+    [setArenaState],
+  )
 
   const addPlayer = useCallback(
     async (
@@ -104,10 +138,14 @@ export function useArenaPlayers({
         }
       }
 
-      const rating =
-        options?.rating !== undefined
-          ? options.rating
-          : resolveRating(userRating, userRatingBand as RatingBandValue | null | undefined)
+      let rating: number | null
+      if (options?.rating !== undefined) {
+        rating = options.rating
+      } else if (userId) {
+        rating = userId === currentUserId ? resolveJoinRating() : null
+      } else {
+        rating = null
+      }
 
       const newPlayer: Player = {
         id: globalThis.crypto.randomUUID(),
@@ -146,7 +184,8 @@ export function useArenaPlayers({
           name: newPlayer.name,
           userId: userId || null,
           isGuest,
-          rating: newPlayer.rating,
+          rating: userId ? undefined : newPlayer.rating,
+          ratingOverride: !userId,
           deviceId,
           asOrganizer: isOrganizer,
           playerId: newPlayer.id,
@@ -173,6 +212,7 @@ export function useArenaPlayers({
             ),
           }))
         }
+        applyJoinRating(savedPlayerId, joinResult.rating)
       } catch (error) {
         const err = error as Record<string, unknown>
         const msg = (err?.message as string) ?? (error instanceof Error ? error.message : String(error))
@@ -201,9 +241,13 @@ export function useArenaPlayers({
       arenaState.tableCount,
       tournamentId,
       isOrganizer,
+      currentUserId,
       userRating,
       userRatingBand,
+      userFideRatings,
       userCountry,
+      resolveJoinRating,
+      applyJoinRating,
       setArenaState,
       onPlayerNameCleared,
       t,
@@ -431,7 +475,7 @@ export function useArenaPlayers({
     const newPlayer: Player = {
       id: crypto.randomUUID(),
       name: userName,
-      rating: resolveRating(userRating, userRatingBand as RatingBandValue | null | undefined),
+      rating: resolveJoinRating(),
       score: 0,
       buchholz: 0,
       sonnebornBerger: 0,
@@ -464,7 +508,6 @@ export function useArenaPlayers({
         name: newPlayer.name,
         userId: currentUserId,
         isGuest: false,
-        rating: newPlayer.rating,
         checkedInAt: checkedInAt != null ? new Date(checkedInAt).toISOString() : null,
         presenceSource,
         playerId: newPlayer.id,
@@ -476,6 +519,8 @@ export function useArenaPlayers({
           ...prev,
           players: prev.players.filter((p) => p.id !== newPlayer.id),
         }))
+      } else {
+        applyJoinRating(joinResult.playerId ?? newPlayer.id, joinResult.rating)
       }
     } catch (error) {
       console.error("[v0] Error saving player to database:", error)
@@ -497,6 +542,9 @@ export function useArenaPlayers({
     tournamentMetadata,
     userRating,
     userRatingBand,
+    userFideRatings,
+    resolveJoinRating,
+    applyJoinRating,
     userCountry,
     setArenaState,
     t,

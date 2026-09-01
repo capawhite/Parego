@@ -5,6 +5,7 @@ import { headers } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient, adminClientMissingReason } from "@/lib/supabase/admin"
 import { parseTournamentSettings } from "@/lib/tournament-settings"
+import { resolvePairingRating } from "@/lib/fide/time-control"
 import type { TournamentData } from "@/lib/database/tournament-db"
 
 /** In-process IP rate limit (best-effort across serverless instances). */
@@ -17,6 +18,8 @@ export type JoinTournamentInput = {
   userId?: string | null
   isGuest: boolean
   rating?: number | null
+  /** When true, use `rating` as-is instead of resolving from FIDE + time control. */
+  ratingOverride?: boolean
   deviceId?: string | null
   checkedInAt?: string | null
   presenceSource?: "gps" | "qr" | "override" | null
@@ -39,6 +42,7 @@ export type JoinTournamentResult = {
     | "INSERT_FAILED"
     | "DEVICE_REQUIRED"
   playerId?: string
+  rating?: number | null
 }
 
 const WINDOW_MS = 10 * 60 * 1000
@@ -201,6 +205,32 @@ export async function joinTournamentAction(input: JoinTournamentInput): Promise<
   }
 
   const playerId = input.playerId || crypto.randomUUID()
+
+  const settings = parseTournamentSettings(tournament)
+  let rating = input.rating ?? null
+
+  if (!input.isGuest && input.userId && !input.ratingOverride) {
+    const { data: profile } = await admin
+      .from("users")
+      .select("rating, rating_band, fide_standard, fide_rapid, fide_blitz")
+      .eq("id", input.userId)
+      .maybeSingle()
+
+    if (profile) {
+      rating = resolvePairingRating({
+        ratingBand: profile.rating_band,
+        fideRatings: {
+          standard: profile.fide_standard ?? null,
+          rapid: profile.fide_rapid ?? null,
+          blitz: profile.fide_blitz ?? null,
+        },
+        profileRating: profile.rating ?? null,
+        baseTimeMinutes: settings.baseTimeMinutes,
+        incrementSeconds: settings.incrementSeconds,
+      })
+    }
+  }
+
   const row = {
     id: playerId,
     tournament_id: input.tournamentId,
@@ -225,7 +255,7 @@ export async function joinTournamentAction(input: JoinTournamentInput): Promise<
     table_numbers: [],
     checked_in_at: input.checkedInAt,
     presence_source: input.presenceSource ?? null,
-    rating: input.rating ?? null,
+    rating,
     device_id: deviceId,
     is_paused: false,
     is_removed: false,
@@ -242,7 +272,7 @@ export async function joinTournamentAction(input: JoinTournamentInput): Promise<
     return { success: false, error: "Failed to join", errorCode: "INSERT_FAILED" }
   }
 
-  return { success: true, playerId }
+  return { success: true, playerId, rating }
 }
 
 /**
