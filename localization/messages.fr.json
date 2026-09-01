@@ -519,6 +519,18 @@
     "rating": "Elo : {rating}",
     "noUsersFound": "Aucun utilisateur inscrit trouvé"
   },
+  "fide": {
+    "signupLabel": "Trouver votre profil FIDE (facultatif)",
+    "signupHint": "Recherchez par nom pour importer votre classement et votre fédération.",
+    "profileLabel": "Profil FIDE",
+    "profileHint": "Liez votre fiche FIDE officielle pour préremplir le classement et le pays.",
+    "searchPlaceholder": "Rechercher des joueurs FIDE par nom…",
+    "searchError": "Impossible de rechercher dans FIDE. Réessayez dans un instant.",
+    "noResults": "Aucun joueur FIDE trouvé pour ce nom.",
+    "resultLine": "{federation} • {rating} • ID {id}",
+    "linkedSummary": "ID FIDE {id} • {federation} • {rating}",
+    "unlink": "Dissocier"
+  },
   "results": {
     "noMatchesYet": "Aucune partie pour l'instant. Démarrez un tournoi pour commencer.",
     "morePairingsComingSoon": "D'autres appariements arrivent bientôt…",

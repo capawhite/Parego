@@ -519,6 +519,18 @@
     "rating": "Rating: {rating}",
     "noUsersFound": "No registered users found"
   },
+  "fide": {
+    "signupLabel": "Find your FIDE profile (optional)",
+    "signupHint": "Search by name to import your rating and federation.",
+    "profileLabel": "FIDE profile",
+    "profileHint": "Link your official FIDE record to pre-fill rating and country.",
+    "searchPlaceholder": "Search FIDE players by name…",
+    "searchError": "Could not search FIDE players. Try again in a moment.",
+    "noResults": "No FIDE players found for that name.",
+    "resultLine": "{federation} • {rating} • ID {id}",
+    "linkedSummary": "FIDE ID {id} • {federation} • {rating}",
+    "unlink": "Unlink"
+  },
   "results": {
     "noMatchesYet": "No matches yet. Start a tournament to begin.",
     "morePairingsComingSoon": "More pairings coming soon…",

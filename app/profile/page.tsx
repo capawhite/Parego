@@ -18,6 +18,8 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { Home } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
+import { FidePlayerSearch, type FidePlayerSelection } from "@/components/fide-player-search"
+import { fideRatingToBand } from "@/lib/fide/rating"
 
 export default function ProfilePage() {
   const [name, setName] = useState("")
@@ -26,6 +28,7 @@ export default function ProfilePage() {
   const [rating, setRating] = useState("")
   const [country, setCountry] = useState("")
   const [city, setCity] = useState("")
+  const [fideSelection, setFideSelection] = useState<FidePlayerSelection | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -69,6 +72,19 @@ export default function ProfilePage() {
         setCountry(profile.country || "")
         setCity(profile.city || "")
         setAvatarUrl(profile.avatar_url || null)
+        if (profile.fide_id) {
+          setFideSelection({
+            fideId: profile.fide_id,
+            fideTitle: profile.fide_title ?? null,
+            name: profile.fide_title
+              ? `${profile.fide_title} • FIDE ${profile.fide_id}`
+              : `FIDE ${profile.fide_id}`,
+            federation: profile.country ?? null,
+            rating: profile.rating ?? null,
+          })
+        } else {
+          setFideSelection(null)
+        }
       }
 
       const { data: activeTournament } = await supabase.rpc("is_user_in_active_tournament", { user_id: user.id })
@@ -103,6 +119,8 @@ export default function ProfilePage() {
           rating: rating ? Number.parseInt(rating, 10) : null,
           country: country || null,
           city: city || null,
+          fide_id: fideSelection?.fideId ?? null,
+          fide_title: fideSelection?.fideTitle ?? null,
           latitude,
           longitude,
           avatar_url: avatarUrl,
@@ -188,6 +206,23 @@ export default function ProfilePage() {
                 <div className="grid gap-2">
                   <Label htmlFor="email">{t("profile.emailLabel")}</Label>
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>{t("fide.profileLabel")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("fide.profileHint")}</p>
+                  <FidePlayerSearch
+                    selected={fideSelection}
+                    disabled={isInActiveTournament}
+                    onSelect={(player) => {
+                      setFideSelection(player)
+                      if (!isInActiveTournament && player.rating != null) {
+                        setRating(String(player.rating))
+                        setRatingBand(fideRatingToBand(player.rating))
+                      }
+                      if (player.federation) setCountry(player.federation)
+                    }}
+                    onClear={() => setFideSelection(null)}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label>{t("profile.strengthLabel")}</Label>

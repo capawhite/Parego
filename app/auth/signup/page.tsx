@@ -17,6 +17,8 @@ import { getDeviceId } from "@/lib/device-id"
 import { getGuestSessionHistory, clearGuestSessionHistory } from "@/lib/guest-session-history"
 import { useI18n } from "@/components/i18n-provider"
 import { SIMPLE_LEVELS, type SimpleLevelValue } from "@/lib/rating-bands"
+import { FidePlayerSearch, type FidePlayerSelection } from "@/components/fide-player-search"
+import { fideRatingToBand } from "@/lib/fide/rating"
 
 function SignUpForm() {
   const searchParams = useSearchParams()
@@ -29,6 +31,7 @@ function SignUpForm() {
   const [name, setName] = useState("")
   const [ratingBand, setRatingBand] = useState<SimpleLevelValue | "">("")
   const [rating, setRating] = useState("")
+  const [fideSelection, setFideSelection] = useState<FidePlayerSelection | null>(null)
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken">("idle")
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -83,6 +86,9 @@ function SignUpForm() {
       name: name.trim(),
       ratingBand: skipRating ? undefined : ratingBand || undefined,
       rating: skipRating ? undefined : ratingNum != null && !isNaN(ratingNum) ? ratingNum : undefined,
+      country: fideSelection?.federation ?? undefined,
+      fideId: fideSelection?.fideId,
+      fideTitle: fideSelection?.fideTitle ?? undefined,
     })
     if (result.error) {
       setIsLoading(false)
@@ -270,6 +276,21 @@ function SignUpForm() {
                 <p className="text-sm text-muted-foreground">{t("auth.stepLevelSubtitle")}</p>
               </div>
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t("fide.signupLabel")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("fide.signupHint")}</p>
+                  <FidePlayerSearch
+                    selected={fideSelection}
+                    onSelect={(player) => {
+                      setFideSelection(player)
+                      if (player.rating != null) {
+                        setRating(String(player.rating))
+                        setRatingBand(fideRatingToBand(player.rating))
+                      }
+                    }}
+                    onClear={() => setFideSelection(null)}
+                  />
+                </div>
                 <RadioGroup
                   value={ratingBand}
                   onValueChange={(v) => setRatingBand(v as SimpleLevelValue)}
