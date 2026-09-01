@@ -7,15 +7,19 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Search, X, Trophy } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
-import type { FidePlayer } from "@/lib/fide/types"
-import { pickFideRating } from "@/lib/fide/rating"
+import type { FidePlayer, FideRatings } from "@/lib/fide/types"
+import { extractFideRatings, formatFideRatingsSummary, pickFideRating } from "@/lib/fide/rating"
 import { cn } from "@/lib/utils"
+
+export type { FideRatings }
 
 export type FidePlayerSelection = {
   fideId: number
   fideTitle: string | null
   name: string
   federation: string | null
+  ratings: FideRatings
+  /** Default pairing rating (standard preferred). */
   rating: number | null
 }
 
@@ -28,11 +32,13 @@ interface FidePlayerSearchProps {
 }
 
 function toSelection(player: FidePlayer): FidePlayerSelection {
+  const ratings = extractFideRatings(player)
   return {
     fideId: player.id,
     fideTitle: player.title,
     name: player.name,
     federation: player.federation,
+    ratings,
     rating: pickFideRating(player),
   }
 }
@@ -124,7 +130,11 @@ export function FidePlayerSearch({
               {t("fide.linkedSummary", {
                 id: selected.fideId,
                 federation: selected.federation ?? "—",
-                rating: selected.rating ?? "—",
+                ratings: formatFideRatingsSummary(selected.ratings, {
+                  standard: t("fide.standardShort"),
+                  rapid: t("fide.rapidShort"),
+                  blitz: t("fide.blitzShort"),
+                }),
               })}
             </p>
           </div>
@@ -175,7 +185,12 @@ export function FidePlayerSearch({
         <Card className="absolute z-50 w-full max-w-md mt-1 p-2 max-h-64 overflow-y-auto shadow-lg">
           <div className="space-y-1">
             {results.map((player) => {
-              const rating = pickFideRating(player)
+              const ratings = extractFideRatings(player)
+              const ratingsLine = formatFideRatingsSummary(ratings, {
+                standard: t("fide.standardShort"),
+                rapid: t("fide.rapidShort"),
+                blitz: t("fide.blitzShort"),
+              })
               return (
                 <Button
                   key={player.id}
@@ -196,7 +211,7 @@ export function FidePlayerSearch({
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {t("fide.resultLine", {
                         federation: player.federation ?? "—",
-                        rating: rating ?? "—",
+                        ratings: ratingsLine,
                         id: player.id,
                       })}
                     </p>

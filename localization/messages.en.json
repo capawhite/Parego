@@ -527,8 +527,11 @@
     "searchPlaceholder": "Search FIDE players by name…",
     "searchError": "Could not search FIDE players. Try again in a moment.",
     "noResults": "No FIDE players found for that name.",
-    "resultLine": "{federation} • {rating} • ID {id}",
-    "linkedSummary": "FIDE ID {id} • {federation} • {rating}",
+    "standardShort": "Std",
+    "rapidShort": "Rapid",
+    "blitzShort": "Blitz",
+    "resultLine": "{federation} • {ratings} • ID {id}",
+    "linkedSummary": "FIDE ID {id} • {federation} • {ratings}",
     "unlink": "Unlink"
   },
   "results": {

@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest"
-import { fideRatingToBand, formatFideDisplayName, pickFideRating } from "@/lib/fide/rating"
+import {
+  extractFideRatings,
+  fideRatingToBand,
+  fideSelectionToDbFields,
+  formatFideDisplayName,
+  formatFideRatingsSummary,
+  pickFideRating,
+} from "@/lib/fide/rating"
 
 describe("fide rating helpers", () => {
   describe("pickFideRating", () => {
@@ -22,6 +29,38 @@ describe("fide rating helpers", () => {
       expect(fideRatingToBand(1200)).toBe("beginner")
       expect(fideRatingToBand(1500)).toBe("intermediate")
       expect(fideRatingToBand(2200)).toBe("advanced")
+    })
+  })
+
+  describe("extractFideRatings", () => {
+    it("keeps only positive ratings", () => {
+      expect(extractFideRatings({ standard: 2400, rapid: 0, blitz: 2100 })).toEqual({
+        standard: 2400,
+        rapid: null,
+        blitz: 2100,
+      })
+    })
+  })
+
+  describe("formatFideRatingsSummary", () => {
+    it("lists available time controls", () => {
+      const summary = formatFideRatingsSummary(
+        { standard: 2823, rapid: 2803, blitz: null },
+        { standard: "Std", rapid: "Rapid", blitz: "Blitz" },
+      )
+      expect(summary).toBe("Std 2823 • Rapid 2803")
+    })
+  })
+
+  describe("fideSelectionToDbFields", () => {
+    it("clears all fide columns when unlinked", () => {
+      expect(fideSelectionToDbFields(null)).toEqual({
+        fide_id: null,
+        fide_title: null,
+        fide_standard: null,
+        fide_rapid: null,
+        fide_blitz: null,
+      })
     })
   })
 

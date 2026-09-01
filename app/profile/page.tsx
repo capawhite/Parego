@@ -19,7 +19,7 @@ import Link from "next/link"
 import { Home } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
 import { FidePlayerSearch, type FidePlayerSelection } from "@/components/fide-player-search"
-import { fideRatingToBand } from "@/lib/fide/rating"
+import { fideRatingToBand, fideSelectionToDbFields } from "@/lib/fide/rating"
 
 export default function ProfilePage() {
   const [name, setName] = useState("")
@@ -80,6 +80,11 @@ export default function ProfilePage() {
               ? `${profile.fide_title} • FIDE ${profile.fide_id}`
               : `FIDE ${profile.fide_id}`,
             federation: profile.country ?? null,
+            ratings: {
+              standard: profile.fide_standard ?? null,
+              rapid: profile.fide_rapid ?? null,
+              blitz: profile.fide_blitz ?? null,
+            },
             rating: profile.rating ?? null,
           })
         } else {
@@ -119,8 +124,7 @@ export default function ProfilePage() {
           rating: rating ? Number.parseInt(rating, 10) : null,
           country: country || null,
           city: city || null,
-          fide_id: fideSelection?.fideId ?? null,
-          fide_title: fideSelection?.fideTitle ?? null,
+          ...fideSelectionToDbFields(fideSelection),
           latitude,
           longitude,
           avatar_url: avatarUrl,

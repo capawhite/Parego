@@ -89,6 +89,9 @@ function SignUpForm() {
       country: fideSelection?.federation ?? undefined,
       fideId: fideSelection?.fideId,
       fideTitle: fideSelection?.fideTitle ?? undefined,
+      fideStandard: fideSelection?.ratings.standard ?? undefined,
+      fideRapid: fideSelection?.ratings.rapid ?? undefined,
+      fideBlitz: fideSelection?.ratings.blitz ?? undefined,
     })
     if (result.error) {
       setIsLoading(false)

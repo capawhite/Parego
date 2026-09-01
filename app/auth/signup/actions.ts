@@ -23,12 +23,16 @@ export async function signUp(formData: {
   city?: string
   fideId?: number
   fideTitle?: string
+  fideStandard?: number
+  fideRapid?: number
+  fideBlitz?: number
 }) {
   if (process.env.NODE_ENV === "development") console.log("[v0] Server: Starting signup process...")
 
   const supabase = await createClient()
 
-  const { email, password, name, ratingBand, rating, country, city, fideId, fideTitle } = formData
+  const { email, password, name, ratingBand, rating, country, city, fideId, fideTitle, fideStandard, fideRapid, fideBlitz } =
+    formData
 
   if (process.env.NODE_ENV === "development") console.log("[v0] Server: Signing up with email:", email)
 
@@ -53,6 +57,9 @@ export async function signUp(formData: {
         email: email,
         fide_id: fideId ?? null,
         fide_title: fideTitle || null,
+        fide_standard: fideStandard ?? null,
+        fide_rapid: fideRapid ?? null,
+        fide_blitz: fideBlitz ?? null,
       },
     },
   })
@@ -84,6 +91,9 @@ export async function signUp(formData: {
       country: country || null,
       fide_id: fideId ?? null,
       fide_title: fideTitle || null,
+      fide_standard: fideStandard ?? null,
+      fide_rapid: fideRapid ?? null,
+      fide_blitz: fideBlitz ?? null,
     })
     .eq("id", authData.user.id)
 
