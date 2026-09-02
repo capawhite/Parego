@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
 import { Download, Printer } from "lucide-react"
-import type { Player, TournamentSettings } from "@/lib/types"
+import type { Match, Player, TournamentSettings } from "@/lib/types"
 import { DEFAULT_SETTINGS } from "@/lib/types"
 import { calculatePerformance, sortPlayersByStandings, standingsToCsv } from "@/lib/standings"
 import { calculatePointsFromSettings } from "@/lib/points"
+import { isSwissAlgorithm } from "@/lib/pairing/swiss"
+import { SwissCrosstable } from "@/components/tournament/swiss-crosstable"
 import { useI18n } from "@/components/i18n-provider"
 
 interface LeaderboardProps {
@@ -16,12 +18,25 @@ interface LeaderboardProps {
   isPlayerView?: boolean
   onOverrideResult?: (playerId: string, gameIndex: number, newResult: "W" | "D" | "L") => void
   settings?: TournamentSettings
+  /** All matches (pending + completed) for Swiss crosstable */
+  matches?: Match[]
 }
 
-export function Leaderboard({ players, isPlayerView = false, onOverrideResult, settings = DEFAULT_SETTINGS }: LeaderboardProps) {
+export function Leaderboard({
+  players,
+  isPlayerView = false,
+  onOverrideResult,
+  settings = DEFAULT_SETTINGS,
+  matches = [],
+}: LeaderboardProps) {
   const { t } = useI18n()
-  const [viewMode, setViewMode] = useState<"points" | "performance">("points")
-  const sorted = sortPlayersByStandings(players, viewMode)
+  const isSwiss = isSwissAlgorithm(settings.pairingAlgorithm)
+  const [viewMode, setViewMode] = useState<"points" | "performance" | "crosstable">("points")
+  const effectiveView = viewMode === "crosstable" && !isSwiss ? "points" : viewMode
+  const sorted = sortPlayersByStandings(
+    players,
+    effectiveView === "crosstable" ? "points" : effectiveView,
+  )
 
   const handleExportCsv = () => {
     const blob = new Blob([standingsToCsv(sorted)], { type: "text/csv;charset=utf-8;" })
@@ -134,7 +149,7 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
             </Button>
             <div className="flex gap-1 border rounded-lg p-1">
               <Button
-                variant={viewMode === "points" ? "default" : "ghost"}
+                variant={effectiveView === "points" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("points")}
                 className="h-8 text-xs"
@@ -142,19 +157,35 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
                 {t("arena.viewPoints")}
               </Button>
               <Button
-                variant={viewMode === "performance" ? "default" : "ghost"}
+                variant={effectiveView === "performance" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("performance")}
                 className="h-8 text-xs"
               >
                 {t("arena.viewPerformance")}
               </Button>
+              {isSwiss && (
+                <Button
+                  variant={effectiveView === "crosstable" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("crosstable")}
+                  className="h-8 text-xs"
+                >
+                  {t("swiss.crosstableTab")}
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-3 md:p-6">
-        {sorted.length === 0 ? (
+        {effectiveView === "crosstable" ? (
+          <SwissCrosstable
+            players={players}
+            matches={matches}
+            plannedRounds={settings.plannedSwissRounds ?? 0}
+          />
+        ) : sorted.length === 0 ? (
           <p className="text-muted-foreground text-center py-4 text-sm md:text-base">{t("arena.noPlayersYet")}</p>
         ) : (
           <div className="space-y-2">
@@ -202,15 +233,15 @@ export function Leaderboard({ players, isPlayerView = false, onOverrideResult, s
 
                   <div className="flex justify-between md:block text-right md:ml-4 flex-shrink-0">
                     <div className="md:hidden text-xs text-muted-foreground">
-                      {viewMode === "points" ? "Total Score" : "Performance"}
+                      {effectiveView === "points" ? "Total Score" : "Performance"}
                     </div>
                     <div>
                       <p className="font-bold text-lg md:text-xl">
-                        {viewMode === "points" ? player.score : performance.toFixed(2)}
+                        {effectiveView === "points" ? player.score : performance.toFixed(2)}
                       </p>
                       {player.gamesPlayed > 0 && (
                         <p className="text-xs text-muted-foreground font-medium">
-                          {viewMode === "points" ? `Perf: ${performance.toFixed(2)}` : `Points: ${player.score}`}
+                          {effectiveView === "points" ? `Perf: ${performance.toFixed(2)}` : `Points: ${player.score}`}
                         </p>
                       )}
                     </div>

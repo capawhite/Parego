@@ -6,10 +6,14 @@ import type { Match } from "@/lib/types"
 import { Loader2, Maximize2 } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
 import { PairingMatchCard } from "@/components/tournament/pairing-match-card"
+import { SwissRoundHistory } from "@/components/tournament/swiss-round-history"
 
 export interface ArenaPairingsTabProps {
   /** Active (non-completed) pairings, typically sorted by table number */
   matches: Match[]
+  /** Completed matches for Swiss round history (from allTime + completed paired) */
+  completedMatches?: Match[]
+  showSwissHistory?: boolean
   onOpenFullScreen: () => void
   /** Club Swiss: organizer can pair the next round when ready */
   swissControls?: {
@@ -21,7 +25,13 @@ export interface ArenaPairingsTabProps {
   } | null
 }
 
-export function ArenaPairingsTab({ matches, onOpenFullScreen, swissControls }: ArenaPairingsTabProps) {
+export function ArenaPairingsTab({
+  matches,
+  completedMatches = [],
+  showSwissHistory = false,
+  onOpenFullScreen,
+  swissControls,
+}: ArenaPairingsTabProps) {
   const { t } = useI18n()
 
   return (
@@ -83,6 +93,8 @@ export function ArenaPairingsTab({ matches, onOpenFullScreen, swissControls }: A
           </CardContent>
         </Card>
       )}
+
+      {showSwissHistory && <SwissRoundHistory completedMatches={completedMatches} />}
     </div>
   )
 }

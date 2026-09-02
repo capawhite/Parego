@@ -78,8 +78,8 @@ export function useArenaMatchResults({
   t,
 }: UseArenaMatchResultsOptions) {
   const recordResult = useCallback(
-    async (matchId: string, winnerId: string | undefined, isDraw: boolean) => {
-      if (DEBUG) console.log("[v0] Recording result for match:", matchId, "isDraw:", isDraw, "winnerId:", winnerId)
+    async (matchId: string, winnerId: string | undefined, isDraw: boolean, isForfeit = false) => {
+      if (DEBUG) console.log("[v0] Recording result for match:", matchId, "isDraw:", isDraw, "winnerId:", winnerId, "isForfeit:", isForfeit)
 
       if (!beginMatchResultRecording(matchId, recordedCompletedMatchIdsRef.current)) return
 
@@ -98,6 +98,7 @@ export function useArenaMatchResults({
           matchId,
           winnerId,
           isDraw,
+          isForfeit,
           removeCompletedFromPaired: prev.settings.pairingAlgorithm === "balanced-strength",
         })
 
@@ -136,6 +137,7 @@ export function useArenaMatchResults({
           matchId,
           winnerId,
           isDraw,
+          isForfeit,
           players: newPlayers,
           pairedMatches: newPairedMatches,
           allTimeMatches: newAllTimeMatches,

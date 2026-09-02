@@ -522,6 +522,13 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     t,
   })
 
+  // Visitors land on Pairings so they can follow the event without joining
+  useEffect(() => {
+    if (userRole === "visitor" && arenaState.isActive) {
+      setActiveTab((prev) => (prev === "players" ? "pairings" : prev))
+    }
+  }, [userRole, arenaState.isActive])
+
   const maxSimultaneousPairings = Math.floor(arenaState.players.length / 2)
   const pendingMatches = arenaState.pairedMatches.filter((m) => !m.result?.completed)
   const sortedPendingMatches = [...pendingMatches].sort((a, b) => {
@@ -533,6 +540,21 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
   const isSwiss = isSwissAlgorithm(arenaState.settings.pairingAlgorithm)
   const allMatchesForSwiss = [...arenaState.pairedMatches, ...arenaState.allTimeMatches]
+  const completedMatchesForHistory = (() => {
+    const byId = new Map<string, Match>()
+    for (const m of arenaState.allTimeMatches) {
+      if (m.result?.completed) byId.set(m.id, m)
+    }
+    for (const m of arenaState.pairedMatches) {
+      if (m.result?.completed) byId.set(m.id, m)
+    }
+    return [...byId.values()]
+  })()
+  const allMatchesForStandings = (() => {
+    const byId = new Map<string, Match>()
+    for (const m of allMatchesForSwiss) byId.set(m.id, m)
+    return [...byId.values()]
+  })()
   const nextSwissRound = isSwiss ? nextSwissRoundToPair(arenaState.settings, allMatchesForSwiss) : null
   const plannedSwissRounds = arenaState.settings.plannedSwissRounds ?? 1
   const openSwissRound = allMatchesForSwiss.reduce<number | null>((max, m) => {
@@ -742,6 +764,22 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
 
         <h1 className="hidden print:block text-xl font-bold mb-2">{displayName}</h1>
 
+        {userRole === "visitor" && (
+          <Card className="mb-4 border-primary/20 bg-primary/5 print:hidden">
+            <CardContent className="py-3 px-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <p className="text-sm font-medium">{t("arena.spectatorTitle")}</p>
+                <p className="text-xs text-muted-foreground">{t("arena.spectatorBody")}</p>
+              </div>
+              {arenaState.status !== "completed" && (
+                <Button size="sm" className="shrink-0" asChild>
+                  <a href={`/join/${tournamentId}`}>{t("arena.joinToPlay")}</a>
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs
           value={activeTab}
           onValueChange={(tab) => {
@@ -810,6 +848,8 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
           <TabsContent value="pairings">
             <ArenaPairingsTab
               matches={sortedPendingMatches}
+              completedMatches={completedMatchesForHistory}
+              showSwissHistory={isSwiss}
               onOpenFullScreen={() => setIsFullScreenPairings(true)}
               swissControls={
                 isSwiss && isOrganizer
@@ -852,7 +892,9 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               }
               canRecordResults={permissions.canRecordAnyResult}
               canSubmitOwnResult={permissions.canSubmitOwnResult}
-              onRecordResult={(id, winner, isDraw) => recordResult(id, winner, isDraw ?? false)}
+              onRecordResult={(id, winner, isDraw, isForfeit) =>
+                recordResult(id, winner, isDraw ?? false, isForfeit ?? false)
+              }
               onPlayerSubmit={handlePlayerSubmit}
               onPlayerConfirm={handlePlayerConfirm}
               onPlayerCancel={handlePlayerCancel}
@@ -865,6 +907,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
               isPlayerView={effectivePlayerView}
               onOverrideResult={!effectivePlayerView ? overrideResult : undefined}
               settings={arenaState.settings}
+              matches={allMatchesForStandings}
             />
           </TabsContent>
         </Tabs>

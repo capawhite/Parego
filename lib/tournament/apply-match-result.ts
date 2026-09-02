@@ -11,6 +11,8 @@ export type ApplyMatchResultInput = {
   matchId: string
   winnerId: string | undefined
   isDraw: boolean
+  /** Organizer forfeit / no-show (winner still gets win points; marks receivedForfeitWin). */
+  isForfeit?: boolean
   /** When true (balanced-strength), remove completed match from paired list. */
   removeCompletedFromPaired: boolean
 }
@@ -60,6 +62,8 @@ export function applyMatchResultToState(input: ApplyMatchResultInput): ApplyMatc
     }
   }
 
+  const isForfeit = Boolean(input.isForfeit && !input.isDraw && input.winnerId)
+
   const completedAt = Date.now()
   const updatedMatch: Match = {
     ...match,
@@ -69,6 +73,7 @@ export function applyMatchResultToState(input: ApplyMatchResultInput): ApplyMatc
       isDraw: input.isDraw,
       completed: true,
       completedAt,
+      ...(isForfeit ? { isForfeit: true } : {}),
     },
   }
 
@@ -87,7 +92,8 @@ export function applyMatchResultToState(input: ApplyMatchResultInput): ApplyMatc
     const swiss = isSwissAlgorithm(input.settings.pairingAlgorithm)
     let newStreak = player.streak
 
-    if (swiss) {
+    // Forfeits don't build arena win streaks
+    if (swiss || isForfeit) {
       newStreak = 0
     } else if (input.isDraw) {
       newStreak = 0
@@ -97,7 +103,12 @@ export function applyMatchResultToState(input: ApplyMatchResultInput): ApplyMatc
       newStreak = 0
     }
 
-    const points = calculatePointsFromSettings(isWinner, input.isDraw, currentStreak, input.settings)
+    const points = calculatePointsFromSettings(
+      isWinner,
+      input.isDraw,
+      isForfeit ? 0 : currentStreak,
+      input.settings,
+    )
     let gameResult: "W" | "D" | "L"
     if (input.isDraw) gameResult = "D"
     else if (isWinner) gameResult = "W"
@@ -114,6 +125,8 @@ export function applyMatchResultToState(input: ApplyMatchResultInput): ApplyMatc
       pieceColors: [...player.pieceColors, pieceColor],
       pointsEarned: [...(player.pointsEarned || []), points],
       tableNumbers: [...(player.tableNumbers || []), match.tableNumber || 0],
+      receivedForfeitWin:
+        isForfeit && isWinner ? true : player.receivedForfeitWin,
     }
   })
 

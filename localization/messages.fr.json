@@ -441,7 +441,10 @@
     "reduceWaitDisabledHelp": "Disponible en Arena lorsqu'au moins un joueur inactif est actuellement en refroidissement.",
     "reduceWaitNoPlayers": "Aucun joueur n'est actuellement en refroidissement.",
     "reduceWaitSuccess": "Attente réduite de 1 minute pour {count} joueur(s).",
-    "confirmPausePlayer": "Mettre {name} en pause ? Il ne sera plus apparié tant qu'il ne sera pas repris."
+    "confirmPausePlayer": "Mettre {name} en pause ? Il ne sera plus apparié tant qu'il ne sera pas repris.",
+    "spectatorTitle": "Mode spectateur",
+    "spectatorBody": "Suivez les appariements et le classement en direct. Rejoignez le tournoi pour jouer.",
+    "joinToPlay": "Rejoindre pour jouer"
   },
   "currentRound": {
     "waitingToBePaired": "En attente d'appariement",
@@ -453,6 +456,8 @@
     "whiteWins": "Victoire des Blancs",
     "draw": "Nulle",
     "blackWins": "Victoire des Noirs",
+    "whiteWinsForfeit": "Blancs gagnent (forfait)",
+    "blackWinsForfeit": "Noirs gagnent (forfait)",
     "submittedWaitingOpponent": "{player} a saisi : {result} — en attente de l'adversaire",
     "bothAgreeAutoConfirm": "Accord des deux : {result} — confirmation automatique…",
     "completedCount": "Terminées ({count})",
@@ -766,6 +771,15 @@
   "swiss": {
     "title": "Tournoi suisse",
     "roundProgress": "Ronde {current} / {planned}",
+    "roundHistoryTitle": "Rondes terminées",
+    "roundLabel": "Ronde {round}",
+    "pairingBye": "bye",
+    "forfeitShort": "forfait",
+    "crosstableTab": "Tableau croisé",
+    "crosstablePlayer": "Joueur",
+    "crosstablePts": "Pts",
+    "crosstableEmpty": "Aucune partie suisse terminée pour le moment.",
+    "crosstableLegend": "1 / ½ / 0 = gain / nulle / perte · 1F / 0F = forfait · + = bye · — = non joué",
     "pairNextRoundBlocked": "Terminez toutes les parties de la ronde en cours (ou démarrez le tournoi) avant d'apparier.",
     "pairing": "Appariement…",
     "roundStatus": "État de la ronde",

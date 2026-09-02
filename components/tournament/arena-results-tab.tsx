@@ -17,7 +17,7 @@ export interface ArenaResultsTabProps {
   canRecordResults: boolean
   /** Signed-in players linked to a seat may submit; guests may not */
   canSubmitOwnResult?: boolean
-  onRecordResult: (matchId: string, winnerId?: string, isDraw?: boolean) => void
+  onRecordResult: (matchId: string, winnerId?: string, isDraw?: boolean, isForfeit?: boolean) => void
   onPlayerSubmit: (matchId: string, result: "player1-win" | "draw" | "player2-win") => void
   onPlayerConfirm: (matchId: string, result?: "player1-win" | "draw" | "player2-win") => void
   onPlayerCancel: (matchId: string) => void

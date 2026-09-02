@@ -441,7 +441,10 @@
     "reduceWaitDisabledHelp": "Available in Arena when at least one idle player is currently cooling down.",
     "reduceWaitNoPlayers": "No players are currently cooling down.",
     "reduceWaitSuccess": "Reduced wait by 1 minute for {count} player(s).",
-    "confirmPausePlayer": "Pause {name}? They won't be paired until resumed."
+    "confirmPausePlayer": "Pause {name}? They won't be paired until resumed.",
+    "spectatorTitle": "Watching as a spectator",
+    "spectatorBody": "You can follow pairings and standings live. Join the tournament to play.",
+    "joinToPlay": "Join to play"
   },
   "currentRound": {
     "waitingToBePaired": "Waiting to be paired",
@@ -453,6 +456,8 @@
     "whiteWins": "White Wins",
     "draw": "Draw",
     "blackWins": "Black Wins",
+    "whiteWinsForfeit": "White wins (forfeit)",
+    "blackWinsForfeit": "Black wins (forfeit)",
     "submittedWaitingOpponent": "{player} submitted: {result} — waiting for opponent",
     "bothAgreeAutoConfirm": "Both agree: {result} — auto-confirming…",
     "completedCount": "Completed ({count})",
@@ -766,6 +771,15 @@
   "swiss": {
     "title": "Swiss tournament",
     "roundProgress": "Round {current} / {planned}",
+    "roundHistoryTitle": "Completed rounds",
+    "roundLabel": "Round {round}",
+    "pairingBye": "bye",
+    "forfeitShort": "forfeit",
+    "crosstableTab": "Crosstable",
+    "crosstablePlayer": "Player",
+    "crosstablePts": "Pts",
+    "crosstableEmpty": "No completed Swiss games yet.",
+    "crosstableLegend": "1 / ½ / 0 = win / draw / loss · 1F / 0F = forfeit · + = bye · — = not played",
     "pairNextRoundBlocked": "Finish all games in the current round (or start the tournament) before pairing.",
     "pairing": "Pairing…",
     "roundStatus": "Round status",

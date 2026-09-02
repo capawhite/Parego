@@ -9,7 +9,7 @@ import { useI18n } from "@/components/i18n-provider"
 
 interface CurrentRoundProps {
   matches: Match[]
-  onRecordResult: (matchId: string, winnerId?: string, isDraw?: boolean) => void
+  onRecordResult: (matchId: string, winnerId?: string, isDraw?: boolean, isForfeit?: boolean) => void
   onPlayerSubmit?: (matchId: string, result: "player1-win" | "draw" | "player2-win") => void
   onPlayerConfirm?: (matchId: string, result: "player1-win" | "draw" | "player2-win") => void
   onPlayerCancel?: (matchId: string) => void
@@ -132,8 +132,13 @@ export function CurrentRound({
   const pendingMatches = visibleMatches.filter((m) => !m.result?.completed)
   const completedMatches = visibleMatches.filter((m) => m.result?.completed)
 
-  const recordMatchResult = (matchId: string, winnerId: string | undefined, isDraw: boolean) => {
-    onRecordResult(matchId, winnerId, isDraw)
+  const recordMatchResult = (
+    matchId: string,
+    winnerId: string | undefined,
+    isDraw: boolean,
+    isForfeit = false,
+  ) => {
+    onRecordResult(matchId, winnerId, isDraw, isForfeit)
   }
 
   const sortedPendingMatches = [...pendingMatches].sort((a, b) => {
@@ -268,33 +273,53 @@ export function CurrentRound({
                     )}
 
                     {canRecordResults && (
-                      <div className="grid grid-cols-3 gap-2 mt-3">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-11 min-h-[44px] px-2 text-sm font-semibold border-2 border-border bg-card text-foreground shadow-sm hover:bg-muted hover:border-foreground/30"
-                          onClick={() => recordMatchResult(match.id, match.player1.id, false)}
-                          data-simulator-result="white"
-                        >
-                          {t("currentRound.whiteWins")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-11 min-h-[44px] px-2 text-sm font-semibold border-2 border-border bg-muted text-foreground shadow-sm hover:bg-secondary hover:border-primary/40"
-                          onClick={() => recordMatchResult(match.id, undefined, true)}
-                          data-simulator-result="draw"
-                        >
-                          {t("currentRound.draw")}
-                        </Button>
-                        <Button
-                          type="button"
-                          className="h-11 min-h-[44px] px-2 text-sm font-semibold bg-foreground text-background shadow-sm hover:bg-foreground/90"
-                          onClick={() => recordMatchResult(match.id, match.player2.id, false)}
-                          data-simulator-result="black"
-                        >
-                          {t("currentRound.blackWins")}
-                        </Button>
+                      <div className="mt-3 space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 min-h-[44px] px-2 text-sm font-semibold border-2 border-border bg-card text-foreground shadow-sm hover:bg-muted hover:border-foreground/30"
+                            onClick={() => recordMatchResult(match.id, match.player1.id, false)}
+                            data-simulator-result="white"
+                          >
+                            {t("currentRound.whiteWins")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 min-h-[44px] px-2 text-sm font-semibold border-2 border-border bg-muted text-foreground shadow-sm hover:bg-secondary hover:border-primary/40"
+                            onClick={() => recordMatchResult(match.id, undefined, true)}
+                            data-simulator-result="draw"
+                          >
+                            {t("currentRound.draw")}
+                          </Button>
+                          <Button
+                            type="button"
+                            className="h-11 min-h-[44px] px-2 text-sm font-semibold bg-foreground text-background shadow-sm hover:bg-foreground/90"
+                            onClick={() => recordMatchResult(match.id, match.player2.id, false)}
+                            data-simulator-result="black"
+                          >
+                            {t("currentRound.blackWins")}
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-9 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => recordMatchResult(match.id, match.player1.id, false, true)}
+                          >
+                            {t("currentRound.whiteWinsForfeit")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-9 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => recordMatchResult(match.id, match.player2.id, false, true)}
+                          >
+                            {t("currentRound.blackWinsForfeit")}
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -340,7 +365,15 @@ export function CurrentRound({
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground font-medium flex-shrink-0">
-                      {match.result?.isDraw ? "½-½" : match.result?.winnerId === match.player1.id ? "1-0" : "0-1"}
+                      {match.result?.isDraw
+                        ? "½-½"
+                        : match.result?.winnerId === match.player1.id
+                          ? match.result?.isForfeit
+                            ? "1-0F"
+                            : "1-0"
+                          : match.result?.isForfeit
+                            ? "0-1F"
+                            : "0-1"}
                     </span>
                   </div>
                 </CardContent>

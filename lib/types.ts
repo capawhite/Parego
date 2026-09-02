@@ -42,6 +42,8 @@ export type MatchResult = {
   isDraw: boolean
   completed: boolean
   completedAt: number
+  /** Organizer recorded a forfeit / no-show win (not a played game). */
+  isForfeit?: boolean
 }
 
 export interface Match {

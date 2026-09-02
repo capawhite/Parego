@@ -37,6 +37,8 @@ function playersToScoreUpdates(players: Player[]) {
     paused: p.paused,
     is_paused: !!p.markedForPause,
     is_removed: !!p.hasLeft || !!p.markedForRemoval,
+    received_pairing_bye: p.receivedPairingBye ?? false,
+    received_forfeit_win: p.receivedForfeitWin ?? false,
   }))
 }
 
@@ -48,6 +50,7 @@ export async function recordOrganizerMatchResult(input: {
   matchId: string
   winnerId?: string
   isDraw: boolean
+  isForfeit?: boolean
   players: Player[]
   pairedMatches: Match[]
   allTimeMatches: Match[]
