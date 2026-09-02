@@ -20,6 +20,15 @@ import { Home } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
 import { FidePlayerSearch, type FidePlayerSelection } from "@/components/fide-player-search"
 import { ManualRatingsInput, type ManualRatingsState } from "@/components/manual-ratings-input"
+import { FederationSelect } from "@/components/federation-select"
+import { CountrySelect } from "@/components/country-select"
+import {
+  isValidFederationCode,
+  normalizeFederationCode,
+  splitLegacyCountryField,
+  federationGeocodeName,
+} from "@/lib/fide/federations"
+import { isKnownCountryName, normalizeCountryName } from "@/lib/geo/countries"
 import {
   fideRatingToBand,
   fideSelectionToDbFields,
@@ -30,6 +39,10 @@ import {
   ratingsFromInputs,
 } from "@/lib/fide/rating"
 
+function displayFederation(fed: string, fromFide: string | null): string | null {
+  return normalizeFederationCode(fed) ?? fromFide
+}
+
 export default function ProfilePage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -39,6 +52,7 @@ export default function ProfilePage() {
     rapid: "",
     blitz: "",
   })
+  const [federation, setFederation] = useState("")
   const [country, setCountry] = useState("")
   const [city, setCity] = useState("")
   const [fideSelection, setFideSelection] = useState<FidePlayerSelection | null>(null)
@@ -81,6 +95,19 @@ export default function ProfilePage() {
         } else {
           setRatingBand("")
         }
+        const legacy = profile.federation
+          ? { federation: null, country: null }
+          : splitLegacyCountryField(profile.country)
+        const loadedFederation =
+          normalizeFederationCode(profile.federation) ?? legacy.federation ?? ""
+        let loadedCountry = profile.country || legacy.country || ""
+        if (!loadedCountry && loadedFederation) {
+          loadedCountry = federationGeocodeName(loadedFederation) ?? ""
+        }
+        setFederation(loadedFederation)
+        setCountry(loadedCountry)
+        setCity(profile.city || "")
+
         const legacyRating = profile.rating?.toString() || ""
         if (profile.fide_id) {
           const fideRatings = {
@@ -97,7 +124,7 @@ export default function ProfilePage() {
             fideId: profile.fide_id,
             fideTitle: profile.fide_title ?? null,
             name: profile.name || `FIDE ${profile.fide_id}`,
-            federation: profile.country ?? null,
+            federation: loadedFederation || null,
             ratings: fideRatings,
             rating: profile.rating ?? null,
           })
@@ -109,8 +136,6 @@ export default function ProfilePage() {
           })
           setFideSelection(null)
         }
-        setCountry(profile.country || "")
-        setCity(profile.city || "")
         setAvatarUrl(profile.avatar_url || null)
       }
 
@@ -133,7 +158,20 @@ export default function ProfilePage() {
       } = await supabase.auth.getUser()
       if (!user) throw new Error("Not authenticated")
 
-      const { latitude, longitude } = await geocodeLocation(city, country)
+      const normalizedFederation = normalizeFederationCode(federation)
+      if (federation.trim() && !isValidFederationCode(normalizedFederation)) {
+        setError(t("profile.federationInvalid"))
+        setIsLoading(false)
+        return
+      }
+      const normalizedCountry = normalizeCountryName(country)
+      if (country.trim() && !isKnownCountryName(normalizedCountry)) {
+        setError(t("profile.countryInvalid"))
+        setIsLoading(false)
+        return
+      }
+
+      const { latitude, longitude } = await geocodeLocation(city, normalizedCountry ?? undefined)
       if (process.env.NODE_ENV === "development")
         console.log("[v0] Profile update: Geocoded coordinates:", { latitude, longitude })
 
@@ -177,7 +215,8 @@ export default function ProfilePage() {
           email: email || null,
           rating_band: ratingBand || null,
           rating: profileRating,
-          country: country || null,
+          federation: normalizedFederation,
+          country: normalizedCountry,
           city: city || null,
           ...fideFields,
           latitude,
@@ -211,6 +250,9 @@ export default function ProfilePage() {
   const displayRatings = fideSelection
     ? mergeDisplayRatings(fideSelection.ratings, parsedManualForDisplay)
     : undefined
+  const fideDisplaySelection = fideSelection
+    ? { ...fideSelection, federation: displayFederation(federation, fideSelection.federation) }
+    : null
 
   const handleAvatarSelect = async (file: File) => {
     if (!userId) return
@@ -282,7 +324,7 @@ export default function ProfilePage() {
                   <p className="text-xs text-muted-foreground">{t("fide.profileHint")}</p>
                   <FidePlayerSearch
                     variant="prominent"
-                    selected={fideSelection}
+                    selected={fideDisplaySelection}
                     displayRatings={displayRatings}
                     disabled={isInActiveTournament}
                     onSelect={(player) => {
@@ -295,7 +337,13 @@ export default function ProfilePage() {
                       if (!isInActiveTournament && player.rating != null) {
                         setRatingBand(fideRatingToBand(player.rating))
                       }
-                      if (player.federation) setCountry(player.federation)
+                      if (player.federation) {
+                        setFederation(player.federation)
+                        if (!country.trim()) {
+                          const suggested = federationGeocodeName(player.federation)
+                          if (suggested) setCountry(suggested)
+                        }
+                      }
                     }}
                     onClear={() => {
                       if (fideSelection) {
@@ -346,13 +394,21 @@ export default function ProfilePage() {
                   </RadioGroup>
                 </div>
                 <div className="grid gap-2">
+                  <Label htmlFor="federation">{t("profile.federationLabel")}</Label>
+                  <FederationSelect
+                    id="federation"
+                    value={federation}
+                    onChange={setFederation}
+                    disabled={isInActiveTournament}
+                  />
+                </div>
+                <div className="grid gap-2">
                   <Label htmlFor="country">{t("profile.countryLabel")}</Label>
-                  <Input
+                  <CountrySelect
                     id="country"
-                    type="text"
-                    placeholder={t("profile.countryPlaceholder")}
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
+                    onChange={setCountry}
+                    disabled={isInActiveTournament}
                   />
                 </div>
                 <div className="grid gap-2">

@@ -29,6 +29,7 @@ type UseArenaTournamentLoadOptions = {
   setUserRating: Dispatch<SetStateAction<number | null>>
   setUserRatingBand: Dispatch<SetStateAction<string | null>>
   setUserFideRatings: Dispatch<SetStateAction<FideRatings | null>>
+  setUserFederation: Dispatch<SetStateAction<string | null>>
   setUserCountry: Dispatch<SetStateAction<string | null>>
   setDisplayName: Dispatch<SetStateAction<string>>
   setOrganizerId: Dispatch<SetStateAction<string | null>>
@@ -50,6 +51,7 @@ export function useArenaTournamentLoad({
   setUserRating,
   setUserRatingBand,
   setUserFideRatings,
+  setUserFederation,
   setUserCountry,
   setDisplayName,
   setOrganizerId,
@@ -71,7 +73,7 @@ export function useArenaTournamentLoad({
         setCurrentUserId(user.id)
         const { data: profileData } = await supabase
           .from("users")
-          .select("name, rating, rating_band, country, fide_standard, fide_rapid, fide_blitz")
+          .select("name, rating, rating_band, country, federation, fide_standard, fide_rapid, fide_blitz")
           .eq("id", user.id)
           .maybeSingle()
         if (profileData) {
@@ -83,6 +85,7 @@ export function useArenaTournamentLoad({
             rapid: profileData.fide_rapid ?? null,
             blitz: profileData.fide_blitz ?? null,
           })
+          setUserFederation(profileData.federation || null)
           setUserCountry(profileData.country || null)
         }
       }
@@ -191,6 +194,8 @@ export function useArenaTournamentLoad({
     setUserName,
     setUserRating,
     setUserRatingBand,
+    setUserFideRatings,
+    setUserFederation,
     setUserCountry,
     setDisplayName,
     setOrganizerId,

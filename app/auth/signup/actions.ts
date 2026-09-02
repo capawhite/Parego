@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { geocodeLocation } from "@/lib/geocode"
+import { federationGeocodeName } from "@/lib/fide/federations"
 
 /** Check if email is available for signup (call when user enters email). */
 export async function checkEmailAvailable(email: string): Promise<{ available: boolean; error?: string }> {
@@ -19,6 +20,7 @@ export async function signUp(formData: {
   name: string
   ratingBand?: string
   rating?: number
+  federation?: string
   country?: string
   city?: string
   fideId?: number
@@ -31,12 +33,26 @@ export async function signUp(formData: {
 
   const supabase = await createClient()
 
-  const { email, password, name, ratingBand, rating, country, city, fideId, fideTitle, fideStandard, fideRapid, fideBlitz } =
-    formData
+  const {
+    email,
+    password,
+    name,
+    ratingBand,
+    rating,
+    federation,
+    country,
+    city,
+    fideId,
+    fideTitle,
+    fideStandard,
+    fideRapid,
+    fideBlitz,
+  } = formData
 
   if (process.env.NODE_ENV === "development") console.log("[v0] Server: Signing up with email:", email)
 
-  const { latitude, longitude } = await geocodeLocation(city, country)
+  const geoCountry = country || (federation ? federationGeocodeName(federation) : undefined) || undefined
+  const { latitude, longitude } = await geocodeLocation(city, geoCountry)
   if (process.env.NODE_ENV === "development")
     console.log("[v0] Server: Geocoded coordinates:", { latitude, longitude })
 
@@ -51,6 +67,7 @@ export async function signUp(formData: {
         name,
         rating: rating ?? null,
         country: country || null,
+        federation: federation || null,
         city: city || null,
         latitude,
         longitude,
@@ -88,6 +105,7 @@ export async function signUp(formData: {
       longitude,
       rating_band: ratingBand || null,
       rating: rating ?? null,
+      federation: federation || null,
       country: country || null,
       fide_id: fideId ?? null,
       fide_title: fideTitle || null,

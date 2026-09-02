@@ -32,6 +32,7 @@ type UseArenaPlayersOptions = {
   userRating: number | null
   userRatingBand: string | null
   userFideRatings: FideRatings | null
+  userFederation: string | null
   userCountry: string | null
   tournamentMetadata: {
     latitude?: number
@@ -57,11 +58,15 @@ export function useArenaPlayers({
   userRating,
   userRatingBand,
   userFideRatings,
+  userFederation,
   userCountry,
   tournamentMetadata,
   t,
   onPlayerNameCleared,
 }: UseArenaPlayersOptions) {
+  // Roster flag: prefer FIDE federation code; fall back to geographic country.
+  const rosterCountry = userFederation ?? userCountry
+
   const [checkingIn, setCheckingIn] = useState(false)
   const [markingPresentPlayerId, setMarkingPresentPlayerId] = useState<string | null>(null)
   const [renamingPlayerId, setRenamingPlayerId] = useState<string | null>(null)
@@ -165,7 +170,7 @@ export function useArenaPlayers({
         rating,
         buchholz: 0,
         sonnebornBerger: 0,
-        country: userCountry,
+        country: rosterCountry,
       }
 
       setArenaState((prev) => ({
@@ -245,7 +250,9 @@ export function useArenaPlayers({
       userRating,
       userRatingBand,
       userFideRatings,
+      userFederation,
       userCountry,
+      rosterCountry,
       resolveJoinRating,
       applyJoinRating,
       setArenaState,
@@ -479,7 +486,7 @@ export function useArenaPlayers({
       score: 0,
       buchholz: 0,
       sonnebornBerger: 0,
-      country: userCountry,
+      country: rosterCountry,
       isGuest: false,
       userId: currentUserId,
       gamesPlayed: 0,
@@ -543,9 +550,9 @@ export function useArenaPlayers({
     userRating,
     userRatingBand,
     userFideRatings,
-    resolveJoinRating,
-    applyJoinRating,
+    userFederation,
     userCountry,
+    rosterCountry,
     setArenaState,
     t,
   ])

@@ -6,6 +6,7 @@ export type OrganizerProfile = {
   name: string
   city?: string | null
   country?: string | null
+  federation?: string | null
   avatarUrl?: string | null
 }
 
@@ -13,7 +14,7 @@ export async function getOrganizerProfile(organizerId: string): Promise<Organize
   const supabase = createClient()
   const { data, error } = await supabase
     .from("users")
-    .select("id, name, city, country, avatar_url")
+    .select("id, name, city, country, federation, avatar_url")
     .eq("id", organizerId)
     .maybeSingle()
   if (error || !data) {
@@ -25,6 +26,7 @@ export async function getOrganizerProfile(organizerId: string): Promise<Organize
     name: data.name,
     city: data.city,
     country: data.country,
+    federation: data.federation,
     avatarUrl: data.avatar_url,
   }
 }

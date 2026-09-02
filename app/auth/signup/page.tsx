@@ -86,7 +86,7 @@ function SignUpForm() {
       name: name.trim(),
       ratingBand: skipRating ? undefined : ratingBand || undefined,
       rating: skipRating ? undefined : ratingNum != null && !isNaN(ratingNum) ? ratingNum : undefined,
-      country: fideSelection?.federation ?? undefined,
+      federation: fideSelection?.federation ?? undefined,
       fideId: fideSelection?.fideId,
       fideTitle: fideSelection?.fideTitle ?? undefined,
       fideStandard: fideSelection?.ratings.standard ?? undefined,

@@ -5,19 +5,27 @@ import { createClient } from "@/lib/supabase/client"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Search, X, UserPlus } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
+import { federationLabel } from "@/lib/fide/federations"
 
 interface User {
   id: string
   name: string
   rating: number | null
   country: string | null
+  federation: string | null
 }
 
 interface UserSearchAutocompleteProps {
   onSelectUser: (user: User) => void
   placeholder?: string
+}
+
+function locationLabel(user: User): string | null {
+  if (user.federation) return federationLabel(user.federation)
+  return user.country
 }
 
 export function UserSearchAutocomplete({
@@ -54,7 +62,7 @@ export function UserSearchAutocomplete({
 
       const { data, error } = await supabase
         .from("users")
-        .select("id, name, rating, country")
+        .select("id, name, rating, country, federation")
         .ilike("name", `%${query}%`)
         .limit(10)
 
@@ -108,25 +116,37 @@ export function UserSearchAutocomplete({
       {showResults && results.length > 0 && (
         <Card className="absolute z-50 w-full mt-1 p-2 max-h-64 overflow-y-auto">
           <div className="space-y-1">
-            {results.map((user) => (
-              <Button
-                key={user.id}
-                variant="ghost"
-                className="w-full justify-start h-auto py-2 px-3"
-                onClick={() => handleSelect(user)}
-              >
-                <div className="flex items-center gap-2 w-full">
-                  <UserPlus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 text-left">
-                    <div className="font-medium text-sm">{user.name}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-2">
-                      {user.rating && <span>{t("userSearch.rating", { rating: user.rating })}</span>}
-                      {user.country && <span>{user.country}</span>}
+            {results.map((user) => {
+              const location = locationLabel(user)
+              return (
+                <Button
+                  key={user.id}
+                  variant="ghost"
+                  className="w-full justify-start h-auto py-2 px-3"
+                  onClick={() => handleSelect(user)}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <UserPlus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 text-left">
+                      <div className="font-medium text-sm">{user.name}</div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                        {user.rating && <span>{t("userSearch.rating", { rating: user.rating })}</span>}
+                        {location && (
+                          <span className="inline-flex items-center gap-1">
+                            {user.federation && (
+                              <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                {user.federation}
+                              </Badge>
+                            )}
+                            <span>{location}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Button>
-            ))}
+                </Button>
+              )
+            })}
           </div>
         </Card>
       )}

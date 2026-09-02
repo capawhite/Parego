@@ -139,6 +139,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
   const [userRating, setUserRating] = useState<number | null>(null)
   const [userRatingBand, setUserRatingBand] = useState<string | null>(null) // rating_band from profile
   const [userFideRatings, setUserFideRatings] = useState<FideRatings | null>(null)
+  const [userFederation, setUserFederation] = useState<string | null>(null)
   const [userCountry, setUserCountry] = useState<string | null>(null)
 
   const [pastGuestSessions, setPastGuestSessions] = useState<GuestSessionEntry[]>([])
@@ -301,6 +302,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     userRating,
     userRatingBand,
     userFideRatings,
+    userFederation,
     userCountry,
     tournamentMetadata,
     t,
@@ -372,6 +374,7 @@ export function ArenaPanel({ tournamentId: initialTournamentId, tournamentName, 
     setUserRating,
     setUserRatingBand,
     setUserFideRatings,
+    setUserFederation,
     setUserCountry,
     setDisplayName,
     setOrganizerId,

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Loader2, MapPin, UserPlus, UserMinus } from "lucide-react"
 import { LandingTournamentCard } from "@/components/landing-tournament-card"
 import { useI18n } from "@/components/i18n-provider"
@@ -127,10 +128,15 @@ export default function OrganizerPage() {
               </Link>
             </Button>
             <h1 className="text-3xl font-bold tracking-tight truncate">{profile.name}</h1>
-            {(profile.city || profile.country) && (
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5" />
-                {[profile.city, profile.country].filter(Boolean).join(", ")}
+            {(profile.city || profile.country || profile.federation) && (
+              <p className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                <span>{[profile.city, profile.country].filter(Boolean).join(", ")}</span>
+                {profile.federation && (
+                  <Badge variant="secondary" className="text-xs">
+                    {profile.federation}
+                  </Badge>
+                )}
               </p>
             )}
             <p className="text-sm text-muted-foreground">{t("organizer.subtitle")}</p>
