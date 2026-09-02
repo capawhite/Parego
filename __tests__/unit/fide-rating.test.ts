@@ -5,7 +5,11 @@ import {
   fideSelectionToDbFields,
   formatFideDisplayName,
   formatFideRatingsSummary,
+  mergeDisplayRatings,
+  missingFideRatingFields,
+  parseRatingInput,
   pickFideRating,
+  ratingsFromInputs,
 } from "@/lib/fide/rating"
 
 describe("fide rating helpers", () => {
@@ -60,6 +64,42 @@ describe("fide rating helpers", () => {
         fide_standard: null,
         fide_rapid: null,
         fide_blitz: null,
+      })
+    })
+  })
+
+  describe("missingFideRatingFields", () => {
+    it("lists only null ratings from a FIDE profile", () => {
+      expect(missingFideRatingFields({ standard: null, rapid: 2100, blitz: 2050 })).toEqual(["standard"])
+    })
+  })
+
+  describe("mergeDisplayRatings", () => {
+    it("fills classical from manual when FIDE has no standard", () => {
+      expect(
+        mergeDisplayRatings(
+          { standard: null, rapid: 2300, blitz: 2250 },
+          { standard: 1800, rapid: null, blitz: null },
+        ),
+      ).toEqual({ standard: 1800, rapid: 2300, blitz: 2250 })
+    })
+  })
+
+  describe("parseRatingInput", () => {
+    it("accepts valid ratings and rejects invalid", () => {
+      expect(parseRatingInput("1847")).toBe(1847)
+      expect(parseRatingInput("")).toBeNull()
+      expect(parseRatingInput("99")).toBeNull()
+      expect(parseRatingInput("3001")).toBeNull()
+    })
+  })
+
+  describe("ratingsFromInputs", () => {
+    it("parses each time control independently", () => {
+      expect(ratingsFromInputs("1800", "", "1650")).toEqual({
+        standard: 1800,
+        rapid: null,
+        blitz: 1650,
       })
     })
   })

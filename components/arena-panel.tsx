@@ -8,7 +8,7 @@ import { Leaderboard } from "./leaderboard"
 import { TournamentPodium } from "./tournament-podium"
 import { TournamentSettingsPanel } from "./tournament-settings"
 import { AlgorithmComparisonPanel } from "./algorithm-comparison-panel"
-import type { ArenaState, Player, Match } from "@/lib/types"
+import type { ArenaState, Player, Match, TournamentSettings } from "@/lib/types"
 import type { FideRatings } from "@/lib/fide/types"
 import { isPairingHeartbeatStale } from "@/lib/tournament/pairing-loop-gate"
 import {

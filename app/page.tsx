@@ -37,6 +37,9 @@ const NEARBY_HOURS = 168 // 7 days on home
 const FALLBACK_LIST_LIMIT = 8
 const HISTORY_LIMIT = 6
 
+/** Responsive grid for tournament discovery cards */
+const TOURNAMENT_GRID_CLASS = "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+
 function formatNearbyDistance(km: number, t: (path: string, params?: Record<string, string | number>) => string): string {
   if (km < 1) return t("landing.distanceMeters", { meters: Math.round(km * 1000) })
   return t("landing.distanceKilometers", { kilometers: Number(km.toFixed(1)) })
@@ -388,26 +391,100 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pb-16 space-y-10">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-10">
         {/* First viewport: brand + one line + CTAs */}
-        <section className="pt-6 sm:pt-10 space-y-6 text-center">
-          <div className="space-y-3">
-            <Link href="/" className="inline-flex items-center justify-center gap-3">
-              <Zap className="h-12 w-12 sm:h-14 sm:w-14 text-primary" strokeWidth={2.5} fill="currentColor" />
-              <h1 className="text-5xl sm:text-6xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Parego
-              </h1>
-            </Link>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-md mx-auto">
-              {t("home.subheadline")}
-            </p>
-            {!loadingAuth && !user && (
-              <p className="text-primary text-sm font-medium">{t("home.registerToCreate")}</p>
-            )}
+        <section className="pt-4 sm:pt-8 space-y-6">
+          <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
+            <div className="space-y-3 text-center lg:text-left">
+              <Link href="/" className="inline-flex items-center justify-center lg:justify-start gap-3">
+                <Zap className="h-12 w-12 sm:h-14 sm:w-14 text-primary" strokeWidth={2.5} fill="currentColor" />
+                <h1 className="text-5xl sm:text-6xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                  Parego
+                </h1>
+              </Link>
+              <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto lg:mx-0">
+                {t("home.subheadline")}
+              </p>
+              {!loadingAuth && !user && (
+                <p className="text-primary text-sm font-medium">{t("home.registerToCreate")}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full max-w-xl mx-auto lg:max-w-md lg:ml-auto lg:mr-0 text-left">
+              {user && (
+                <Button
+                  className="w-full h-12 font-semibold bg-primary hover:bg-primary/90 shrink-0"
+                  asChild
+                >
+                  <Link href="/create">
+                    <Plus className="h-4 w-4 mr-2 shrink-0" />
+                    {t("home.ctaCreate")}
+                  </Link>
+                </Button>
+              )}
+              <div className="flex flex-col rounded-md border-2 border-input bg-background/80 hover:border-primary transition-colors overflow-hidden min-w-0 w-full">
+                {showCodeInput ? (
+                  <div className="p-4 space-y-3">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={t("home.enterTournamentCode")}
+                        value={joinCode}
+                        onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleJoinWithCode()
+                          if (e.key === "Escape") {
+                            setShowCodeInput(false)
+                            setJoinCode("")
+                          }
+                        }}
+                        className="text-center font-mono tracking-widest uppercase"
+                        maxLength={8}
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setShowCodeInput(false)
+                          setJoinCode("")
+                        }}
+                      >
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        className="flex-1 bg-primary hover:bg-primary/90"
+                        onClick={handleJoinWithCode}
+                        disabled={!joinCode.trim()}
+                      >
+                        {t("home.joinButton")}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full h-auto min-h-12 rounded-md border-0 bg-transparent hover:bg-primary/5 font-semibold justify-start px-4 py-3 shadow-none whitespace-normal text-left"
+                    onClick={() => setShowCodeInput(true)}
+                  >
+                    <span className="flex items-start gap-2 w-full">
+                      <Hash className="h-4 w-4 mt-0.5 shrink-0" strokeWidth={2.5} />
+                      <span className="flex flex-col gap-0.5 min-w-0">
+                        <span>{t("home.ctaJoin")}</span>
+                        <span className="text-muted-foreground font-normal text-sm leading-snug">
+                          {t("home.enterCodeOrQr")}
+                        </span>
+                      </span>
+                    </span>
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
 
           {showGuestBanner && (
-            <div className="max-w-xl mx-auto rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 text-left">
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 text-left">
               <p className="text-sm flex-1">{t("home.guestAccountBanner")}</p>
               <Button size="sm" className="shrink-0" asChild>
                 <Link href="/auth/signup?from=conversion&skipRating=1">{t("home.guestAccountBannerCta")}</Link>
@@ -416,7 +493,7 @@ export default function Home() {
           )}
 
           {singleNearby && singleNearbyDistanceKm != null && (
-            <div className="max-w-xl mx-auto rounded-lg border-2 border-primary/30 bg-background/90 p-4 space-y-3 text-left shadow-sm">
+            <div className="rounded-lg border-2 border-primary/30 bg-background/90 p-4 space-y-3 text-left shadow-sm max-w-xl lg:max-w-md lg:ml-auto">
               <p className="text-sm font-medium">
                 {t("home.nearbyJoinCta", {
                   name: singleNearby.name,
@@ -431,74 +508,6 @@ export default function Home() {
               </Button>
             </div>
           )}
-
-          <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto text-left">
-            {user && (
-              <Button
-                className="sm:flex-1 h-12 font-semibold bg-primary hover:bg-primary/90"
-                asChild
-              >
-                <Link href="/create">
-                  <Plus className="h-4 w-4 mr-2 shrink-0" />
-                  {t("home.ctaCreate")}
-                </Link>
-              </Button>
-            )}
-            <div className="sm:flex-1 flex flex-col rounded-md border-2 border-input bg-background/80 hover:border-primary transition-colors overflow-hidden">
-              {showCodeInput ? (
-                <div className="p-4 space-y-3">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder={t("home.enterTournamentCode")}
-                      value={joinCode}
-                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleJoinWithCode()
-                        if (e.key === "Escape") {
-                          setShowCodeInput(false)
-                          setJoinCode("")
-                        }
-                      }}
-                      className="text-center font-mono tracking-widest uppercase"
-                      maxLength={8}
-                      autoFocus
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        setShowCodeInput(false)
-                        setJoinCode("")
-                      }}
-                    >
-                      {t("common.cancel")}
-                    </Button>
-                    <Button
-                      className="flex-1 bg-primary hover:bg-primary/90"
-                      onClick={handleJoinWithCode}
-                      disabled={!joinCode.trim()}
-                    >
-                      {t("home.joinButton")}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="w-full h-12 rounded-md border-0 bg-transparent hover:bg-primary/5 font-semibold justify-start px-4 shadow-none"
-                  onClick={() => setShowCodeInput(true)}
-                >
-                  <Hash className="h-4 w-4 mr-2 shrink-0" strokeWidth={2.5} />
-                  <span className="truncate">{t("home.ctaJoin")}</span>
-                  <span className="text-muted-foreground font-normal text-sm ml-1.5 hidden sm:inline truncate">
-                    — {t("home.enterCodeOrQr")}
-                  </span>
-                </Button>
-              )}
-            </div>
-          </div>
         </section>
 
         {/* Tournament discovery */}
@@ -528,7 +537,7 @@ export default function Home() {
               {(followingTournaments.length > 0 || clubEventTournaments.length > 0) && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-muted-foreground">{t("home.followingEventsTitle")}</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className={TOURNAMENT_GRID_CLASS}>
                     {[...clubEventTournaments, ...followingTournaments]
                       .filter((t, i, arr) => arr.findIndex((x) => x.id === t.id) === i)
                       .slice(0, 6)
@@ -589,7 +598,7 @@ export default function Home() {
                       </Button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className={TOURNAMENT_GRID_CLASS}>
                     {nearbyTournaments.map((tour) => (
                       <LandingTournamentCard
                         key={tour.id}
@@ -653,7 +662,7 @@ export default function Home() {
                   </Button>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className={TOURNAMENT_GRID_CLASS}>
                 {fallbackTournaments.map((tour) => (
                   <LandingTournamentCard
                     key={tour.id}
@@ -678,7 +687,7 @@ export default function Home() {
                 <h2 className="text-sm font-medium text-muted-foreground">{t("home.historyTitle")}</h2>
                 <p className="text-xs text-muted-foreground">{t("home.historyHint")}</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 opacity-90">
+              <div className={`${TOURNAMENT_GRID_CLASS} opacity-90`}>
                 {historyTournaments.map((tour) => (
                   <LandingTournamentCard
                     key={`hist-${tour.id}`}

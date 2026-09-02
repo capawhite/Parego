@@ -19,13 +19,26 @@ import Link from "next/link"
 import { Home } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
 import { FidePlayerSearch, type FidePlayerSelection } from "@/components/fide-player-search"
-import { fideRatingToBand, fideSelectionToDbFields } from "@/lib/fide/rating"
+import { ManualRatingsInput, type ManualRatingsState } from "@/components/manual-ratings-input"
+import {
+  fideRatingToBand,
+  fideSelectionToDbFields,
+  manualRatingsToDbFields,
+  mergeDisplayRatings,
+  missingFideRatingFields,
+  pickFideRating,
+  ratingsFromInputs,
+} from "@/lib/fide/rating"
 
 export default function ProfilePage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [ratingBand, setRatingBand] = useState<RatingBandValue | "">("")
-  const [rating, setRating] = useState("")
+  const [manualRatings, setManualRatings] = useState<ManualRatingsState>({
+    standard: "",
+    rapid: "",
+    blitz: "",
+  })
   const [country, setCountry] = useState("")
   const [city, setCity] = useState("")
   const [fideSelection, setFideSelection] = useState<FidePlayerSelection | null>(null)
@@ -68,28 +81,37 @@ export default function ProfilePage() {
         } else {
           setRatingBand("")
         }
-        setRating(profile.rating?.toString() || "")
-        setCountry(profile.country || "")
-        setCity(profile.city || "")
-        setAvatarUrl(profile.avatar_url || null)
+        const legacyRating = profile.rating?.toString() || ""
         if (profile.fide_id) {
+          const fideRatings = {
+            standard: profile.fide_standard ?? null,
+            rapid: profile.fide_rapid ?? null,
+            blitz: profile.fide_blitz ?? null,
+          }
+          setManualRatings({
+            standard: fideRatings.standard == null ? legacyRating : "",
+            rapid: fideRatings.rapid == null ? "" : "",
+            blitz: fideRatings.blitz == null ? "" : "",
+          })
           setFideSelection({
             fideId: profile.fide_id,
             fideTitle: profile.fide_title ?? null,
-            name: profile.fide_title
-              ? `${profile.fide_title} • FIDE ${profile.fide_id}`
-              : `FIDE ${profile.fide_id}`,
+            name: profile.name || `FIDE ${profile.fide_id}`,
             federation: profile.country ?? null,
-            ratings: {
-              standard: profile.fide_standard ?? null,
-              rapid: profile.fide_rapid ?? null,
-              blitz: profile.fide_blitz ?? null,
-            },
+            ratings: fideRatings,
             rating: profile.rating ?? null,
           })
         } else {
+          setManualRatings({
+            standard: profile.fide_standard?.toString() || legacyRating || "",
+            rapid: profile.fide_rapid?.toString() || "",
+            blitz: profile.fide_blitz?.toString() || "",
+          })
           setFideSelection(null)
         }
+        setCountry(profile.country || "")
+        setCity(profile.city || "")
+        setAvatarUrl(profile.avatar_url || null)
       }
 
       const { data: activeTournament } = await supabase.rpc("is_user_in_active_tournament", { user_id: user.id })
@@ -115,16 +137,49 @@ export default function ProfilePage() {
       if (process.env.NODE_ENV === "development")
         console.log("[v0] Profile update: Geocoded coordinates:", { latitude, longitude })
 
+      const parsedManualRatings = ratingsFromInputs(
+        manualRatings.standard,
+        manualRatings.rapid,
+        manualRatings.blitz,
+      )
+
+      let fideFields
+      let profileRating: number | null
+
+      if (fideSelection) {
+        fideFields = fideSelectionToDbFields(fideSelection)
+        // Self-reported classical when FIDE has no standard rating (users.rating).
+        const manualClassical =
+          fideSelection.ratings.standard == null ? parsedManualRatings.standard : null
+        profileRating =
+          manualClassical ??
+          pickFideRating({
+            standard: fideSelection.ratings.standard,
+            rapid: fideSelection.ratings.rapid ?? parsedManualRatings.rapid,
+            blitz: fideSelection.ratings.blitz ?? parsedManualRatings.blitz,
+          })
+        // Fill rapid/blitz gaps from manual entry when not on FIDE profile.
+        if (fideFields.fide_rapid == null) fideFields.fide_rapid = parsedManualRatings.rapid
+        if (fideFields.fide_blitz == null) fideFields.fide_blitz = parsedManualRatings.blitz
+      } else {
+        fideFields = {
+          fide_id: null as number | null,
+          fide_title: null as string | null,
+          ...manualRatingsToDbFields(parsedManualRatings),
+        }
+        profileRating = pickFideRating(parsedManualRatings)
+      }
+
       const { error: updateError } = await supabase
         .from("users")
         .update({
           name,
           email: email || null,
           rating_band: ratingBand || null,
-          rating: rating ? Number.parseInt(rating, 10) : null,
+          rating: profileRating,
           country: country || null,
           city: city || null,
-          ...fideSelectionToDbFields(fideSelection),
+          ...fideFields,
           latitude,
           longitude,
           avatar_url: avatarUrl,
@@ -145,6 +200,17 @@ export default function ProfilePage() {
     await supabase.auth.signOut()
     router.push("/")
   }
+
+  const parsedManualForDisplay = ratingsFromInputs(
+    manualRatings.standard,
+    manualRatings.rapid,
+    manualRatings.blitz,
+  )
+  const missingFromFide = fideSelection ? missingFideRatingFields(fideSelection.ratings) : []
+  const showManualRatings = !fideSelection || missingFromFide.length > 0
+  const displayRatings = fideSelection
+    ? mergeDisplayRatings(fideSelection.ratings, parsedManualForDisplay)
+    : undefined
 
   const handleAvatarSelect = async (file: File) => {
     if (!userId) return
@@ -175,7 +241,7 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-svh w-full flex-col items-center p-4 sm:p-6">
-      <div className="mb-4 w-full max-w-sm">
+      <div className="mb-4 w-full max-w-md">
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -184,7 +250,7 @@ export default function ProfilePage() {
           {t("profile.home")}
         </Link>
       </div>
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">{t("profile.title")}</CardTitle>
@@ -215,19 +281,52 @@ export default function ProfilePage() {
                   <Label>{t("fide.profileLabel")}</Label>
                   <p className="text-xs text-muted-foreground">{t("fide.profileHint")}</p>
                   <FidePlayerSearch
+                    variant="prominent"
                     selected={fideSelection}
+                    displayRatings={displayRatings}
                     disabled={isInActiveTournament}
                     onSelect={(player) => {
                       setFideSelection(player)
+                      setManualRatings((prev) => ({
+                        standard: player.ratings.standard == null ? prev.standard : "",
+                        rapid: player.ratings.rapid == null ? prev.rapid : "",
+                        blitz: player.ratings.blitz == null ? prev.blitz : "",
+                      }))
                       if (!isInActiveTournament && player.rating != null) {
-                        setRating(String(player.rating))
                         setRatingBand(fideRatingToBand(player.rating))
                       }
                       if (player.federation) setCountry(player.federation)
                     }}
-                    onClear={() => setFideSelection(null)}
+                    onClear={() => {
+                      if (fideSelection) {
+                        const manualClassical =
+                          fideSelection.ratings.standard == null ? manualRatings.standard : ""
+                        setManualRatings({
+                          standard: manualClassical || fideSelection.ratings.standard?.toString() || "",
+                          rapid: fideSelection.ratings.rapid?.toString() ?? "",
+                          blitz: fideSelection.ratings.blitz?.toString() ?? "",
+                        })
+                      }
+                      setFideSelection(null)
+                    }}
                   />
                 </div>
+                {showManualRatings && (
+                  <div className="grid gap-2">
+                    <Label>
+                      {fideSelection ? t("profile.ratingsAddMissingLabel") : t("profile.ratingsLabel")}
+                      {isInActiveTournament && (
+                        <span className="ml-2 text-xs text-amber-500">{t("profile.ratingActiveNote")}</span>
+                      )}
+                    </Label>
+                    <ManualRatingsInput
+                      value={manualRatings}
+                      onChange={setManualRatings}
+                      visibleFields={fideSelection ? missingFromFide : undefined}
+                      disabled={isInActiveTournament}
+                    />
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label>{t("profile.strengthLabel")}</Label>
                   <RadioGroup
@@ -245,26 +344,6 @@ export default function ProfilePage() {
                       </label>
                     ))}
                   </RadioGroup>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="rating">
-                    {t("profile.ratingLabel")}
-                    {isInActiveTournament && (
-                      <span className="ml-2 text-xs text-amber-500">
-                        {t("profile.ratingActiveNote")}
-                      </span>
-                    )}
-                  </Label>
-                  <Input
-                    id="rating"
-                    type="number"
-                    placeholder={t("profile.ratingPlaceholder")}
-                    min={100}
-                    max={3000}
-                    value={rating}
-                    disabled={isInActiveTournament}
-                    onChange={(e) => setRating(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="country">{t("profile.countryLabel")}</Label>

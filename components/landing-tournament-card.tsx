@@ -113,7 +113,7 @@ export function LandingTournamentCard({
         <div className="p-4 space-y-3 flex-1">
           <Link href={`/tournament/${tournament.id}`} className="block">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-lg leading-tight truncate flex-1 min-w-0">
+              <h3 className="font-semibold text-lg leading-snug line-clamp-2 flex-1 min-w-0">
                 {tournament.name}
               </h3>
               <span
@@ -143,23 +143,31 @@ export function LandingTournamentCard({
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-              {playerCount > 0 && (
-                <span>
-                  <span className="font-medium text-foreground">
-                    {playerCount === 1
-                      ? t("landing.playersCountSingle", { count: playerCount })
-                      : t("landing.playersCountMultiple", { count: playerCount })}
-                  </span>
-                  {playerNames.length > 0 && (
-                    <span className="text-muted-foreground ml-1 min-w-0 truncate block sm:inline" title={playerNames.slice(0, 5).join(", ") + (playerCount > 5 ? ` +${playerCount - 5} more` : "")}>
-                      — {playerNames.slice(0, 5).join(", ")}
-                      {playerCount > 5 ? ` ${t("landing.morePlayers", { count: playerCount - 5 })}` : ""}
-                    </span>
-                  )}
-                </span>
-              )}
-            </div>
+            {playerCount > 0 && (
+              <div className="space-y-1 pt-0.5">
+                <p className="text-xs font-medium text-foreground">
+                  {playerCount === 1
+                    ? t("landing.playersCountSingle", { count: playerCount })
+                    : t("landing.playersCountMultiple", { count: playerCount })}
+                </p>
+                {playerNames.length > 0 && (
+                  <p
+                    className="text-xs text-muted-foreground line-clamp-2 leading-relaxed"
+                    title={
+                      playerNames.slice(0, 4).join(", ") +
+                      (playerCount > playerNames.length
+                        ? ` +${playerCount - playerNames.length}`
+                        : playerCount > 4
+                          ? ` ${t("landing.morePlayers", { count: playerCount - 4 })}`
+                          : "")
+                    }
+                  >
+                    {playerNames.slice(0, 4).join(", ")}
+                    {playerCount > 4 ? ` ${t("landing.morePlayers", { count: playerCount - 4 })}` : ""}
+                  </p>
+                )}
+              </div>
+            )}
           </Link>
           {(clubSlug && clubName) || (organizerId && organizerName) ? (
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
@@ -188,16 +196,16 @@ export function LandingTournamentCard({
           )}
         </div>
         <div className="flex border-t bg-muted/30 min-h-[44px]">
-          <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation" asChild>
+          <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation gap-2" asChild>
             <Link href={`/tournament/${tournament.id}`}>
-              <Eye className="h-4 w-4 mr-2 shrink-0" />
-              {t("landing.viewButton")}
+              <Eye className="h-4 w-4 shrink-0" />
+              <span className="truncate">{t("landing.viewButton")}</span>
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground font-semibold transition-colors" asChild>
+          <Button variant="ghost" size="sm" className="flex-1 rounded-none min-h-[44px] touch-manipulation gap-2 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground font-semibold transition-colors" asChild>
             <Link href={`/join/${tournament.id}`}>
-              <LogIn className="h-4 w-4 mr-2 shrink-0" />
-              {t("landing.joinButton")}
+              <LogIn className="h-4 w-4 shrink-0" />
+              <span className="truncate">{t("landing.joinButton")}</span>
             </Link>
           </Button>
         </div>

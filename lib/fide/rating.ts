@@ -45,6 +45,50 @@ export function formatFideDisplayName(name: string): string {
   return `${first} ${last}`
 }
 
+export function parseRatingInput(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const n = Number.parseInt(trimmed, 10)
+  if (Number.isNaN(n) || n < 100 || n > 3000) return null
+  return n
+}
+
+export function ratingsFromInputs(standard: string, rapid: string, blitz: string): FideRatings {
+  return {
+    standard: parseRatingInput(standard),
+    rapid: parseRatingInput(rapid),
+    blitz: parseRatingInput(blitz),
+  }
+}
+
+export function mergeDisplayRatings(
+  fideRatings: FideRatings,
+  manual: FideRatings,
+  /** Self-reported classical when FIDE has no standard rating (stored in users.rating). */
+  manualClassical?: number | null,
+): FideRatings {
+  const classical = fideRatings.standard ?? manualClassical ?? manual.standard
+  return {
+    standard: classical,
+    rapid: fideRatings.rapid ?? manual.rapid,
+    blitz: fideRatings.blitz ?? manual.blitz,
+  }
+}
+
+export type FideRatingField = keyof FideRatings
+
+export function missingFideRatingFields(fideRatings: FideRatings): FideRatingField[] {
+  return (["standard", "rapid", "blitz"] as const).filter((key) => fideRatings[key] == null)
+}
+
+export function manualRatingsToDbFields(ratings: FideRatings) {
+  return {
+    fide_standard: ratings.standard,
+    fide_rapid: ratings.rapid,
+    fide_blitz: ratings.blitz,
+  }
+}
+
 export function fideSelectionToDbFields(selection: {
   fideId: number
   fideTitle: string | null

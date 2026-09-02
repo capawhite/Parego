@@ -9,6 +9,7 @@ import { Search, X, Trophy } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"
 import type { FidePlayer, FideRatings } from "@/lib/fide/types"
 import { extractFideRatings, formatFideRatingsSummary, pickFideRating } from "@/lib/fide/rating"
+import { FideRatingsDisplay } from "@/components/fide-ratings-display"
 import { cn } from "@/lib/utils"
 
 export type { FideRatings }
@@ -29,6 +30,10 @@ interface FidePlayerSearchProps {
   selected?: FidePlayerSelection | null
   className?: string
   disabled?: boolean
+  /** Larger linked-player card with rating stats (profile page). */
+  variant?: "default" | "prominent"
+  /** Merged ratings for display (e.g. FIDE rapid/blitz + self-reported classical). */
+  displayRatings?: FideRatings
 }
 
 function toSelection(player: FidePlayer): FidePlayerSelection {
@@ -49,6 +54,8 @@ export function FidePlayerSearch({
   selected,
   className,
   disabled = false,
+  variant = "default",
+  displayRatings,
 }: FidePlayerSearchProps) {
   const { t } = useI18n()
   const [query, setQuery] = useState("")
@@ -113,6 +120,32 @@ export function FidePlayerSearch({
   }
 
   if (selected) {
+    if (variant === "prominent") {
+      return (
+        <div className={cn("space-y-2", className)}>
+          <FideRatingsDisplay
+            name={selected.name}
+            fideId={selected.fideId}
+            fideTitle={selected.fideTitle}
+            federation={selected.federation}
+            ratings={displayRatings ?? selected.ratings}
+          />
+          {onClear && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={onClear}
+              disabled={disabled}
+            >
+              {t("fide.unlink")}
+            </Button>
+          )}
+        </div>
+      )
+    }
+
     return (
       <div className={cn("rounded-lg border bg-muted/40 p-3", className)}>
         <div className="flex items-start justify-between gap-2">
@@ -130,8 +163,8 @@ export function FidePlayerSearch({
               {t("fide.linkedSummary", {
                 id: selected.fideId,
                 federation: selected.federation ?? "—",
-                ratings: formatFideRatingsSummary(selected.ratings, {
-                  standard: t("fide.standardShort"),
+                ratings: formatFideRatingsSummary(displayRatings ?? selected.ratings, {
+                  standard: t("fide.classicalShort"),
                   rapid: t("fide.rapidShort"),
                   blitz: t("fide.blitzShort"),
                 }),
@@ -187,7 +220,7 @@ export function FidePlayerSearch({
             {results.map((player) => {
               const ratings = extractFideRatings(player)
               const ratingsLine = formatFideRatingsSummary(ratings, {
-                standard: t("fide.standardShort"),
+                standard: t("fide.classicalShort"),
                 rapid: t("fide.rapidShort"),
                 blitz: t("fide.blitzShort"),
               })
